@@ -27,17 +27,32 @@ export default function TabLayout() {
         }),
       }}>
       <Tabs.Screen
-        name="index"
+        name="live"
         options={{
-          title: 'Home',
+          title: 'Live',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="radio"
         options={{
-          title: 'Explore',
+          title: 'Archive',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="playlist"
+        options={{
+          title: 'Playlists',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        }}
+      />
+
+      {/* Hide schedule from main app tabs by setting href: null */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          href: null
         }}
       />
     </Tabs>
