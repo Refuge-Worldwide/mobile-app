@@ -3,29 +3,24 @@ import { StyleSheet, Text, type TextProps } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
 export type ThemedTextProps = TextProps & {
-  lightColor?: string;
-  darkColor?: string;
-  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
+  type?: 'default' | 'large' | 'title' | 'subtitle';
 };
 
 export function ThemedText({
   style,
-  lightColor,
-  darkColor,
   type = 'default',
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const color = useThemeColor({}, 'text');
 
   return (
     <Text
       style={[
         { color },
         type === 'default' ? styles.default : undefined,
+        type === 'large' ? styles.large : undefined,
         type === 'title' ? styles.title : undefined,
-        type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
         type === 'subtitle' ? styles.subtitle : undefined,
-        type === 'link' ? styles.link : undefined,
         style,
       ]}
       {...rest}
@@ -35,26 +30,21 @@ export function ThemedText({
 
 const styles = StyleSheet.create({
   default: {
-    fontSize: 16,
+    fontSize: 17,
     lineHeight: 24,
+    fontFamily: 'VisueltMedium',
   },
-  defaultSemiBold: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '600',
+  large: {
+    fontSize: 24,
+    fontFamily: 'VisueltMedium',
+    letterSpacing: -1,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    lineHeight: 32,
+    fontSize: 40,
+    fontFamily: 'ABCArizonaFlare',
   },
   subtitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-  },
-  link: {
-    lineHeight: 30,
-    fontSize: 16,
-    color: '#0a7ea4',
+    fontFamily: 'ABCArizonaFlare',
   },
 });

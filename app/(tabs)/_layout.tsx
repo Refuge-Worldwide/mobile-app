@@ -1,8 +1,9 @@
+import { ThemedText } from '@/components/ThemedText';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const colorScheme = useColorScheme();
@@ -41,14 +42,9 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           }
         ]}
       >
-        <Text style={[
-          styles.tabText,
-          {
-            color: isFocused ? colors.text : colors.background,
-          }
-        ]}>
+        <ThemedText type="large" style={{ color: isFocused ? colors.text : colors.background }}>
           {label}
-        </Text>
+        </ThemedText>
       </TouchableOpacity>
     );
   };
@@ -139,8 +135,9 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   container: {
     paddingBottom: 34, // Safe area padding
-    paddingTop: 10,
+    paddingTop: 6,
     minHeight: 120, // Ensure enough height for both rows
+    backgroundColor: '#fff',
   },
   tabsRow: {
     flexDirection: 'row',
@@ -151,13 +148,9 @@ const styles = StyleSheet.create({
   },
   tab: {
     paddingHorizontal: 7.5,
-    paddingVertical: 5,
+    paddingTop: 3.37,
+    paddingBottom: 2.25,
     marginHorizontal: 3,
     borderWidth: 1,
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
   },
 });
