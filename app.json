@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.anonymous.refuge-worldwide-app"
     },
     "android": {
+      "package": "com.refugeworldwide.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"

@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Text } from '@react-navigation/elements';
 import { useAudioPlayer } from 'expo-audio';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
@@ -64,10 +65,15 @@ export default function Live() {
     }
   };
 
+  const openChat = () => {
+    // Logic to open chat interface
+  }
+
   return (
     <ThemedView style={styles.liveContainer}>
       {liveNow &&
-        <>
+        <Pressable onPress={playFunction}>
+          <Text>{isPlaying ? 'Pause' : 'Play'}</Text>
           <Image
             style={styles.image}
             contentFit="cover"
@@ -75,33 +81,35 @@ export default function Live() {
             placeholder="blurhash"
             source={liveNow?.artwork}
           />
-          <ThemedText type="title">
+          <Text>
+            Live now
+          </Text>
+          <Text>
             {liveNow.title}
-          </ThemedText>
-        </>
+          </Text>
+        </Pressable>
       }
+
       <Link href="/live/schedule">
         Schedule
       </Link>
-      <Pressable onPress={playFunction}>
-        <ThemedText>{isPlaying ? 'Pause' : 'Play'}</ThemedText>
+      <Pressable onPress={openChat}>
+        <ThemedText>Chat</ThemedText>
       </Pressable>
-    </ThemedView>
+    </ThemedView >
   );
 }
 
 const styles = StyleSheet.create({
   liveContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    marginBottom: 46,
+    justifyContent: 'center',
+    padding: 12,
     gap: 8,
-    backgroundColor: 'transparent',
   },
   image: {
     flex: 1,
     height: '50%',
     width: '100%',
-    backgroundColor: '#0553',
   },
 });
