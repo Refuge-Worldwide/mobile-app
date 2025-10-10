@@ -8,6 +8,8 @@ export type IconName =
   | 'play'
   | 'stop'
   | 'loading'
+  | 'heart'
+  | 'heart-outline'
 
 interface IconProps {
   name: IconName;
@@ -34,6 +36,10 @@ export function Icon({
         return <Ionicons name="stop-sharp" size={size} color={iconColor} style={style} />;
       case 'loading':
         return <Ionicons name="refresh" size={size} color={iconColor} style={style} />;
+      case 'heart':
+        return <Ionicons name="heart" size={size} color={iconColor} style={style} />;
+      case 'heart-outline':
+        return <Ionicons name="heart-outline" size={size} color={iconColor} style={style} />;
       default:
         return null;
     }

@@ -1,5 +1,20 @@
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { Stack } from 'expo-router';
 
 export default function Layout() {
-  return <Stack />;
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: backgroundColor,
+        },
+        headerTintColor: textColor,
+        headerShadowVisible: false,
+        headerTitle: '',
+      }}
+    />
+  );
 }
