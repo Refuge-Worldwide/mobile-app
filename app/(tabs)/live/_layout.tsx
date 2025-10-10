@@ -3,15 +3,21 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { Stack } from 'expo-router';
 
 export default function Layout() {
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+
   return (
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: useThemeColor({}, 'background'),
+          backgroundColor: backgroundColor,
         },
+        headerTintColor: textColor,
         headerTitle: '',
         headerBackTitle: '',
         headerBackButtonDisplayMode: 'minimal',
+        headerShadowVisible: false,
+        headerBackVisible: false,
         headerLeft: ({ canGoBack }) => {
           if (canGoBack) {
             return <BackButton />;

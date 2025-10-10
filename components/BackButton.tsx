@@ -1,7 +1,7 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 
 interface BackButtonProps {
   size?: number;
@@ -24,7 +24,7 @@ export function BackButton({ size = 24, style, onPress }: BackButtonProps) {
   return (
     <Pressable
       onPress={handlePress}
-      style={[styles.button, style]}
+      android_ripple={{ color: 'transparent' }}
     >
       <Ionicons
         name="arrow-back"
@@ -34,9 +34,3 @@ export function BackButton({ size = 24, style, onPress }: BackButtonProps) {
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    padding: 8,
-  },
-});

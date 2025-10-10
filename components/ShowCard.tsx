@@ -1,11 +1,13 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { Image } from 'expo-image';
 import React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon } from './Icon';
 import { ThemedText } from './ThemedText';
 
 interface ShowCardProps {
   imageUrl?: string;
+  blurhash?: string;
   title: string;
   date: string;
   genres: string[];
@@ -16,6 +18,7 @@ interface ShowCardProps {
 
 export function ShowCard({
   imageUrl,
+  blurhash,
   title,
   date,
   genres,
@@ -25,14 +28,26 @@ export function ShowCard({
 }: ShowCardProps) {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
+  const colorScheme = useThemeColor({}, 'text') === '#11181C' ? 'light' : 'dark';
 
   const displayGenres = genres.slice(0, 3);
 
+  // Theme-aware blurhash with more interesting gradient patterns
+  const defaultBlurhash = colorScheme === 'dark'
+    ? 'L04.Jn00~q-;xuof4nM{00D%?bRj' // Dark theme: darker with subtle variations
+    : 'LLPZz~ofM{of~qayM{j[RjayRjof'; // Light theme: lighter with subtle variations
+
   return (
-    <Pressable style={styles.container} onPress={onPress}>
+    <Pressable onPress={onPress}>
       <View style={styles.imageContainer}>
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.image} />
+          <Image
+            source={{ uri: imageUrl }}
+            placeholder={{ blurhash: blurhash || defaultBlurhash }}
+            transition={300}
+            style={styles.image}
+            contentFit="cover"
+          />
         ) : (
           <View style={[styles.image, styles.placeholderImage]} />
         )}
@@ -78,9 +93,6 @@ export function ShowCard({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
   imageContainer: {
     width: '100%',
     aspectRatio: 16 / 9,
