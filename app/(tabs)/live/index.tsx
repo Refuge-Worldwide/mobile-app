@@ -1,4 +1,5 @@
 import { Icon } from '@/components/Icon';
+import { RefugeLogo } from '@/components/RefugeLogo';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -119,7 +120,10 @@ export default function Live() {
   }
 
   return (
-    <ThemedView style={[styles.liveContainer, { paddingTop: insets.top + 20 }]}>
+    <ThemedView style={[styles.liveContainer, { paddingTop: insets.top + 8 }]}>
+      <View style={styles.header}>
+        <RefugeLogo size={50} />
+      </View>
       <View style={styles.centeredContent}>
         {liveNow &&
           <View>
@@ -171,17 +175,17 @@ export default function Live() {
       <View style={styles.buttons}>
         <Pressable
           onPress={openChat}
-          style={[styles.menuButton, { backgroundColor: backgroundColor, borderColor: textColor }]}
+          style={[styles.menuButton, { backgroundColor: textColor, borderColor: textColor }]}
         >
-          <ThemedText type="large" style={{ color: textColor }}>
+          <ThemedText type="large" style={{ color: backgroundColor }}>
             Chat
           </ThemedText>
         </Pressable>
         <Pressable
-          style={[styles.menuButton, { backgroundColor: backgroundColor, borderColor: textColor }]}
+          style={[styles.menuButton, { backgroundColor: textColor, borderColor: textColor }]}
         >
           <Link href="/live/schedule" style={styles.buttonLink}>
-            <ThemedText type="large" style={{ color: textColor }}>
+            <ThemedText type="large" style={{ color: backgroundColor }}>
               Schedule
             </ThemedText>
           </Link>
@@ -196,6 +200,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     gap: 8,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   centeredContent: {
     flex: 1,

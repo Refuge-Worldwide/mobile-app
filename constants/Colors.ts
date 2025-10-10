@@ -4,11 +4,27 @@
  */
 
 export const Colors = {
+  olive: {
+    text: "#5E6614",
+    background: "#5E6614"
+  },
   light: {
     text: '#FFD9F0',
     background: '#1A4AFC',
     icon: '#FFD9F0',
     tabIconDefault: '#FFD9F0',
+  },
+  pink: {
+    text: "#FF96FF",
+    background: "#FF96FF"
+  },
+  ochre: {
+    text: "#B27524",
+    background: "#B27524"
+  },
+  grey: {
+    text: "#D9D9D9",
+    background: "#D9D9D9"
   },
   dark: {
     text: '#CCFFD1',

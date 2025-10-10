@@ -41,35 +41,7 @@
         }
       ],
       "expo-audio",
-      "expo-font",
-      {
-        "fonts": [
-          "./assets/fonts/ABCArizonaFlare.otf",
-          "./assets/fonts/VisueltMedium.otf"
-        ],
-        "android": {
-          "fonts": [
-            {
-              "fontFamily": "ABCArizonaFlare",
-              "fontDefinitions": [
-                {
-                  "path": "./assets/fonts/ABCArizonaFlare.otf",
-                  "weight": 800
-                }
-              ]
-            },
-            {
-              "fontFamily": "VisueltMedium",
-              "fontDefinitions": [
-                {
-                  "path": "./assets/fonts/VisueltMedium.otf",
-                  "weight": 400
-                }
-              ]
-            }
-          ]
-        }
-      }
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
