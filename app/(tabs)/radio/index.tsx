@@ -85,6 +85,7 @@ export default function Archive() {
     return (
       <ShowCard
         imageUrl={imageUrl}
+        audioUrl="https://downloads.ctfassets.net/taoiy3h84mql/4js8WfDtP9bkEDjpg4hFzu/a04cd029a0a8967eca15c7191297b6a6/Dub_Dal_takeover__Body__Mind___Bass_-_Aarti_Kriplani___Zena__-_03_Oct_2025.mp3"
         title={item.title}
         date={formatDate(item.date)}
         genres={item.genres}

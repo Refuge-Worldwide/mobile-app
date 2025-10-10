@@ -3,37 +3,22 @@ import { RefugeLogo } from '@/components/RefugeLogo';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { useAudioPlayer } from 'expo-audio';
+import { useAudioStore } from '@/store/audioStore';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-// import TrackPlayer from 'react-native-track-player';
 
 export default function Live() {
   const [liveNow, setLiveNow] = useState<{ title: string; artwork: string, slug: string, isMixedFeelings: boolean } | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const insets = useSafeAreaInsets();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
 
-  // Create a new player each time - this will reload the stream
-  const player = useAudioPlayer('https://streaming.radio.co/s3699c5e49/listen');
-
-
-  // Setup TrackPlayer on mount
-  // useEffect(() => {
-  //   const setup = async () => {
-  //     try {
-  //       await TrackPlayer.setupPlayer();
-  //     } catch (error) {
-  //       console.error('TrackPlayer setup error:', error);
-  //     }
-  //   };
-  //   setup();
-  // }, []);
+  const { currentTrack, isPlaying, setLiveTrack, clearTrack } = useAudioStore();
+  const isCurrentlyPlayingLive = currentTrack?.isLive && isPlaying;
 
   // Fetch live show data
   useEffect(() => {
@@ -59,30 +44,16 @@ export default function Live() {
   }, []);
 
   const playFunction = async () => {
-    if (isPlaying) {
-      // Stop current playback
-      setIsLoading(true);
-      try {
-        player.pause();
-        setIsPlaying(false);
-      } catch (error) {
-        console.error('Error pausing stream:', error);
-      } finally {
-        setIsLoading(false);
-      }
-      return;
+    if (isCurrentlyPlayingLive) {
+      // Stop live playback
+      clearTrack();
     } else {
-      try {
-        setIsLoading(true);
-
-        // The player is recreated on each component render, which reloads the stream
-        await player.play();
-        setIsPlaying(true);
-      } catch (error) {
-        console.error('Error playing stream:', error);
-        setIsPlaying(false);
-      } finally {
-        setIsLoading(false);
+      // Start live playback - replace any current track
+      if (liveNow) {
+        setLiveTrack({
+          title: liveNow.title,
+          artwork: liveNow.artwork,
+        });
       }
     }
   };
@@ -145,7 +116,7 @@ export default function Live() {
                   />
                 ) : (
                   <Icon
-                    name={isPlaying ? "stop" : "play"}
+                    name={isCurrentlyPlayingLive ? "stop" : "play"}
                     size={84}
                     withShadow={true}
                   />

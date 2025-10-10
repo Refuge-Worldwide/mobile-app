@@ -1,4 +1,5 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useAudioStore } from '@/store/audioStore';
 import { Image } from 'expo-image';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -11,6 +12,7 @@ interface ShowCardProps {
   title: string;
   date: string;
   genres: string[];
+  audioUrl?: string;
   isFavorited?: boolean;
   onFavoritePress?: () => void;
   onPress?: () => void;
@@ -22,6 +24,7 @@ export function ShowCard({
   title,
   date,
   genres,
+  audioUrl,
   isFavorited = false,
   onFavoritePress,
   onPress,
@@ -36,6 +39,23 @@ export function ShowCard({
   const defaultBlurhash = colorScheme === 'dark'
     ? 'L04.Jn00~q-;xuof4nM{00D%?bRj' // Dark theme: darker with subtle variations
     : 'LLPZz~ofM{of~qayM{j[RjayRjof'; // Light theme: lighter with subtle variations
+
+  const setTrack = useAudioStore((state) => state.setTrack);
+
+  const handlePlayPress = (e: any) => {
+    e.stopPropagation();
+    if (audioUrl) {
+      setTrack({
+        id: title,
+        url: audioUrl,
+        title: title,
+        artist: date,
+        artwork: imageUrl,
+        mode: 'archive',
+        isLive: false,
+      });
+    }
+  };
 
   return (
     <Pressable onPress={onPress}>
@@ -52,18 +72,33 @@ export function ShowCard({
           <View style={[styles.image, styles.placeholderImage]} />
         )}
 
-        {onFavoritePress && (
-          <Pressable
-            style={styles.heartButton}
-            onPress={onFavoritePress}
-          >
-            <Icon
-              name={isFavorited ? 'heart' : 'heart-outline'}
-              size={24}
-              color="#fff"
-            />
-          </Pressable>
-        )}
+        <View style={styles.buttonContainer}>
+          {audioUrl && (
+            <Pressable
+              style={[styles.iconButton, { backgroundColor: textColor }]}
+              onPress={handlePlayPress}
+            >
+              <Icon
+                name="play"
+                size={40}
+                color={backgroundColor}
+              />
+            </Pressable>
+          )}
+
+          {onFavoritePress && (
+            <Pressable
+              style={[styles.iconButton, { backgroundColor: textColor }]}
+              onPress={onFavoritePress}
+            >
+              <Icon
+                name={isFavorited ? 'heart' : 'heart-outline'}
+                size={40}
+                color={backgroundColor}
+              />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <View style={[styles.infoRow, { borderBottomColor: textColor }]}>
@@ -107,11 +142,17 @@ const styles = StyleSheet.create({
   placeholderImage: {
     backgroundColor: '#333',
   },
-  heartButton: {
+  buttonContainer: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
-    padding: 4,
+    bottom: 0,
+    right: 0,
+    flexDirection: 'row',
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   infoRow: {
     flexDirection: 'row',

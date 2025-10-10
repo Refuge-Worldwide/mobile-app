@@ -1,8 +1,8 @@
+import { AudioPlayer } from '@/components/AudioPlayer';
 import { ThemedText } from '@/components/ThemedText';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Tabs } from 'expo-router';
-import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
@@ -83,52 +83,55 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
 export default function TabLayout() {
   return (
-    <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-      }}>
-      <Tabs.Screen
-        name="live"
-        options={{
-          title: 'Live',
-        }}
-      />
-      <Tabs.Screen
-        name="radio"
-        options={{
-          title: 'Archive',
-        }}
-      />
-      <Tabs.Screen
-        name="playlist"
-        options={{
-          title: 'Playlists',
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: 'Search',
-          href: '/search',
-        }}
-      />
-      <Tabs.Screen
-        name="account"
-        options={{
-          title: 'Account',
-          href: '/account',
-        }}
-      />
+    <>
+      <AudioPlayer />
+      <Tabs
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+        }}>
+        <Tabs.Screen
+          name="live"
+          options={{
+            title: 'Live',
+          }}
+        />
+        <Tabs.Screen
+          name="radio"
+          options={{
+            title: 'Archive',
+          }}
+        />
+        <Tabs.Screen
+          name="playlist"
+          options={{
+            title: 'Playlists',
+          }}
+        />
+        <Tabs.Screen
+          name="search"
+          options={{
+            title: 'Search',
+            href: '/search',
+          }}
+        />
+        <Tabs.Screen
+          name="account"
+          options={{
+            title: 'Account',
+            href: '/account',
+          }}
+        />
 
-      {/* Hide schedule from main app tabs by setting href: null */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          href: null
-        }}
-      />
-    </Tabs>
+        {/* Hide schedule from main app tabs by setting href: null */}
+        <Tabs.Screen
+          name="index"
+          options={{
+            href: null
+          }}
+        />
+      </Tabs>
+    </>
   );
 }
 
@@ -138,6 +141,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     minHeight: 120, // Ensure enough height for both rows
     backgroundColor: '#fff',
+    zIndex: 200,
   },
   tabsRow: {
     flexDirection: 'row',
