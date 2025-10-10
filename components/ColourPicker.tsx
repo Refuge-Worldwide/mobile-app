@@ -1,22 +1,16 @@
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import React, { useEffect, useState } from 'react';
+import { useColorScheme, useSetColorScheme } from '@/hooks/useColorScheme';
+import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function ColourPicker() {
   const colorScheme = useColorScheme();
+  const setColorScheme = useSetColorScheme();
   const insets = useSafeAreaInsets();
-  const [currentScheme, setCurrentScheme] = useState<keyof typeof Colors>(colorScheme ?? 'light');
-
-  useEffect(() => {
-    setCurrentScheme(colorScheme ?? 'light');
-  }, [colorScheme]);
 
   const handleColorSchemeChange = (scheme: keyof typeof Colors) => {
-    setCurrentScheme(scheme);
-    // Note: You might need to implement actual theme switching logic
-    // depending on how your useColorScheme hook works
+    setColorScheme(scheme);
   };
 
   // Get all color schemes from the Colors object
@@ -27,15 +21,18 @@ export function ColourPicker() {
 
   return (
     <View style={[styles.container, { top: insets.top + 10, right: 16 }]}>
-      {colorSchemes.map((scheme, index) => (
+      {colorSchemes.map((scheme) => (
         <Pressable
           key={scheme.key}
           style={[
             styles.colorButton,
-            { backgroundColor: scheme.colors.background },
+            { backgroundColor: scheme.colors.background }
           ]}
           onPress={() => handleColorSchemeChange(scheme.key)}
         >
+          {colorScheme === scheme.key && (
+            <View style={[styles.activeDot, { backgroundColor: scheme.colors.text }]} />
+          )}
         </Pressable>
       ))}
     </View>
@@ -55,10 +52,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  innerDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  activeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });
-

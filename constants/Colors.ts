@@ -5,7 +5,7 @@
 
 export const Colors = {
   olive: {
-    text: "#5E6614",
+    text: "#FFFE49",
     background: "#5E6614"
   },
   light: {
@@ -15,15 +15,15 @@ export const Colors = {
     tabIconDefault: '#FFD9F0',
   },
   pink: {
-    text: "#FF96FF",
+    text: "#071907",
     background: "#FF96FF"
   },
   ochre: {
-    text: "#B27524",
+    text: "#FBFFB3",
     background: "#B27524"
   },
   grey: {
-    text: "#D9D9D9",
+    text: "#071907",
     background: "#D9D9D9"
   },
   dark: {

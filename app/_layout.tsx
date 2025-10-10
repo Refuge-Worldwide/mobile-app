@@ -9,13 +9,32 @@ import { StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { ColorSchemeProvider } from '@/contexts/ColorSchemeContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayoutContent() {
   const colorScheme = useColorScheme();
 
+  return (
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <View style={styles.container}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+
+        {/* Self-contained ColourPicker with fixed button */}
+        <ColourPicker />
+
+        <StatusBar style="auto" />
+      </View>
+    </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
   const [loaded] = useFonts({
     VisueltMedium: require('../assets/fonts/VisueltMedium.otf'),
     ABCArizonaFlare: require('../assets/fonts/ABCArizonaFlare.otf'),
@@ -32,19 +51,9 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <View style={styles.container}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-
-        {/* Self-contained ColourPicker with fixed button */}
-        <ColourPicker />
-
-        <StatusBar style="auto" />
-      </View>
-    </ThemeProvider>
+    <ColorSchemeProvider>
+      <RootLayoutContent />
+    </ColorSchemeProvider>
   );
 }
 
