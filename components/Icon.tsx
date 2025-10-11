@@ -10,6 +10,8 @@ export type IconName =
   | 'loading'
   | 'heart'
   | 'heart-outline'
+  | 'add-to-queue'
+  | 'plus'
 
 interface IconProps {
   name: IconName;
@@ -40,6 +42,10 @@ export function Icon({
         return <Ionicons name="heart" size={size} color={iconColor} style={style} />;
       case 'heart-outline':
         return <Ionicons name="heart-outline" size={size} color={iconColor} style={style} />;
+      case 'add-to-queue':
+        return <Ionicons name="list" size={size} color={iconColor} style={style} />;
+      case 'plus':
+        return <Ionicons name="add" size={size} color={iconColor} style={style} />;
       default:
         return null;
     }

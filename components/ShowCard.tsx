@@ -3,6 +3,7 @@ import { useAudioStore } from '@/store/audioStore';
 import { Image } from 'expo-image';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import TrackPlayer from 'react-native-track-player';
 import { Icon } from './Icon';
 import { ThemedText } from './ThemedText';
 
@@ -13,8 +14,6 @@ interface ShowCardProps {
   date: string;
   genres: string[];
   audioUrl?: string;
-  isFavorited?: boolean;
-  onFavoritePress?: () => void;
   onPress?: () => void;
 }
 
@@ -25,8 +24,6 @@ export function ShowCard({
   date,
   genres,
   audioUrl,
-  isFavorited = false,
-  onFavoritePress,
   onPress,
 }: ShowCardProps) {
   const textColor = useThemeColor({}, 'text');
@@ -57,6 +54,23 @@ export function ShowCard({
     }
   };
 
+  const handleQueuePress = async (e: any) => {
+    e.stopPropagation();
+    if (audioUrl) {
+      try {
+        await TrackPlayer.add({
+          id: title,
+          url: audioUrl,
+          title: title,
+          artist: date,
+          artwork: imageUrl,
+        });
+      } catch (error) {
+        console.error('Error adding to queue:', error);
+      }
+    }
+  };
+
   return (
     <Pressable onPress={onPress}>
       <View style={styles.imageContainer}>
@@ -74,29 +88,28 @@ export function ShowCard({
 
         <View style={styles.buttonContainer}>
           {audioUrl && (
-            <Pressable
-              style={[styles.iconButton, { backgroundColor: textColor }]}
-              onPress={handlePlayPress}
-            >
-              <Icon
-                name="play"
-                size={40}
-                color={backgroundColor}
-              />
-            </Pressable>
-          )}
-
-          {onFavoritePress && (
-            <Pressable
-              style={[styles.iconButton, { backgroundColor: textColor }]}
-              onPress={onFavoritePress}
-            >
-              <Icon
-                name={isFavorited ? 'heart' : 'heart-outline'}
-                size={40}
-                color={backgroundColor}
-              />
-            </Pressable>
+            <>
+              <Pressable
+                style={[styles.iconButton, { backgroundColor: textColor }]}
+                onPress={handlePlayPress}
+              >
+                <Icon
+                  name="play"
+                  size={40}
+                  color={backgroundColor}
+                />
+              </Pressable>
+              <Pressable
+                style={[styles.iconButton, { backgroundColor: textColor }]}
+                onPress={handleQueuePress}
+              >
+                <Icon
+                  name="plus"
+                  size={40}
+                  color={backgroundColor}
+                />
+              </Pressable>
+            </>
           )}
         </View>
       </View>

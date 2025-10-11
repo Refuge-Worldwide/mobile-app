@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import TrackPlayer, { Capability, Event, State, useProgress, useTrackPlayerEvents } from 'react-native-track-player';
+import { QueuePreview } from './QueuePreview';
 import { ThemedText } from './ThemedText';
 
 export function AudioPlayer() {
@@ -15,9 +16,9 @@ export function AudioPlayer() {
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [progressBarWidth, setProgressBarWidth] = useState(300);
+  const [showQueue, setShowQueue] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(100)).current; // Start below screen
-  const imageHeight = 56; // 2 rows height
   const isLiveMode = playbackMode === 'live' || currentTrack?.isLive;
 
   // Animation functions
@@ -143,18 +144,31 @@ export function AudioPlayer() {
   if (!currentTrack && !isVisible) return null;
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          backgroundColor,
-          transform: [{ translateY: slideAnim }]
-        }
-      ]}
-    >
+    <>
+      <QueuePreview isVisible={showQueue} onClose={() => setShowQueue(false)} />
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            backgroundColor,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
       <View style={styles.content}>
-        {/* Left side - Track info and controls */}
-        <View style={styles.leftContainer}>
+        {/* Left side - Show image (only if artwork exists) */}
+        {currentTrack?.artwork && (
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ uri: currentTrack.artwork }}
+              style={styles.artwork}
+              contentFit="cover"
+            />
+          </View>
+        )}
+
+        {/* Middle - Track info and controls */}
+        <View style={styles.middleContainer}>
           {/* Show title */}
           <View style={{ backgroundColor: textColor, marginBottom: 1 }}>
             <ThemedText type="player" style={[styles.title, { color: backgroundColor }]} numberOfLines={1}>
@@ -202,7 +216,7 @@ export function AudioPlayer() {
                 ]}
               />
 
-              {/* Time text container - positioned on right */}
+              {/* Time text container */}
               <View style={styles.scrubberTimeContainer}>
                 {/* Inverted text (shows on filled portion) */}
                 <View style={[styles.scrubberTimeWrapper, { overflow: 'hidden' }]}>
@@ -236,10 +250,18 @@ export function AudioPlayer() {
                 </View>
               </View>
 
-              {/* Close button on right */}
-              <Pressable onPress={handleClose} style={styles.scrubberCloseButton}>
-                <Ionicons name="close" size={18} color={textColor} />
-              </Pressable>
+              {/* Buttons container on right */}
+              <View style={styles.scrubberButtonsContainer}>
+                {/* Queue button */}
+                <Pressable onPress={() => setShowQueue(!showQueue)} style={styles.scrubberButton}>
+                  <Ionicons name="list" size={18} color={textColor} />
+                </Pressable>
+
+                {/* Close button */}
+                <Pressable onPress={handleClose} style={styles.scrubberButton}>
+                  <Ionicons name="close" size={18} color={textColor} />
+                </Pressable>
+              </View>
             </Pressable>
           ) : (
             <View style={styles.controlsRow}>
@@ -264,25 +286,19 @@ export function AudioPlayer() {
                 <ThemedText type="player" style={styles.liveIndicatorText}>Streaming Live</ThemedText>
               </View>
 
+              <Pressable onPress={() => setShowQueue(!showQueue)} style={styles.queueButton}>
+                <Ionicons name="list" size={22} color={textColor} />
+              </Pressable>
+
               <Pressable onPress={handleClose} style={styles.closeButton}>
                 <Ionicons name="close" size={22} color={textColor} />
               </Pressable>
             </View>
           )}
         </View>
-
-        {/* Right side - Show image (only if artwork exists) */}
-        {currentTrack?.artwork && (
-          <View style={[styles.imageContainer, { height: imageHeight }]}>
-            <Image
-              source={{ uri: currentTrack.artwork }}
-              style={styles.artwork}
-              contentFit="cover"
-            />
-          </View>
-        )}
       </View>
-    </Animated.View>
+      </Animated.View>
+    </>
   );
 }
 
@@ -299,8 +315,22 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     gap: 8,
+  },
+  imageContainer: {
+    width: 56,
+    height: 56,
+    overflow: 'hidden',
+  },
+  artwork: {
+    width: '100%',
+    height: '100%',
+  },
+  middleContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    gap: 0,
   },
   leftContainer: {
     flex: 1,
@@ -331,10 +361,31 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     zIndex: 3,
   },
+  scrubberQueueButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    zIndex: 3,
+    position: 'relative',
+  },
   scrubberCloseButton: {
     paddingHorizontal: 4,
     paddingVertical: 2,
     zIndex: 3,
+  },
+  queueBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  queueBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
   },
   scrubberFill: {
     position: 'absolute',
@@ -346,12 +397,26 @@ const styles = StyleSheet.create({
   },
   scrubberTimeContainer: {
     position: 'absolute',
-    right: 32,
+    right: 70,
     top: 0,
     bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 2,
+  },
+  scrubberButtonsContainer: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 3,
+    gap: 4,
+  },
+  scrubberButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   scrubberTimeWrapper: {
     position: 'absolute',
@@ -433,6 +498,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  queueButton: {
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
   closeButton: {
     padding: 4,
     justifyContent: 'center',
@@ -451,13 +522,5 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   liveIndicatorText: {
-  },
-  imageContainer: {
-    aspectRatio: 16 / 9,
-    height: '100%',
-    overflow: 'hidden',
-  },
-  artwork: {
-    flex: 1,
   },
 });
