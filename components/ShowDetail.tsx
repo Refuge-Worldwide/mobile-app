@@ -1,3 +1,4 @@
+import { Icon } from '@/components/Icon';
 import { ShowCard } from '@/components/ShowCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -9,6 +10,7 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   View,
 } from 'react-native';
@@ -86,6 +88,20 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     router.push(`${navigationPrefix}/${relatedSlug}`);
   };
 
+  const handleShare = async () => {
+    try {
+      const shareUrl = `https://refugeworldwide.com/shows/${slug}`;
+      const shareMessage = `${show?.title} - ${formatDate(show?.date || '')}`;
+
+      await Share.share({
+        message: shareMessage,
+        url: shareUrl,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   if (loading) {
     return (
       <ThemedView style={styles.container}>
@@ -149,6 +165,11 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
               )}
             </View>
           )}
+
+          {/* Share Button */}
+          <Pressable onPress={handleShare} style={styles.shareButton}>
+            <Icon name="share" size={24} />
+          </Pressable>
         </View>
 
         {/* Related Shows */}
@@ -215,5 +236,10 @@ const styles = StyleSheet.create({
   },
   relatedShowsSection: {
     marginTop: 8,
+  },
+  shareButton: {
+    marginTop: 16,
+    padding: 8,
+    alignSelf: 'flex-start',
   },
 });
