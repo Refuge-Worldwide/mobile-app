@@ -1,7 +1,7 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet';
 import { forwardRef, ReactNode, useCallback } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface BottomSheetProps {
@@ -34,6 +34,7 @@ export const BottomSheet = forwardRef<BottomSheetModal, BottomSheetProps>(
         ref={ref}
         snapPoints={snapPoints}
         enablePanDownToClose
+        enableContentPanningGesture={false}
         backdropComponent={renderBackdrop}
         backgroundStyle={{ backgroundColor }}
         handleIndicatorStyle={{ backgroundColor: textColor }}
@@ -41,9 +42,9 @@ export const BottomSheet = forwardRef<BottomSheetModal, BottomSheetProps>(
         android_keyboardInputMode="adjustResize"
         onDismiss={onDismiss}
       >
-        <BottomSheetView style={[styles.contentContainer, { paddingBottom: insets.bottom }]}>
+        <View style={[styles.contentContainer, { paddingBottom: insets.bottom }]}>
           {children}
-        </BottomSheetView>
+        </View>
       </BottomSheetModal>
     );
   }

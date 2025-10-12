@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import TrackPlayer, { Capability, Event, State, useProgress, useTrackPlayerEvents } from 'react-native-track-player';
-import { QueuePreview } from './QueuePreview';
+import { QueuePreview, QueuePreviewRef } from './QueuePreview';
 import { ThemedText } from './ThemedText';
 
 export function AudioPlayer() {
@@ -16,8 +16,8 @@ export function AudioPlayer() {
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [progressBarWidth, setProgressBarWidth] = useState(300);
-  const [showQueue, setShowQueue] = useState(false);
 
+  const queueSheetRef = useRef<QueuePreviewRef>(null);
   const slideAnim = useRef(new Animated.Value(100)).current; // Start below screen
   const isLiveMode = playbackMode === 'live' || currentTrack?.isLive;
 
@@ -145,7 +145,7 @@ export function AudioPlayer() {
 
   return (
     <>
-      <QueuePreview isVisible={showQueue} onClose={() => setShowQueue(false)} />
+      <QueuePreview ref={queueSheetRef} />
       <Animated.View
         style={[
           styles.container,
@@ -155,148 +155,148 @@ export function AudioPlayer() {
           }
         ]}
       >
-      <View style={styles.content}>
-        {/* Left side - Show image (only if artwork exists) */}
-        {currentTrack?.artwork && (
-          <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: currentTrack.artwork }}
-              style={styles.artwork}
-              contentFit="cover"
-            />
-          </View>
-        )}
-
-        {/* Middle - Track info and controls */}
-        <View style={styles.middleContainer}>
-          {/* Show title */}
-          <View style={{ backgroundColor: textColor, marginBottom: 1 }}>
-            <ThemedText type="player" style={[styles.title, { color: backgroundColor }]} numberOfLines={1}>
-              {currentTrack?.title || ''}
-            </ThemedText>
-          </View>
-
-          {/* Controls row - full width scrubber for archive, controls for live */}
-          {!isLiveMode ? (
-            <Pressable
-              style={styles.scrubberRow}
-              onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
-              onPress={(e) => {
-                const { locationX } = e.nativeEvent;
-                const percentage = locationX / progressBarWidth;
-                const newPosition = percentage * duration;
-                handleSeekComplete(newPosition);
-              }}
-            >
-              {/* Play button on left */}
-              <Pressable
-                onPress={handlePlayPause}
-                disabled={isLoading}
-                style={styles.scrubberPlayButton}
-              >
-                {isLoading ? (
-                  <Ionicons name="hourglass-outline" size={20} color={textColor} />
-                ) : (
-                  <Ionicons
-                    name={isPlaying ? 'pause' : 'play'}
-                    size={20}
-                    color={textColor}
-                  />
-                )}
-              </Pressable>
-
-              {/* Progress fill */}
-              <View
-                style={[
-                  styles.scrubberFill,
-                  {
-                    backgroundColor: textColor,
-                    width: `${((position / (duration || 1)) * 100)}%`,
-                  },
-                ]}
+        <View style={styles.content}>
+          {/* Left side - Show image (only if artwork exists) */}
+          {currentTrack?.artwork && (
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: currentTrack.artwork }}
+                style={styles.artwork}
+                contentFit="cover"
               />
-
-              {/* Time text container */}
-              <View style={styles.scrubberTimeContainer}>
-                {/* Inverted text (shows on filled portion) */}
-                <View style={[styles.scrubberTimeWrapper, { overflow: 'hidden' }]}>
-                  <ThemedText
-                    type="player"
-                    style={[
-                      styles.scrubberTime,
-                      {
-                        color: backgroundColor,
-                        width: `${((position / (duration || 1)) * 100)}%`,
-                      },
-                    ]}
-                  >
-                    {getTimeElapsed()}
-                  </ThemedText>
-                </View>
-                {/* Normal text (shows on unfilled portion) */}
-                <View style={[styles.scrubberTimeWrapper, { overflow: 'hidden' }]}>
-                  <ThemedText
-                    type="player"
-                    style={[
-                      styles.scrubberTime,
-                      {
-                        color: textColor,
-                        width: `${(100 - (position / (duration || 1)) * 100)}%`,
-                      },
-                    ]}
-                  >
-                    {getTimeElapsed()}
-                  </ThemedText>
-                </View>
-              </View>
-
-              {/* Buttons container on right */}
-              <View style={styles.scrubberButtonsContainer}>
-                {/* Queue button */}
-                <Pressable onPress={() => setShowQueue(!showQueue)} style={styles.scrubberButton}>
-                  <Ionicons name="list" size={18} color={textColor} />
-                </Pressable>
-
-                {/* Close button */}
-                <Pressable onPress={handleClose} style={styles.scrubberButton}>
-                  <Ionicons name="close" size={18} color={textColor} />
-                </Pressable>
-              </View>
-            </Pressable>
-          ) : (
-            <View style={styles.controlsRow}>
-              <Pressable
-                onPress={handlePlayPause}
-                disabled={isLoading}
-                style={styles.playButton}
-              >
-                {isLoading ? (
-                  <Ionicons name="hourglass-outline" size={24} color={textColor} />
-                ) : (
-                  <Ionicons
-                    name={isPlaying ? 'pause' : 'play'}
-                    size={24}
-                    color={textColor}
-                  />
-                )}
-              </Pressable>
-
-              <View style={styles.liveIndicatorContainer}>
-                <View style={[styles.liveDot, { backgroundColor: '#ff0000' }]} />
-                <ThemedText type="player" style={styles.liveIndicatorText}>Streaming Live</ThemedText>
-              </View>
-
-              <Pressable onPress={() => setShowQueue(!showQueue)} style={styles.queueButton}>
-                <Ionicons name="list" size={22} color={textColor} />
-              </Pressable>
-
-              <Pressable onPress={handleClose} style={styles.closeButton}>
-                <Ionicons name="close" size={22} color={textColor} />
-              </Pressable>
             </View>
           )}
+
+          {/* Middle - Track info and controls */}
+          <View style={styles.middleContainer}>
+            {/* Show title */}
+            <View style={{ backgroundColor: textColor, marginBottom: 1 }}>
+              <ThemedText type="player" style={[styles.title, { color: backgroundColor }]} numberOfLines={1}>
+                {currentTrack?.title || ''}
+              </ThemedText>
+            </View>
+
+            {/* Controls row - full width scrubber for archive, controls for live */}
+            {!isLiveMode ? (
+              <Pressable
+                style={styles.scrubberRow}
+                onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
+                onPress={(e) => {
+                  const { locationX } = e.nativeEvent;
+                  const percentage = locationX / progressBarWidth;
+                  const newPosition = percentage * duration;
+                  handleSeekComplete(newPosition);
+                }}
+              >
+                {/* Play button on left */}
+                <Pressable
+                  onPress={handlePlayPause}
+                  disabled={isLoading}
+                  style={styles.scrubberPlayButton}
+                >
+                  {isLoading ? (
+                    <Ionicons name="hourglass-outline" size={20} color={textColor} />
+                  ) : (
+                    <Ionicons
+                      name={isPlaying ? 'pause' : 'play'}
+                      size={20}
+                      color={textColor}
+                    />
+                  )}
+                </Pressable>
+
+                {/* Progress fill */}
+                <View
+                  style={[
+                    styles.scrubberFill,
+                    {
+                      backgroundColor: textColor,
+                      width: `${((position / (duration || 1)) * 100)}%`,
+                    },
+                  ]}
+                />
+
+                {/* Time text container */}
+                <View style={styles.scrubberTimeContainer}>
+                  {/* Inverted text (shows on filled portion) */}
+                  <View style={[styles.scrubberTimeWrapper, { overflow: 'hidden' }]}>
+                    <ThemedText
+                      type="player"
+                      style={[
+                        styles.scrubberTime,
+                        {
+                          color: backgroundColor,
+                          width: `${((position / (duration || 1)) * 100)}%`,
+                        },
+                      ]}
+                    >
+                      {getTimeElapsed()}
+                    </ThemedText>
+                  </View>
+                  {/* Normal text (shows on unfilled portion) */}
+                  <View style={[styles.scrubberTimeWrapper, { overflow: 'hidden' }]}>
+                    <ThemedText
+                      type="player"
+                      style={[
+                        styles.scrubberTime,
+                        {
+                          color: textColor,
+                          width: `${(100 - (position / (duration || 1)) * 100)}%`,
+                        },
+                      ]}
+                    >
+                      {getTimeElapsed()}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                {/* Buttons container on right */}
+                <View style={styles.scrubberButtonsContainer}>
+                  {/* Queue button */}
+                  <Pressable onPress={() => queueSheetRef.current?.present()} style={styles.scrubberButton}>
+                    <Ionicons name="list" size={18} color={textColor} />
+                  </Pressable>
+
+                  {/* Close button */}
+                  <Pressable onPress={handleClose} style={styles.scrubberButton}>
+                    <Ionicons name="close" size={18} color={textColor} />
+                  </Pressable>
+                </View>
+              </Pressable>
+            ) : (
+              <View style={styles.controlsRow}>
+                <Pressable
+                  onPress={handlePlayPause}
+                  disabled={isLoading}
+                  style={styles.playButton}
+                >
+                  {isLoading ? (
+                    <Ionicons name="hourglass-outline" size={24} color={textColor} />
+                  ) : (
+                    <Ionicons
+                      name={isPlaying ? 'pause' : 'play'}
+                      size={24}
+                      color={textColor}
+                    />
+                  )}
+                </Pressable>
+
+                <View style={styles.liveIndicatorContainer}>
+                  <View style={[styles.liveDot, { backgroundColor: '#ff0000' }]} />
+                  <ThemedText type="player" style={styles.liveIndicatorText}>Streaming Live</ThemedText>
+                </View>
+
+                <Pressable onPress={() => queueSheetRef.current?.present()} style={styles.queueButton}>
+                  <Ionicons name="list" size={22} color={textColor} />
+                </Pressable>
+
+                <Pressable onPress={handleClose} style={styles.closeButton}>
+                  <Ionicons name="close" size={22} color={textColor} />
+                </Pressable>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
       </Animated.View>
     </>
   );

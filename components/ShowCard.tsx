@@ -1,7 +1,6 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAudioStore } from '@/store/audioStore';
 import { Image } from 'expo-image';
-import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import TrackPlayer from 'react-native-track-player';
 import { Icon } from './Icon';
@@ -31,7 +30,6 @@ export function ShowCard({
 
   const displayGenres = genres.slice(0, 3);
 
-  // Helper function to convert hex to RGB
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
@@ -41,7 +39,6 @@ export function ShowCard({
     } : null;
   };
 
-  // Helper function to convert RGB to hex
   const rgbToHex = (r: number, g: number, b: number) => {
     return "#" + [r, g, b].map(x => {
       const hex = Math.round(x).toString(16);
@@ -49,12 +46,10 @@ export function ShowCard({
     }).join('');
   };
 
-  // Create a lighter shade of the text color
   const getLighterColor = (color: string, amount: number = 0.7) => {
     const rgb = hexToRgb(color);
     if (!rgb) return color;
 
-    // Mix with white for lighter shade
     const r = rgb.r + (255 - rgb.r) * amount;
     const g = rgb.g + (255 - rgb.g) * amount;
     const b = rgb.b + (255 - rgb.b) * amount;
@@ -62,11 +57,21 @@ export function ShowCard({
     return rgbToHex(r, g, b);
   };
 
-  // Generate blurhash-like placeholder color based on theme
   const placeholderColor = getLighterColor(textColor, 0.85);
 
-  // Use a neutral blurhash for all themes
   const defaultBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
+
+  const optimizeImage = (src: string | undefined): string => {
+    if (!src) return '';
+
+    const imageUrl = src.startsWith('//') ? `https:${src}` : src;
+
+    if (!imageUrl.includes('ctfassets.net') && !imageUrl.includes('contentful.com')) {
+      return imageUrl;
+    }
+
+    return `${imageUrl}?w=590&h=332&q=80&fm=jpg&fl=progressive&f=faces&fit=fill`;
+  };
 
   const setTrack = useAudioStore((state) => state.setTrack);
 
@@ -107,7 +112,7 @@ export function ShowCard({
       <View style={styles.imageContainer}>
         {imageUrl ? (
           <Image
-            source={{ uri: imageUrl }}
+            source={{ uri: optimizeImage(imageUrl) }}
             placeholder={{ blurhash: blurhash || defaultBlurhash }}
             transition={300}
             style={styles.image}

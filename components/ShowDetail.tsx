@@ -128,7 +128,6 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
           {show.description && (
             <View style={styles.descriptionContainer}>
               <ThemedText
-                style={styles.description}
                 numberOfLines={isDescriptionExpanded ? undefined : 5}
                 onTextLayout={(e) => {
                   if (e.nativeEvent.lines.length > 5) {
@@ -200,14 +199,10 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   showCardWrapper: {
-    marginBottom: 24,
+    marginBottom: 42,
   },
   descriptionContainer: {
-    marginTop: 16,
-  },
-  description: {
-    fontSize: 14,
-    lineHeight: 20,
+    marginTop: 4,
   },
   viewMoreButton: {
     marginTop: 8,

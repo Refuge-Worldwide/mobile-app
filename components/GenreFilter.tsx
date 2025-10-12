@@ -34,18 +34,10 @@ export function GenreFilter({
     if (!searchQuery.trim()) return genres;
     const query = searchQuery.toLowerCase();
     return genres.filter((genre: string) => genre.toLowerCase().includes(query));
-  }, [searchQuery, genres]); return (
-    <View style={styles.container}>
-      {/* Header */}
-      {/* <View style={styles.header}>
-        {selectedGenres.length > 0 && (
-          <Pressable onPress={onClearAll}>
-            <ThemedText style={styles.clearButton}>Clear All</ThemedText>
-          </Pressable>
-        )}
-      </View> */}
+  }, [searchQuery, genres]);
 
-      {/* Search Input */}
+  return (
+    <View style={styles.container}>
       <View style={styles.searchContainer}>
         <TextInput
           style={[
@@ -65,8 +57,10 @@ export function GenreFilter({
         />
       </View>
 
-      {/* Genre List */}
-      <BottomSheetScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <BottomSheetScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.genresList}>
           {genresLoading ? (
             <View style={styles.loadingState}>
@@ -124,7 +118,6 @@ export function GenreFilter({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 8,
   },
   header: {
     flexDirection: 'row',
@@ -142,8 +135,8 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   searchContainer: {
-    marginBottom: 16,
-    position: 'relative',
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   searchInput: {
     height: 48,
@@ -152,12 +145,11 @@ const styles = StyleSheet.create({
     fontFamily: 'ABCArizonaFlare',
     paddingRight: 40,
   },
-  scrollView: {
-    flex: 1,
+  scrollViewContent: {
+    paddingBottom: 32,
   },
   genresList: {
     gap: 12,
-    paddingBottom: 16,
   },
   genreButton: {
     width: '100%',

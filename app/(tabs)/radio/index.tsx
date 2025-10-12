@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 
 const API_BASE_URL = 'https://refugeworldwide.com/api/shows';
+const FEATURED_API_URL = 'https://refugeworldwide.com/api/shows/featured';
 const GENRES_API_URL = 'https://refugeworldwide.com/api/genres';
 const ITEMS_PER_PAGE = 20;
 
@@ -28,7 +29,6 @@ export default function Archive() {
   const [loading, setLoading] = useState(false);
   const [skip, setSkip] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('latest');
   const [genres, setGenres] = useState<string[]>([]);
@@ -74,6 +74,22 @@ export default function Archive() {
     }
   }, [loading]);
 
+  const fetchFeaturedShows = useCallback(async () => {
+    if (loading) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(FEATURED_API_URL);
+      const data: Show[] = await response.json();
+      setShows(data);
+      setHasMore(false); // Featured shows don't have pagination
+    } catch (error) {
+      console.error('Error fetching featured shows:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading]);
+
   const fetchGenres = useCallback(async () => {
     setGenresLoading(true);
     setGenresError(null);
@@ -102,9 +118,14 @@ export default function Archive() {
     setShows([]);
     setSkip(0);
     setHasMore(true);
-    fetchShows(0, selectedGenres);
+
+    if (activeTab === 'featured') {
+      fetchFeaturedShows();
+    } else {
+      fetchShows(0, selectedGenres);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGenres]);
+  }, [selectedGenres, activeTab]);
 
   // Load genres when component mounts
   useEffect(() => {
@@ -113,7 +134,7 @@ export default function Archive() {
   }, []);
 
   const loadMore = () => {
-    if (!loading && hasMore) {
+    if (!loading && hasMore && activeTab !== 'featured') {
       fetchShows(skip, selectedGenres);
     }
   };
@@ -140,18 +161,6 @@ export default function Archive() {
     bottomSheetRef.current?.present();
   };
 
-  const toggleFavorite = (showId: string) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(showId)) {
-        newFavorites.delete(showId);
-      } else {
-        newFavorites.add(showId);
-      }
-      return newFavorites;
-    });
-  };
-
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const day = date.getDate();
@@ -160,24 +169,14 @@ export default function Archive() {
     return `${day} ${month} ${year}`;
   };
 
-  const getImageUrl = (url?: string): string => {
-    if (!url) return '';
-    return url.startsWith('//') ? `https:${url}` : url;
-  };
-
   const renderShowItem = ({ item }: { item: Show }) => {
-    const imageUrl = getImageUrl(item.coverImage || item.artwork);
-    const isFavorited = favorites.has(item.id);
-
     return (
       <ShowCard
-        imageUrl={imageUrl}
+        imageUrl={item.coverImage || item.artwork}
         audioUrl="https://downloads.ctfassets.net/taoiy3h84mql/4js8WfDtP9bkEDjpg4hFzu/a04cd029a0a8967eca15c7191297b6a6/Dub_Dal_takeover__Body__Mind___Bass_-_Aarti_Kriplani___Zena__-_03_Oct_2025.mp3"
         title={item.title}
         date={formatDate(item.date)}
         genres={item.genres}
-        isFavorited={isFavorited}
-        onFavoritePress={() => toggleFavorite(item.id)}
         onPress={() => router.push(`/(tabs)/radio/${item.slug}`)}
       />
     );
@@ -200,14 +199,13 @@ export default function Archive() {
           style={[
             styles.tab,
             activeTab === 'featured' && styles.tabActive,
-            { borderColor: textColor, opacity: 0.5 }
+            { borderColor: textColor, backgroundColor: activeTab === 'featured' ? textColor : 'transparent' }
           ]}
-          disabled
+          onPress={() => setActiveTab('featured')}
         >
-          <ThemedText style={[
-            styles.tabText,
-            activeTab === 'features' && styles.tabTextActive,
-            { color: textColor }
+          <ThemedText type="tag" style={[
+            activeTab === 'featured' && styles.tabTextActive,
+            { color: activeTab === 'featured' ? backgroundColor : textColor }
           ]}>
             Featured
           </ThemedText>
@@ -221,8 +219,7 @@ export default function Archive() {
           ]}
           onPress={() => setActiveTab('latest')}
         >
-          <ThemedText style={[
-            styles.tabText,
+          <ThemedText type="tag" style={[
             activeTab === 'latest' && styles.tabTextActive,
             { color: activeTab === 'latest' ? backgroundColor : textColor }
           ]}>
@@ -241,8 +238,7 @@ export default function Archive() {
             openGenreFilter();
           }}
         >
-          <ThemedText style={[
-            styles.tabText,
+          <ThemedText type="tag" style={[
             activeTab === 'genre' && styles.tabTextActive,
             { color: activeTab === 'genre' ? backgroundColor : textColor }
           ]}>
@@ -307,19 +303,15 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 7,
+    borderRadius: 999,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabActive: {
     // Active styling handled by backgroundColor prop
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   tabTextActive: {
     // Active text color handled by color prop

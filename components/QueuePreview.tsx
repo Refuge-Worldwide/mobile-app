@@ -1,29 +1,47 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import TrackPlayer, { Track } from 'react-native-track-player';
 import { ThemedText } from './ThemedText';
 
-interface QueuePreviewProps {
-  isVisible: boolean;
-  onClose: () => void;
+export interface QueuePreviewRef {
+  present: () => void;
+  dismiss: () => void;
 }
 
-export function QueuePreview({ isVisible, onClose }: QueuePreviewProps) {
+export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
   const [queue, setQueue] = useState<Track[]>([]);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
 
-  const slideAnim = useRef(new Animated.Value(300)).current;
+  useImperativeHandle(ref, () => ({
+    present: () => bottomSheetRef.current?.present(),
+    dismiss: () => bottomSheetRef.current?.dismiss(),
+  }));
 
-  // Fetch queue when visible
-  useEffect(() => {
-    if (isVisible) {
+  // Fetch queue when sheet opens
+  const handleSheetChange = useCallback((index: number) => {
+    if (index >= 0) {
       loadQueue();
     }
-  }, [isVisible]);
+  }, []);
+
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.8}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
 
   const loadQueue = async () => {
     try {
@@ -43,29 +61,6 @@ export function QueuePreview({ isVisible, onClose }: QueuePreviewProps) {
     }
   };
 
-  const slideUp = useCallback(() => {
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [slideAnim]);
-
-  const slideDown = useCallback(() => {
-    Animated.timing(slideAnim, {
-      toValue: 300,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      onClose();
-    });
-  }, [slideAnim, onClose]);
-
-  // Trigger animation when visibility changes
-  if (isVisible) {
-    slideUp();
-  }
-
   const handleRemove = async (trackIndex: number) => {
     try {
       const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
@@ -81,81 +76,74 @@ export function QueuePreview({ isVisible, onClose }: QueuePreviewProps) {
     }
   };
 
-  if (!isVisible && slideAnim._value === 300) return null;
-
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          backgroundColor,
-          borderTopColor: textColor,
-          transform: [{ translateY: slideAnim }]
-        }
-      ]}
+    <BottomSheetModal
+      ref={bottomSheetRef}
+      snapPoints={['40%', '75%']}
+      enablePanDownToClose
+      enableContentPanningGesture={false}
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor }}
+      handleIndicatorStyle={{ backgroundColor: textColor }}
+      onChange={handleSheetChange}
     >
-      <View style={styles.header}>
-        <ThemedText type="subtitle" style={styles.headerTitle}>
-          Queue ({queue.length})
-        </ThemedText>
-        <Pressable onPress={slideDown} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color={textColor} />
-        </Pressable>
-      </View>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <ThemedText type="subtitle" style={styles.headerTitle}>
+            Queue ({queue.length})
+          </ThemedText>
+        </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {queue.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <ThemedText style={styles.emptyText}>No tracks in queue</ThemedText>
-          </View>
-        ) : (
-          queue.map((track, index) => (
-            <View key={`${track.id}-${index}`} style={[styles.queueItem, { borderBottomColor: textColor }]}>
-              {track.artwork && (
-                <Image
-                  source={{ uri: track.artwork }}
-                  style={styles.artwork}
-                  contentFit="cover"
-                />
-              )}
-              <View style={styles.trackInfo}>
-                <ThemedText numberOfLines={1} style={styles.trackTitle}>
-                  {track.title}
-                </ThemedText>
-                <ThemedText numberOfLines={1} style={styles.trackArtist}>
-                  {track.artist || 'Unknown Artist'}
-                </ThemedText>
-              </View>
-              <Pressable
-                onPress={() => handleRemove(index)}
-                style={styles.removeButton}
-              >
-                <Ionicons name="close-circle" size={24} color={textColor} />
-              </Pressable>
+        <BottomSheetScrollView contentContainerStyle={styles.scrollContent}>
+          {queue.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText}>No tracks in queue</ThemedText>
             </View>
-          ))
-        )}
-      </ScrollView>
-    </Animated.View>
+          ) : (
+            queue.map((track, index) => (
+              <View key={`${track.id}-${index}`} style={[styles.queueItem, { borderBottomColor: textColor }]}>
+                {track.artwork && (
+                  <Image
+                    source={{ uri: track.artwork }}
+                    style={styles.artwork}
+                    contentFit="cover"
+                  />
+                )}
+                <View style={styles.trackInfo}>
+                  <ThemedText numberOfLines={1} style={styles.trackTitle}>
+                    {track.title}
+                  </ThemedText>
+                  <ThemedText numberOfLines={1} style={styles.trackArtist}>
+                    {track.artist || 'Unknown Artist'}
+                  </ThemedText>
+                </View>
+                <Pressable
+                  onPress={() => handleRemove(index)}
+                  style={styles.removeButton}
+                >
+                  <Ionicons name="close-circle" size={24} color={textColor} />
+                </Pressable>
+              </View>
+            ))
+          )}
+        </BottomSheetScrollView>
+      </View>
+    </BottomSheetModal>
   );
-}
+});
+
+QueuePreview.displayName = 'QueuePreview';
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 300,
-    borderTopWidth: 1,
-    zIndex: 200,
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
   },
   headerTitle: {
     fontSize: 18,
@@ -164,11 +152,8 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
-  scrollView: {
-    flex: 1,
-  },
   scrollContent: {
-    paddingBottom: 16,
+    paddingBottom: 32,
   },
   emptyContainer: {
     flex: 1,
