@@ -1,5 +1,6 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from './ThemedText';
@@ -28,6 +29,7 @@ export function GenreFilter({
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
   const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
 
   // Filter genres based on search query
   const filteredGenres = useMemo(() => {
@@ -97,7 +99,7 @@ export function GenreFilter({
                     },
                   ]}
                   onPress={() => {
-                    onGenreToggle(genre);
+                    router.push(`/(tabs)/radio/genre/${encodeURIComponent(genre)}`);
                     onClose?.();
                   }}
                 >

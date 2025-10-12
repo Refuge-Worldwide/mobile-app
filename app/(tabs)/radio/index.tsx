@@ -30,7 +30,7 @@ export default function Archive() {
   const [skip, setSkip] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>('latest');
+  const [activeTab, setActiveTab] = useState<TabType>('featured');
   const [genres, setGenres] = useState<string[]>([]);
   const [genresLoading, setGenresLoading] = useState(false);
   const [genresError, setGenresError] = useState<string | null>(null);
@@ -154,7 +154,6 @@ export default function Archive() {
 
   const closeGenreFilter = () => {
     bottomSheetRef.current?.dismiss();
-    setActiveTab('latest');
   };
 
   const openGenreFilter = () => {
@@ -230,17 +229,14 @@ export default function Archive() {
         <Pressable
           style={[
             styles.tab,
-            activeTab === 'genre' && styles.tabActive,
-            { borderColor: textColor, backgroundColor: activeTab === 'genre' ? textColor : 'transparent' }
+            { borderColor: textColor, backgroundColor: 'transparent' }
           ]}
           onPress={() => {
-            setActiveTab('genre');
             openGenreFilter();
           }}
         >
           <ThemedText type="tag" style={[
-            activeTab === 'genre' && styles.tabTextActive,
-            { color: activeTab === 'genre' ? backgroundColor : textColor }
+            { color: textColor }
           ]}>
             Genre
           </ThemedText>

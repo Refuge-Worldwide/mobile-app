@@ -1,6 +1,7 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAudioStore } from '@/store/audioStore';
 import { Image } from 'expo-image';
+import { useRouter, useSegments } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import TrackPlayer from 'react-native-track-player';
 import { Icon } from './Icon';
@@ -27,8 +28,13 @@ export function ShowCard({
 }: ShowCardProps) {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
+  const router = useRouter();
+  const segments = useSegments();
 
   const displayGenres = genres.slice(0, 3);
+
+  // Determine which tab we're in
+  const currentTab = segments[1] as string; // Gets 'radio', 'search', etc. from /(tabs)/[tab]/...
 
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -166,9 +172,18 @@ export function ShowCard({
       {displayGenres.length > 0 && (
         <View style={styles.genresContainer}>
           {displayGenres.map((genre, index) => (
-            <View key={`${genre}-${index}`} style={[styles.genreTag, { borderColor: textColor }]}>
+            <Pressable
+              key={`${genre}-${index}`}
+              style={[styles.genreTag, { borderColor: textColor }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                // Route to genre page within the current tab
+                const genrePath = `/(tabs)/${currentTab || 'radio'}/genre/${encodeURIComponent(genre)}`;
+                router.push(genrePath as any);
+              }}
+            >
               <ThemedText type='tag'>{genre}</ThemedText>
-            </View>
+            </Pressable>
           ))}
         </View>
       )}
