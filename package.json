@@ -1,5 +1,5 @@
 {
-  "name": "refuge-worldwide-app",
+  "name": "Refuge Worldwide",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@gorhom/bottom-sheet": "^5.2.6",
+    "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/slider": "^5.0.1",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",

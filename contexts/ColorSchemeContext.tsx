@@ -1,12 +1,14 @@
+import { Colors } from '@/constants/Colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useColorScheme as useDeviceColorScheme } from 'react-native';
-import { Colors } from '@/constants/Colors';
 
 type ColorScheme = keyof typeof Colors;
 
 interface ColorSchemeContextType {
   colorScheme: ColorScheme;
   setColorScheme: (scheme: ColorScheme) => void;
+  isLoading: boolean;
 }
 
 const ColorSchemeContext = createContext<ColorSchemeContextType | undefined>(undefined);
@@ -15,21 +17,45 @@ interface ColorSchemeProviderProps {
   children: ReactNode;
 }
 
+const COLOR_SCHEME_KEY = '@color_scheme';
+
 export function ColorSchemeProvider({ children }: ColorSchemeProviderProps) {
   const deviceColorScheme = useDeviceColorScheme();
-  const [colorScheme, setColorScheme] = useState<ColorScheme>(
+  const [colorScheme, setColorSchemeState] = useState<ColorScheme>(
     (deviceColorScheme as ColorScheme) ?? 'light'
   );
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Load saved color scheme on mount
   useEffect(() => {
-    // If device color scheme changes and we haven't manually set a theme, update to device preference
-    if (deviceColorScheme && !colorScheme) {
-      setColorScheme(deviceColorScheme as ColorScheme);
+    loadColorScheme();
+  }, []);
+
+  const loadColorScheme = async () => {
+    try {
+      const savedScheme = await AsyncStorage.getItem(COLOR_SCHEME_KEY);
+      if (savedScheme && (savedScheme === 'light' || savedScheme === 'dark')) {
+        setColorSchemeState(savedScheme as ColorScheme);
+      }
+    } catch (error) {
+      console.error('Error loading color scheme:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [deviceColorScheme]);
+  };
+
+  const setColorScheme = async (scheme: ColorScheme) => {
+    try {
+      await AsyncStorage.setItem(COLOR_SCHEME_KEY, scheme);
+      setColorSchemeState(scheme);
+    } catch (error) {
+      console.error('Error saving color scheme:', error);
+      setColorSchemeState(scheme); // Still update state even if save fails
+    }
+  };
 
   return (
-    <ColorSchemeContext.Provider value={{ colorScheme, setColorScheme }}>
+    <ColorSchemeContext.Provider value={{ colorScheme, setColorScheme, isLoading }}>
       {children}
     </ColorSchemeContext.Provider>
   );

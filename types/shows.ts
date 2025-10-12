@@ -7,6 +7,8 @@ export interface Show {
   coverImage?: string;
   genres: string[];
   artwork?: string;
+  description?: string;
+  relatedShows?: Show[];
 }
 
 export interface ShowsApiResponse {

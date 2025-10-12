@@ -1,6 +1,5 @@
 import { Colors } from '@/constants/Colors';
 import { useColorScheme, useSetColorScheme } from '@/hooks/useColorScheme';
-import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -42,7 +41,7 @@ export function ColourPicker() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    zIndex: 1000,
+    // zIndex: 10,
     flexDirection: 'row',
     alignItems: 'center',
   },

@@ -28,14 +28,45 @@ export function ShowCard({
 }: ShowCardProps) {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
-  const colorScheme = useThemeColor({}, 'text') === '#11181C' ? 'light' : 'dark';
 
   const displayGenres = genres.slice(0, 3);
 
-  // Theme-aware blurhash with more interesting gradient patterns
-  const defaultBlurhash = colorScheme === 'dark'
-    ? 'L04.Jn00~q-;xuof4nM{00D%?bRj' // Dark theme: darker with subtle variations
-    : 'LLPZz~ofM{of~qayM{j[RjayRjof'; // Light theme: lighter with subtle variations
+  // Helper function to convert hex to RGB
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  };
+
+  // Helper function to convert RGB to hex
+  const rgbToHex = (r: number, g: number, b: number) => {
+    return "#" + [r, g, b].map(x => {
+      const hex = Math.round(x).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+  };
+
+  // Create a lighter shade of the text color
+  const getLighterColor = (color: string, amount: number = 0.7) => {
+    const rgb = hexToRgb(color);
+    if (!rgb) return color;
+
+    // Mix with white for lighter shade
+    const r = rgb.r + (255 - rgb.r) * amount;
+    const g = rgb.g + (255 - rgb.g) * amount;
+    const b = rgb.b + (255 - rgb.b) * amount;
+
+    return rgbToHex(r, g, b);
+  };
+
+  // Generate blurhash-like placeholder color based on theme
+  const placeholderColor = getLighterColor(textColor, 0.85);
+
+  // Use a neutral blurhash for all themes
+  const defaultBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
 
   const setTrack = useAudioStore((state) => state.setTrack);
 
@@ -83,7 +114,7 @@ export function ShowCard({
             contentFit="cover"
           />
         ) : (
-          <View style={[styles.image, styles.placeholderImage]} />
+          <View style={[styles.image, { backgroundColor: placeholderColor }]} />
         )}
 
         <View style={styles.buttonContainer}>
@@ -151,9 +182,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
-  },
-  placeholderImage: {
-    backgroundColor: '#333',
   },
   buttonContainer: {
     position: 'absolute',

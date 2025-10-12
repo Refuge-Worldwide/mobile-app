@@ -3,6 +3,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +32,7 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
+  const router = useRouter();
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -123,10 +125,11 @@ export default function SearchScreen() {
           renderItem={({ item }) => (
             <ShowCard
               imageUrl={item.coverImage?.startsWith('//') ? `https:${item.coverImage}` : item.coverImage}
-              audioUrl="https://downloads.ctfassets.net/taoiy3h84mql/4js8WfDtP9bkEDjpg4hFzu/a04cd029a0a8967eca15c7191297b6a6/Dub_Dal_takeover__Body__Mind___Bass_-_Aarti_Kriplani___Zena__-_03_Oct_2025.mp3"
+              audioUrl={item.mixcloudLink}
               title={item.title}
               date={formatDate(item.date)}
               genres={item.genres}
+              onPress={() => router.push(`/(tabs)/search/${item.slug}`)}
             />
           )}
           contentContainerStyle={styles.listContent}

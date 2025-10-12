@@ -1,36 +1,38 @@
 import { ColourPicker } from '@/components/ColourPicker';
+import { SplashScreen } from '@/components/SplashScreen';
+import { ColorSchemeProvider } from '@/contexts/ColorSchemeContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { ColorSchemeProvider } from '@/contexts/ColorSchemeContext';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
 
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <View style={styles.container}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <View style={styles.container}>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
 
-        {/* Self-contained ColourPicker with fixed button */}
-        <ColourPicker />
+            {/* Self-contained ColourPicker with fixed button */}
+            <ColourPicker />
 
-        <StatusBar style="auto" />
-      </View>
-    </ThemeProvider>
+            <StatusBar style="auto" />
+          </View>
+        </ThemeProvider>
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -39,15 +41,14 @@ export default function RootLayout() {
     VisueltMedium: require('../assets/fonts/VisueltMedium.otf'),
     ABCArizonaFlare: require('../assets/fonts/ABCArizonaFlare.otf'),
   });
+  const [appIsReady, setAppIsReady] = useState(false);
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
+  if (!loaded || !appIsReady) {
+    return (
+      <ColorSchemeProvider>
+        <SplashScreen onReady={() => setAppIsReady(true)} />
+      </ColorSchemeProvider>
+    );
   }
 
   return (
