@@ -41,6 +41,7 @@ export const BottomSheet = forwardRef<BottomSheetModal, BottomSheetProps>(
         keyboardBehavior="interactive"
         android_keyboardInputMode="adjustResize"
         onDismiss={onDismiss}
+        enableDynamicSizing={false}
       >
         <View style={[styles.contentContainer, { paddingBottom: insets.bottom }]}>
           {children}
@@ -54,7 +55,7 @@ BottomSheet.displayName = 'BottomSheet';
 
 const styles = StyleSheet.create({
   contentContainer: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 16,
   },
 });

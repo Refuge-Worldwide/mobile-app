@@ -37,7 +37,7 @@ export function GenreFilter({
   }, [searchQuery, genres]);
 
   return (
-    <View style={styles.container}>
+    <>
       <View style={styles.searchContainer}>
         <TextInput
           style={[
@@ -60,6 +60,7 @@ export function GenreFilter({
       <BottomSheetScrollView
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
       >
         <View style={styles.genresList}>
           {genresLoading ? (
@@ -111,14 +112,11 @@ export function GenreFilter({
           )}
         </View>
       </BottomSheetScrollView>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -146,7 +144,7 @@ const styles = StyleSheet.create({
     paddingRight: 40,
   },
   scrollViewContent: {
-    paddingBottom: 32,
+    paddingBottom: 300,
   },
   genresList: {
     gap: 12,
