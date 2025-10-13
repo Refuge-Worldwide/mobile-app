@@ -12,9 +12,17 @@ export interface Favorite {
  * @param showId - The immutable show ID (not slug, as slugs can change)
  */
 export async function addFavorite(showId: string) {
+  // Get the current user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { data: null, error: new Error('User not authenticated') };
+  }
+
   const { data, error } = await supabase
     .from('show_favorites')
     .insert({
+      user_id: user.id,
       show_id: showId,
     })
     .select()

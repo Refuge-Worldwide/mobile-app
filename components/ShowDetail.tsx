@@ -212,7 +212,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                 <Icon
                   name={isFavorite ? 'heart' : 'heart-outline'}
                   size={24}
-                  color={isFavorite ? '#ff0000' : undefined}
+                  color={isFavorite ? textColor : undefined}
                 />
               )}
             </Pressable>
