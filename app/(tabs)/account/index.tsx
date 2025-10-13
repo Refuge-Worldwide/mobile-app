@@ -5,7 +5,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFavorites } from '@/lib/favorites';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,9 +16,10 @@ import {
 } from 'react-native';
 
 export default function AccountScreen() {
-  const { user, loading, signIn, signUp, signOut } = useAuth();
+  const { user, loading, signIn, signUp, signOut, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
@@ -41,6 +42,11 @@ export default function AccountScreen() {
       return;
     }
 
+    if (isSignUp && password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
     setSubmitting(true);
     const { error } = isSignUp
       ? await signUp(email, password)
@@ -59,12 +65,33 @@ export default function AccountScreen() {
       }
       setEmail('');
       setPassword('');
+      setConfirmPassword('');
     }
   };
 
   const handleSignOut = async () => {
     await signOut();
     setFavoritesCount(0);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    setSubmitting(true);
+    const { error } = await resetPassword(email);
+    setSubmitting(false);
+
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      Alert.alert(
+        'Success',
+        'Password reset email sent! Please check your inbox.'
+      );
+    }
   };
 
   if (loading) {
@@ -107,9 +134,9 @@ export default function AccountScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <ThemedText type="title" style={styles.title}>
+        {/* <ThemedText type="title" style={styles.title}>
           {isSignUp ? 'Sign Up' : 'Sign In'}
-        </ThemedText>
+        </ThemedText> */}
 
         <View style={styles.form}>
           <ThemedInput
@@ -120,13 +147,36 @@ export default function AccountScreen() {
             keyboardType="email-address"
           />
 
-          <ThemedInput
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
+          <View>
+            <ThemedInput
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+            {!isSignUp && (
+              <Pressable
+                style={styles.forgotPassword}
+                onPress={handleForgotPassword}
+                disabled={submitting}
+              >
+                <ThemedText style={styles.forgotPasswordText}>
+                  Forgot your password?
+                </ThemedText>
+              </Pressable>
+            )}
+          </View>
+
+          {isSignUp && (
+            <ThemedInput
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+          )}
 
           <ThemedButton
             title={isSignUp ? 'Sign Up' : 'Sign In'}
@@ -138,7 +188,7 @@ export default function AccountScreen() {
             style={styles.toggleButton}
             onPress={() => setIsSignUp(!isSignUp)}
           >
-            <ThemedText style={styles.toggleText}>
+            <ThemedText style={{ textDecorationLine: 'underline' }}>
               {isSignUp
                 ? 'Already have an account? Sign In'
                 : "Don't have an account? Sign Up"}
@@ -163,7 +213,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   form: {
-    gap: 16,
+    gap: 55,
   },
   toggleButton: {
     padding: 8,
@@ -171,6 +221,14 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  forgotPassword: {
+    marginTop: 8,
+    alignItems: 'flex-end',
+  },
+  forgotPasswordText: {
+    fontSize: 12,
     textDecorationLine: 'underline',
   },
   section: {
