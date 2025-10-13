@@ -2,12 +2,15 @@ import { Icon } from '@/components/Icon';
 import { ShowCard } from '@/components/ShowCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useAuth } from '@/contexts/AuthContext';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { isFavorited, toggleFavorite } from '@/lib/favorites';
 import { Show } from '@/types/shows';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   Share,
@@ -24,11 +27,14 @@ interface ShowDetailProps {
 export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const [show, setShow] = useState<Show | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   const textColor = useThemeColor({}, 'text');
 
@@ -37,6 +43,12 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
       fetchShow(slug);
     }
   }, [slug]);
+
+  useEffect(() => {
+    if (user && show) {
+      checkFavoriteStatus();
+    }
+  }, [user, show?.id]);
 
   const fetchShow = async (showSlug: string) => {
     setLoading(true);
@@ -99,6 +111,31 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
       });
     } catch (error) {
       console.error('Error sharing:', error);
+    }
+  };
+
+  const checkFavoriteStatus = async () => {
+    if (!show?.id) return;
+    const favorited = await isFavorited(show.id);
+    setIsFavorite(favorited);
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      Alert.alert('Sign in required', 'Please sign in to favorite shows');
+      return;
+    }
+
+    if (!show?.id) return;
+
+    setFavoriteLoading(true);
+    const { error } = await toggleFavorite(show.id);
+    setFavoriteLoading(false);
+
+    if (error) {
+      Alert.alert('Error', 'Failed to update favorite');
+    } else {
+      setIsFavorite(!isFavorite);
     }
   };
 
@@ -166,10 +203,23 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
             </View>
           )}
 
-          {/* Share Button */}
-          <Pressable onPress={handleShare} style={styles.shareButton}>
-            <Icon name="share" size={24} />
-          </Pressable>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <Pressable onPress={handleToggleFavorite} style={styles.actionButton}>
+              {favoriteLoading ? (
+                <ActivityIndicator size="small" />
+              ) : (
+                <Icon
+                  name={isFavorite ? 'heart' : 'heart-outline'}
+                  size={24}
+                  color={isFavorite ? '#ff0000' : undefined}
+                />
+              )}
+            </Pressable>
+            <Pressable onPress={handleShare} style={styles.actionButton}>
+              <Icon name="share" size={24} />
+            </Pressable>
+          </View>
         </View>
 
         {/* Related Shows */}
@@ -237,9 +287,12 @@ const styles = StyleSheet.create({
   relatedShowsSection: {
     marginTop: 8,
   },
-  shareButton: {
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 16,
     marginTop: 16,
+  },
+  actionButton: {
     padding: 8,
-    alignSelf: 'flex-start',
   },
 });
