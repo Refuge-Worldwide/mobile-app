@@ -1,10 +1,14 @@
+import { RefugeLogo } from '@/components/RefugeLogo';
 import { ThemedButton } from '@/components/ThemedButton';
 import { ThemedInput } from '@/components/ThemedInput';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { getFavorites } from '@/lib/favorites';
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -94,6 +98,24 @@ export default function AccountScreen() {
     }
   };
 
+  const handleFavoritesPress = () => {
+    router.push('/(tabs)/playlist/playlist/favorites');
+  };
+
+  const handlePodcastPress = () => {
+    router.push('/(tabs)/account/podcast');
+  };
+
+  const handleCopyDiscountCode = async () => {
+    const discountCode = 'REFUGE2024';
+    await Clipboard.setStringAsync(discountCode);
+    Alert.alert('Success', `Discount code ${discountCode} copied to clipboard!`);
+  };
+
+  const handleManageSubscription = async () => {
+    await WebBrowser.openBrowserAsync('https://refugeworldwide.com');
+  };
+
   if (loading) {
     return (
       <ThemedView style={styles.container}>
@@ -102,30 +124,64 @@ export default function AccountScreen() {
     );
   }
 
+  const textColor = useThemeColor({}, 'text');
+  const backgroundColor = useThemeColor({}, 'background');
+
   if (user) {
     return (
       <ThemedView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <ThemedText type="title" style={styles.title}>
-            Account
-          </ThemedText>
 
-          <View style={styles.section}>
-            <ThemedText type="subtitle">Email</ThemedText>
-            <ThemedText style={styles.email}>{user.email}</ThemedText>
+          {/* Account Status Card */}
+          <View style={[styles.card, { backgroundColor: textColor }]}>
+            <View style={styles.cardRow}>
+              <ThemedText style={{ color: backgroundColor }}>Antonia Ferragamo</ThemedText>
+            </View>
+            <View style={{ marginTop: 28, marginBottom: 36 }}>
+              <RefugeLogo size={50} />
+            </View>
+            <View style={styles.cardRow}>
+              <ThemedText style={{ color: backgroundColor }}>Joined:</ThemedText>
+              <ThemedText style={{ color: backgroundColor }}>January 24, 2024</ThemedText>
+            </View>
+            <View style={styles.cardRow}>
+              <ThemedText style={{ color: backgroundColor }}>Subscription:</ThemedText>
+              <ThemedText style={{ color: backgroundColor }}>Active</ThemedText>
+            </View>
           </View>
 
-          <View style={styles.section}>
-            <ThemedText type="subtitle">Favorites</ThemedText>
-            <ThemedText style={styles.favoriteCount}>
-              {favoritesCount} show{favoritesCount !== 1 ? 's' : ''}
-            </ThemedText>
-          </View>
+          {/* Action Buttons */}
+          <View style={styles.buttonsContainer}>
+            <ThemedButton
+              title="Favourites Shows"
+              onPress={handleFavoritesPress}
+              variant="outline"
+            />
 
-          <ThemedButton
-            title="Sign Out"
-            onPress={handleSignOut}
-          />
+            <ThemedButton
+              title="Podcasts"
+              onPress={handlePodcastPress}
+              variant="outline"
+            />
+
+            <ThemedButton
+              title="Copy Discount Code"
+              onPress={handleCopyDiscountCode}
+              variant="outline"
+            />
+
+            <ThemedButton
+              title="Manage Subscription"
+              onPress={handleManageSubscription}
+              variant="outline"
+            />
+
+            <ThemedButton
+              title="Sign Out"
+              onPress={handleSignOut}
+              variant="outline"
+            />
+          </View>
         </ScrollView>
       </ThemedView>
     );
@@ -206,7 +262,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingTop: 60,
   },
   title: {
     marginBottom: 30,
@@ -231,15 +286,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textDecorationLine: 'underline',
   },
-  section: {
-    marginBottom: 24,
+  card: {
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 15,
   },
-  email: {
-    marginTop: 8,
-    fontSize: 16,
+  cardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  favoriteCount: {
-    marginTop: 8,
-    fontSize: 16,
+  buttonsContainer: {
+    gap: 12,
   },
 });

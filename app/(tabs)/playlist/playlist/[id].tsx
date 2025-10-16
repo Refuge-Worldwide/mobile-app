@@ -2,11 +2,12 @@ import { ShowCard } from '@/components/ShowCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { getFavoritesWithShows } from '@/lib/favorites';
 import { Show } from '@/types/shows';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
 export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -15,6 +16,7 @@ export default function PlaylistDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const backgroundColor = useThemeColor({}, 'background');
 
   useEffect(() => {
     if (user && id) {
@@ -105,27 +107,38 @@ export default function PlaylistDetailScreen() {
     );
   }
 
+  const renderShowItem = ({ item }: { item: Show }) => {
+    return (
+      <ShowCard
+        imageUrl={getImageUrl(item.coverImage || item.artwork)}
+        title={item.title}
+        date={formatDate(item.date)}
+        genres={item.genres}
+        audioUrl={item.mixcloudLink}
+        onPress={() => handleShowPress(item.slug)}
+      />
+    );
+  };
+
+  const ListHeaderComponent = () => (
+    <View style={{ backgroundColor }}>
+      <ThemedText type="title">
+        {getPlaylistTitle()}
+      </ThemedText>
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <ThemedText type="title" style={styles.title}>
-          {getPlaylistTitle()}
-        </ThemedText>
-        <View style={styles.showsList}>
-          {shows.map((show) => (
-            <View key={show.id}>
-              <ShowCard
-                imageUrl={getImageUrl(show.coverImage || show.artwork)}
-                title={show.title}
-                date={formatDate(show.date)}
-                genres={show.genres}
-                audioUrl={show.mixcloudLink}
-                onPress={() => handleShowPress(show.slug)}
-              />
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+      <FlatList
+        data={shows}
+        renderItem={renderShowItem}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={ListHeaderComponent}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[0]}
+      />
     </ThemedView>
   );
 }
@@ -165,8 +178,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
     marginBottom: 20,
-  },
-  showsList: {
-    gap: 8,
   },
 });

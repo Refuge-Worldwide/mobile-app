@@ -52,12 +52,11 @@ ThemedButton.displayName = 'ThemedButton';
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: 12,
+    paddingVertical: 6,
     paddingHorizontal: 24,
     borderRadius: 999,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
   },
 });
