@@ -8,6 +8,11 @@
     "scheme": "refugeworldwideapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A4AFC"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.refuge-worldwide-app"
