@@ -132,13 +132,12 @@ export default function AccountScreen() {
       <ThemedView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
 
-          {/* Account Status Card */}
           <View style={[styles.card, { backgroundColor: textColor }]}>
             <View style={styles.cardRow}>
               <ThemedText style={{ color: backgroundColor }}>Antonia Ferragamo</ThemedText>
             </View>
-            <View style={{ marginTop: 28, marginBottom: 36 }}>
-              <RefugeLogo size={50} />
+            <View style={{ marginTop: 28, marginBottom: 36, alignItems: 'center' }}>
+              <RefugeLogo size={70} />
             </View>
             <View style={styles.cardRow}>
               <ThemedText style={{ color: backgroundColor }}>Joined:</ThemedText>
@@ -150,7 +149,6 @@ export default function AccountScreen() {
             </View>
           </View>
 
-          {/* Action Buttons */}
           <View style={styles.buttonsContainer}>
             <ThemedButton
               title="Favourites Shows"
