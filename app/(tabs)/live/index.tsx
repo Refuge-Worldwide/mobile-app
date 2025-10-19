@@ -6,13 +6,14 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAudioStore } from '@/store/audioStore';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Live() {
   const [liveNow, setLiveNow] = useState<{ title: string; artwork: string, slug: string, isMixedFeelings: boolean } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
@@ -20,19 +21,19 @@ export default function Live() {
   const { currentTrack, isPlaying, setLiveTrack, clearTrack } = useAudioStore();
   const isCurrentlyPlayingLive = currentTrack?.isLive && isPlaying;
 
+  const fetchLiveShow = useCallback(async () => {
+    try {
+      const res = await fetch('https://refugeworldwide.com/api/schedule');
+      const data = await res.json();
+      // Assuming the API returns an array of shows with a "live" property
+      setLiveNow(data.liveNow);
+    } catch (error) {
+      console.error('Failed to fetch live show:', error);
+    }
+  }, []);
+
   // Fetch live show data
   useEffect(() => {
-    const fetchLiveShow = async () => {
-      try {
-        const res = await fetch('https://refugeworldwide.com/api/schedule');
-        const data = await res.json();
-        // Assuming the API returns an array of shows with a "live" property
-        setLiveNow(data.liveNow);
-      } catch (error) {
-        console.error('Failed to fetch live show:', error);
-      }
-    };
-
     // Fetch immediately on mount
     fetchLiveShow();
 
@@ -41,7 +42,7 @@ export default function Live() {
 
     // Cleanup interval on unmount
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchLiveShow]);
 
   const playFunction = async () => {
     if (isCurrentlyPlayingLive) {
@@ -88,60 +89,79 @@ export default function Live() {
       console.error('Error opening Discord:', error);
       Alert.alert('Error', 'Unable to open Discord. Please try again.');
     }
-  }
+  };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchLiveShow();
+    setRefreshing(false);
+  }, [fetchLiveShow]);
 
   return (
     <ThemedView style={[styles.liveContainer, { paddingTop: insets.top + 8 }]}>
       <View style={styles.header}>
         <RefugeLogo size={50} variant="text" />
       </View>
-      <View style={styles.centeredContent}>
-        {liveNow &&
-          <View>
-            <Pressable onPress={playFunction} style={styles.imageContainer}>
-              <Image
-                style={styles.image}
-                contentFit="cover"
-                transition={1000}
-                placeholder="blurhash"
-                source={liveNow?.artwork}
-              />
-              <View style={styles.playButtonOverlay}>
-                {isLoading ? (
-                  <Icon
-                    name="loading"
-                    size={84}
-                    withShadow={true}
-                    style={styles.loadingIcon}
-                  />
-                ) : (
-                  <Icon
-                    name={isCurrentlyPlayingLive ? "stop" : "play"}
-                    size={84}
-                    withShadow={true}
-                  />
-                )}
-              </View>
-            </Pressable>
-            <View style={styles.liveNowContainer}>
-              <View style={{ backgroundColor: textColor, padding: 4 }}>
-                <ThemedText
-                  type="subtitle"
-                  style={{ color: backgroundColor }}
-                >
-                  Live now
-                </ThemedText>
-              </View>
-              <View style={{ backgroundColor: textColor, padding: 4 }}>
 
-                <ThemedText type="subtitle" style={{ color: backgroundColor }}>
-                  {liveNow.title}
-                </ThemedText>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={textColor}
+            colors={[textColor]}
+          />
+        }
+      >
+        <View style={styles.centeredContent}>
+          {liveNow &&
+            <View>
+              <Pressable onPress={playFunction} style={styles.imageContainer}>
+                <Image
+                  style={styles.image}
+                  contentFit="cover"
+                  transition={1000}
+                  placeholder="blurhash"
+                  source={liveNow?.artwork}
+                />
+                <View style={styles.playButtonOverlay}>
+                  {isLoading ? (
+                    <Icon
+                      name="loading"
+                      size={84}
+                      withShadow={true}
+                      style={styles.loadingIcon}
+                    />
+                  ) : (
+                    <Icon
+                      name={isCurrentlyPlayingLive ? "stop" : "play"}
+                      size={84}
+                      withShadow={true}
+                    />
+                  )}
+                </View>
+              </Pressable>
+              <View style={styles.liveNowContainer}>
+                <View style={{ backgroundColor: textColor, padding: 4 }}>
+                  <ThemedText
+                    type="subtitle"
+                    style={{ color: backgroundColor }}
+                  >
+                    Live now
+                  </ThemedText>
+                </View>
+                <View style={{ backgroundColor: textColor, padding: 4 }}>
+
+                  <ThemedText type="subtitle" style={{ color: backgroundColor }}>
+                    {liveNow.title}
+                  </ThemedText>
+                </View>
               </View>
             </View>
-          </View>
-        }
-      </View>
+          }
+        </View>
+      </ScrollView>
 
       <View style={styles.buttons}>
         <Pressable
@@ -172,13 +192,16 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
   },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
   },
   centeredContent: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },

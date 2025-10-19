@@ -4,8 +4,8 @@ import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Show {
@@ -28,6 +28,7 @@ export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<Show[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const textColor = useThemeColor({}, 'text');
@@ -70,6 +71,13 @@ export default function SearchScreen() {
       day: 'numeric',
     }).format(date);
   };
+
+  const handleRefresh = useCallback(async () => {
+    if (searchQuery.trim().length === 0) return;
+    setRefreshing(true);
+    await handleSearch(searchQuery);
+    setRefreshing(false);
+  }, [searchQuery]);
 
   return (
     <ThemedView style={styles.container}>
@@ -134,6 +142,14 @@ export default function SearchScreen() {
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={textColor}
+              colors={[textColor]}
+            />
+          }
         />
       )}
 

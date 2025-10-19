@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   StyleSheet,
   View,
 } from 'react-native';
@@ -22,6 +23,7 @@ interface GenreShowsListProps {
 export function GenreShowsList({ genre }: GenreShowsListProps) {
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [skip, setSkip] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
@@ -78,6 +80,14 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
       fetchShows(skip);
     }
   };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setSkip(0);
+    setHasMore(true);
+    await fetchShows(0);
+    setRefreshing(false);
+  }, [fetchShows]);
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -140,6 +150,14 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           stickyHeaderIndices={[0]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={textColor}
+              colors={[textColor]}
+            />
+          }
         />
       )}
     </ThemedView>

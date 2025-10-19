@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   View,
 } from 'react-native';
@@ -27,6 +28,7 @@ type TabType = 'featured' | 'latest' | 'genre';
 export default function Archive() {
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [skip, setSkip] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -138,6 +140,22 @@ export default function Archive() {
       fetchShows(skip, selectedGenres);
     }
   };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setSkip(0);
+    setHasMore(true);
+
+    try {
+      if (activeTab === 'featured') {
+        await fetchFeaturedShows();
+      } else {
+        await fetchShows(0, selectedGenres);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [activeTab, selectedGenres, fetchFeaturedShows, fetchShows]);
 
   const handleGenreToggle = (genre: string) => {
     setSelectedGenres((prev) => {
@@ -264,6 +282,14 @@ export default function Archive() {
         ListFooterComponent={renderFooter}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={textColor}
+            colors={[textColor]}
+          />
+        }
       />
 
       {/* Genre Filter Bottom Sheet */}

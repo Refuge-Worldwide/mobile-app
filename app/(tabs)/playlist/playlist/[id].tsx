@@ -6,17 +6,19 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { getFavoritesWithShows } from '@/lib/favorites';
 import { Show } from '@/types/shows';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
 
   useEffect(() => {
     if (user && id) {
@@ -66,6 +68,12 @@ export default function PlaylistDetailScreen() {
     if (id === 'favorites') return 'Favorites';
     return 'Playlist';
   };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadPlaylist();
+    setRefreshing(false);
+  }, [loadPlaylist]);
 
   if (loading) {
     return (
@@ -138,6 +146,14 @@ export default function PlaylistDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[0]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={textColor}
+            colors={[textColor]}
+          />
+        }
       />
     </ThemedView>
   );
