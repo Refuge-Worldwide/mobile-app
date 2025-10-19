@@ -1,7 +1,6 @@
 import { Colors } from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useColorScheme as useDeviceColorScheme } from 'react-native';
 
 type ColorScheme = keyof typeof Colors;
 
@@ -20,10 +19,7 @@ interface ColorSchemeProviderProps {
 const COLOR_SCHEME_KEY = '@color_scheme';
 
 export function ColorSchemeProvider({ children }: ColorSchemeProviderProps) {
-  const deviceColorScheme = useDeviceColorScheme();
-  const [colorScheme, setColorSchemeState] = useState<ColorScheme>(
-    (deviceColorScheme as ColorScheme) ?? 'light'
-  );
+  const [colorScheme, setColorSchemeState] = useState<ColorScheme>('light');
   const [isLoading, setIsLoading] = useState(true);
 
   // Load saved color scheme on mount
@@ -34,7 +30,7 @@ export function ColorSchemeProvider({ children }: ColorSchemeProviderProps) {
   const loadColorScheme = async () => {
     try {
       const savedScheme = await AsyncStorage.getItem(COLOR_SCHEME_KEY);
-      if (savedScheme && (savedScheme === 'light' || savedScheme === 'dark')) {
+      if (savedScheme && savedScheme in Colors) {
         setColorSchemeState(savedScheme as ColorScheme);
       }
     } catch (error) {
