@@ -137,7 +137,7 @@ export default function AccountScreen() {
               <ThemedText style={{ color: backgroundColor }}>Antonia Ferragamo</ThemedText>
             </View>
             <View style={{ marginTop: 28, marginBottom: 36, alignItems: 'center' }}>
-              <RefugeLogo size={70} />
+              <RefugeLogo size={70} variant="background" />
             </View>
             <View style={styles.cardRow}>
               <ThemedText style={{ color: backgroundColor }}>Joined:</ThemedText>
