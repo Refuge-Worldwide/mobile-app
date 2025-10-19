@@ -133,8 +133,16 @@ export default function AccountScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
 
           <View style={[styles.card, { backgroundColor: textColor }]}>
-            <View style={styles.cardRow}>
-              <ThemedText style={{ color: backgroundColor }}>Antonia Ferragamo</ThemedText>
+            <View style={styles.nameContainer}>
+              <ThemedText
+                style={{ color: backgroundColor }}
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                minimumFontScale={0.5}
+                type="title"
+              >
+                {user.email}
+              </ThemedText>
             </View>
             <View style={{ marginTop: 28, marginBottom: 36, alignItems: 'center' }}>
               <RefugeLogo size={70} variant="background" />
@@ -289,12 +297,16 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
   },
+  nameContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
   cardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   buttonsContainer: {
-    gap: 12,
+    gap: 8,
   },
 });
