@@ -128,13 +128,13 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingTop: 8,
-    paddingBottom: 16,
   },
   scrollViewContent: {
     paddingBottom: 300,
   },
   genresList: {
     gap: 12,
+    paddingTop: 10
   },
   genreButton: {
     width: '100%',
