@@ -2,7 +2,8 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ThemedInput } from './ThemedInput';
 import { ThemedText } from './ThemedText';
 
 interface GenreFilterProps {
@@ -41,17 +42,8 @@ export function GenreFilter({
   return (
     <>
       <View style={styles.searchContainer}>
-        <TextInput
-          style={[
-            styles.searchInput,
-            {
-              color: textColor,
-              borderColor: textColor,
-              backgroundColor: backgroundColor,
-            }
-          ]}
+        <ThemedInput
           placeholder="Search genres..."
-          placeholderTextColor={textColor + '80'}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
@@ -137,13 +129,6 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingTop: 8,
     paddingBottom: 16,
-  },
-  searchInput: {
-    height: 48,
-    borderBottomWidth: 1,
-    fontSize: 43,
-    fontFamily: 'ABCArizonaFlare',
-    paddingRight: 40,
   },
   scrollViewContent: {
     paddingBottom: 300,

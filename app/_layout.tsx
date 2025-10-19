@@ -1,5 +1,6 @@
 import { ColourPicker } from '@/components/ColourPicker';
 import { SplashScreen } from '@/components/SplashScreen';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { ColorSchemeProvider } from '@/contexts/ColorSchemeContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -53,7 +54,9 @@ export default function RootLayout() {
 
   return (
     <ColorSchemeProvider>
-      <RootLayoutContent />
+      <AuthProvider>
+        <RootLayoutContent />
+      </AuthProvider>
     </ColorSchemeProvider>
   );
 }

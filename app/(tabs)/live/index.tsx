@@ -93,7 +93,7 @@ export default function Live() {
   return (
     <ThemedView style={[styles.liveContainer, { paddingTop: insets.top + 8 }]}>
       <View style={styles.header}>
-        <RefugeLogo size={50} />
+        <RefugeLogo size={50} variant="text" />
       </View>
       <View style={styles.centeredContent}>
         {liveNow &&
