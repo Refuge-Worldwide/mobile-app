@@ -50,5 +50,6 @@ const styles = StyleSheet.create({
     fontFamily: 'ABCArizonaFlare',
     paddingRight: 40,
     paddingLeft: 0,
+    lineHeight: 50
   },
 });

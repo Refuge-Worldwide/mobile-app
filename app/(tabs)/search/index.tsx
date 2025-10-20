@@ -103,7 +103,7 @@ export default function SearchScreen() {
             style={styles.clearButton}
             onPress={() => handleSearch('')}
           >
-            <Ionicons name="close" size={24} color={textColor} />
+            <Ionicons name="close" size={40} color={textColor} />
           </Pressable>
         )}
       </View>
@@ -165,7 +165,9 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 24
   },
   searchContainer: {
     position: 'relative',
@@ -176,6 +178,7 @@ const styles = StyleSheet.create({
     fontSize: 43,
     fontFamily: 'ABCArizonaFlare',
     paddingRight: 40,
+    lineHeight: 50,
   },
   clearButton: {
     position: 'absolute',
@@ -185,6 +188,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: 40,
+    height: 40,
   },
   centerContainer: {
     flex: 1,

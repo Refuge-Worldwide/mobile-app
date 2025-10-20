@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedInput } from './ThemedInput';
 import { ThemedText } from './ThemedText';
+import { Ionicons } from '@expo/vector-icons';
 
 interface GenreFilterProps {
   selectedGenres: string[];
@@ -49,6 +50,14 @@ export function GenreFilter({
           autoCapitalize="none"
           autoCorrect={false}
         />
+        {searchQuery.length > 0 && (
+          <Pressable
+            style={styles.clearButton}
+            onPress={() => setSearchQuery('')}
+          >
+            <Ionicons name="close" size={40} color={textColor} />
+          </Pressable>
+        )}
       </View>
 
       <BottomSheetScrollView
@@ -122,12 +131,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
-  clearButton: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
   searchContainer: {
+    position: 'relative',
     paddingTop: 8,
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 0,
+    top: 8,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+    height: 40,
   },
   scrollViewContent: {
     paddingBottom: 300,

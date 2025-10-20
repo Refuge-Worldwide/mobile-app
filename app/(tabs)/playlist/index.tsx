@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 12,
-    paddingTop: 60,
+    paddingTop: 12,
     paddingBottom: 24,
   },
   playlistsList: {
