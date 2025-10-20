@@ -6,7 +6,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAudioStore } from '@/store/audioStore';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -152,7 +152,6 @@ export default function Live() {
                   </ThemedText>
                 </View>
                 <View style={{ backgroundColor: textColor, padding: 4 }}>
-
                   <ThemedText type="subtitle" style={{ color: backgroundColor }}>
                     {liveNow.title}
                   </ThemedText>
@@ -250,8 +249,8 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     paddingHorizontal: 7.5,
-    paddingTop: 3.37,
-    paddingBottom: 2.25,
+    paddingTop: 2,
+    paddingBottom: 0,
     marginHorizontal: 3,
     borderWidth: 1,
   },

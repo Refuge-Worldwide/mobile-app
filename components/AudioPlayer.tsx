@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import TrackPlayer, { Capability, Event, State, useProgress, useTrackPlayerEvents } from 'react-native-track-player';
+import TrackPlayer, { AppKilledPlaybackBehavior, Capability, Event, State, useProgress, useTrackPlayerEvents } from 'react-native-track-player';
 import { QueuePreview, QueuePreviewRef } from './QueuePreview';
 import { ThemedText } from './ThemedText';
 
@@ -20,6 +20,7 @@ export function AudioPlayer() {
   const queueSheetRef = useRef<QueuePreviewRef>(null);
   const slideAnim = useRef(new Animated.Value(100)).current; // Start below screen
   const isLiveMode = playbackMode === 'live' || currentTrack?.isLive;
+  const defaultBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
 
   // Animation functions
   const slideUp = useCallback(() => {
@@ -60,15 +61,43 @@ export function AudioPlayer() {
     try {
       await TrackPlayer.setupPlayer();
       await TrackPlayer.updateOptions({
+        android: {
+          appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
+        },
         capabilities: [
           Capability.Play,
           Capability.Pause,
           Capability.Stop,
+          Capability.SeekTo,
         ],
         compactCapabilities: [
           Capability.Play,
           Capability.Pause,
+          Capability.Stop,
         ],
+        notificationCapabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.Stop,
+        ],
+      });
+
+      // Setup remote control event handlers for lock screen
+      TrackPlayer.addEventListener(Event.RemotePlay, async () => {
+        await TrackPlayer.play();
+      });
+
+      TrackPlayer.addEventListener(Event.RemotePause, async () => {
+        await TrackPlayer.pause();
+      });
+
+      TrackPlayer.addEventListener(Event.RemoteStop, async () => {
+        await TrackPlayer.stop();
+        clearTrack();
+      });
+
+      TrackPlayer.addEventListener(Event.RemoteSeek, async (event) => {
+        await TrackPlayer.seekTo(event.position);
       });
     } catch (error) {
       console.log('Error setting up player:', error);
@@ -151,6 +180,7 @@ export function AudioPlayer() {
           styles.container,
           {
             backgroundColor,
+            borderTopColor: textColor,
             transform: [{ translateY: slideAnim }]
           }
         ]}
@@ -161,6 +191,8 @@ export function AudioPlayer() {
             <View style={styles.imageContainer}>
               <Image
                 source={{ uri: currentTrack.artwork }}
+                placeholder={{ blurhash: defaultBlurhash }}
+                transition={200}
                 style={styles.artwork}
                 contentFit="cover"
               />
@@ -311,6 +343,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     zIndex: 100,
+    borderTopWidth: 1,
   },
   content: {
     flexDirection: 'row',

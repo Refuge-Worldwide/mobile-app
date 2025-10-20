@@ -3,7 +3,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Tabs } from 'expo-router';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const colorScheme = useColorScheme();
@@ -31,7 +31,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     const isFocused = state.index === index;
 
     return (
-      <TouchableOpacity
+      <Pressable
         key={route.key}
         onPress={() => handleTabPress(route, index)}
         style={[
@@ -45,7 +45,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         <ThemedText type="large" style={{ color: isFocused ? colors.text : colors.background }}>
           {label}
         </ThemedText>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -152,8 +152,8 @@ const styles = StyleSheet.create({
   },
   tab: {
     paddingHorizontal: 7.5,
-    paddingTop: 3.37,
-    paddingBottom: 2.25,
+    paddingTop: 2,
+    paddingBottom: 0,
     marginHorizontal: 3,
     borderWidth: 1,
   },

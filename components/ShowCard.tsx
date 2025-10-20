@@ -36,35 +36,6 @@ export function ShowCard({
   // Determine which tab we're in
   const currentTab = segments[1] as string; // Gets 'radio', 'search', etc. from /(tabs)/[tab]/...
 
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : null;
-  };
-
-  const rgbToHex = (r: number, g: number, b: number) => {
-    return "#" + [r, g, b].map(x => {
-      const hex = Math.round(x).toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    }).join('');
-  };
-
-  const getLighterColor = (color: string, amount: number = 0.7) => {
-    const rgb = hexToRgb(color);
-    if (!rgb) return color;
-
-    const r = rgb.r + (255 - rgb.r) * amount;
-    const g = rgb.g + (255 - rgb.g) * amount;
-    const b = rgb.b + (255 - rgb.b) * amount;
-
-    return rgbToHex(r, g, b);
-  };
-
-  const placeholderColor = getLighterColor(textColor, 0.85);
-
   const defaultBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
 
   const optimizeImage = (src: string | undefined): string => {
@@ -125,7 +96,7 @@ export function ShowCard({
             contentFit="cover"
           />
         ) : (
-          <View style={[styles.image, { backgroundColor: placeholderColor }]} />
+          <View style={[styles.image, { backgroundColor: textColor }]} />
         )}
 
         <View style={styles.buttonContainer}>
@@ -142,7 +113,7 @@ export function ShowCard({
                 />
               </Pressable>
               <Pressable
-                style={[styles.iconButton, { backgroundColor: textColor }]}
+                style={[styles.iconButton, { backgroundColor: textColor, marginLeft: -8 }]}
                 onPress={handleQueuePress}
               >
                 <Icon
@@ -158,11 +129,11 @@ export function ShowCard({
 
       <View style={[styles.infoRow, { borderBottomColor: textColor }]}>
         <View style={[styles.dateBox, { backgroundColor: textColor }]}>
-          <ThemedText style={{ color: backgroundColor }}>
+          <ThemedText style={{ color: backgroundColor, paddingTop: 2, marginBottom: -1.5 }}>
             {date}
           </ThemedText>
         </View>
-        <View style={styles.titleContainer}>
+        <View style={[styles.titleContainer, { paddingTop: 6 }]}>
           <ThemedText>
             {title}
           </ThemedText>
