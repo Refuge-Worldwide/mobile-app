@@ -107,6 +107,7 @@ const styles = StyleSheet.create({
     height: 200,
   },
   playlistName: {
+    marginTop: 4,
     marginBottom: 4,
   },
 });
