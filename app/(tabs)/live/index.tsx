@@ -12,13 +12,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Live() {
   const [liveNow, setLiveNow] = useState<{ title: string; artwork: string, slug: string, isMixedFeelings: boolean } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
 
-  const { currentTrack, isPlaying, setLiveTrack, clearTrack } = useAudioStore();
+  const { currentTrack, isPlaying, isLoading, setLiveTrack, stopTrack } = useAudioStore();
   const isCurrentlyPlayingLive = currentTrack?.isLive && isPlaying;
 
   const fetchLiveShow = useCallback(async () => {
@@ -46,10 +45,10 @@ export default function Live() {
 
   const playFunction = async () => {
     if (isCurrentlyPlayingLive) {
-      // Stop live playback
-      clearTrack();
+      // Pause live playback (keeps player open)
+      stopTrack();
     } else {
-      // Start live playback - replace any current track
+      // Start live playback - or resume if already loaded
       if (liveNow) {
         setLiveTrack({
           title: liveNow.title,

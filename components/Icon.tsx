@@ -1,7 +1,7 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
-import { type StyleProp, type TextStyle } from 'react-native';
+import { ActivityIndicator, type StyleProp, type TextStyle } from 'react-native';
 
 // Define available icon names
 export type IconName =
@@ -38,7 +38,10 @@ export function Icon({
       case 'stop':
         return <Ionicons name="stop-sharp" size={size} color={iconColor} style={style} />;
       case 'loading':
-        return <Ionicons name="refresh" size={size} color={iconColor} style={style} />;
+        // ActivityIndicator accepts 'small' or 'large', or a number
+        // For sizes < 40, use 'small', otherwise 'large'
+        const activitySize = size && size >= 40 ? 'large' : 'small';
+        return <ActivityIndicator size={activitySize} color={iconColor} />;
       case 'heart':
         return <Ionicons name="heart" size={size} color={iconColor} style={style} />;
       case 'heart-outline':

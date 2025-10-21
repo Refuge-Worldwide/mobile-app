@@ -15,10 +15,13 @@ export interface Track {
 interface AudioStore {
   currentTrack: Track | null;
   isPlaying: boolean;
+  isLoading: boolean;
   playbackMode: PlaybackMode;
   setTrack: (track: Track) => void;
   setIsPlaying: (isPlaying: boolean) => void;
+  setIsLoading: (isLoading: boolean) => void;
   clearTrack: () => void;
+  stopTrack: () => void;
   setLiveTrack: (liveData: { title: string; artwork?: string }) => void;
 }
 
@@ -36,9 +39,10 @@ const optimizeImageForPlayer = (src: string | undefined): string | undefined => 
   return `${imageUrl}?w=150&h=150&q=80&fm=jpg&fl=progressive&fit=fill`;
 };
 
-export const useAudioStore = create<AudioStore>((set) => ({
+export const useAudioStore = create<AudioStore>((set, get) => ({
   currentTrack: null,
   isPlaying: false,
+  isLoading: false,
   playbackMode: 'archive',
   setTrack: (track) => set({
     currentTrack: {
@@ -48,17 +52,30 @@ export const useAudioStore = create<AudioStore>((set) => ({
     playbackMode: track.mode
   }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
-  clearTrack: () => set({ currentTrack: null, isPlaying: false }),
-  setLiveTrack: (liveData) => set({
-    currentTrack: {
-      id: 'live-stream',
-      url: 'https://streaming.radio.co/s3699c5e49/listen',
-      title: liveData.title,
-      artist: 'Live on Refuge Worldwide',
-      artwork: optimizeImageForPlayer(liveData.artwork),
-      mode: 'live',
-      isLive: true,
-    },
-    playbackMode: 'live',
-  }),
+  setIsLoading: (isLoading) => set({ isLoading }),
+  clearTrack: () => set({ currentTrack: null, isPlaying: false, isLoading: false }),
+  stopTrack: () => set({ isPlaying: false }),
+  setLiveTrack: (liveData) => {
+    const state = get();
+    // Check if we're already on the live stream
+    if (state.currentTrack?.isLive && state.currentTrack?.id === 'live-stream') {
+      // Just resume/play the existing track - don't create a new one
+      set({ isPlaying: true });
+      return;
+    }
+
+    // Otherwise set up a new live track
+    set({
+      currentTrack: {
+        id: 'live-stream',
+        url: 'https://streaming.radio.co/s3699c5e49/listen',
+        title: liveData.title,
+        artist: 'Live on Refuge Worldwide',
+        artwork: optimizeImageForPlayer(liveData.artwork),
+        mode: 'live',
+        isLive: true,
+      },
+      playbackMode: 'live',
+    });
+  },
 }));

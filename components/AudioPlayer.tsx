@@ -5,15 +5,15 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import TrackPlayer, { AppKilledPlaybackBehavior, Capability, Event, State, useProgress, useTrackPlayerEvents } from 'react-native-track-player';
+import { Icon } from './Icon';
 import { QueuePreview, QueuePreviewRef } from './QueuePreview';
 import { ThemedText } from './ThemedText';
 
 export function AudioPlayer() {
-  const { currentTrack, isPlaying, setIsPlaying, clearTrack, playbackMode } = useAudioStore();
+  const { currentTrack, isPlaying, isLoading, setIsPlaying, setIsLoading, clearTrack, stopTrack, playbackMode } = useAudioStore();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
   const { position, duration } = useProgress();
-  const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [progressBarWidth, setProgressBarWidth] = useState(300);
 
@@ -107,14 +107,23 @@ export function AudioPlayer() {
   const loadTrack = useCallback(async () => {
     try {
       setIsLoading(true);
-      await TrackPlayer.reset();
-      await TrackPlayer.add({
-        id: currentTrack!.id,
-        url: currentTrack!.url,
-        title: currentTrack!.title,
-        artist: currentTrack!.artist || 'Unknown Artist',
-        artwork: currentTrack!.artwork,
-      });
+
+      // Check if the track is already in the queue
+      const queue = await TrackPlayer.getQueue();
+      const currentTrackInQueue = queue.find(track => track.id === currentTrack!.id);
+
+      // Only reset and add if it's a different track
+      if (!currentTrackInQueue) {
+        await TrackPlayer.reset();
+        await TrackPlayer.add({
+          id: currentTrack!.id,
+          url: currentTrack!.url,
+          title: currentTrack!.title,
+          artist: currentTrack!.artist || 'Unknown Artist',
+          artwork: currentTrack!.artwork,
+        });
+      }
+
       await TrackPlayer.play();
       setIsPlaying(true);
       setIsLoading(false);
@@ -122,7 +131,7 @@ export function AudioPlayer() {
       console.error('Error loading track:', error);
       setIsLoading(false);
     }
-  }, [currentTrack, setIsPlaying]);
+  }, [currentTrack, setIsPlaying, setIsLoading]);
 
   // Load and play track when currentTrack changes
   useEffect(() => {
@@ -131,11 +140,44 @@ export function AudioPlayer() {
     }
   }, [currentTrack, loadTrack]);
 
+  // Sync isPlaying state from store to TrackPlayer
+  useEffect(() => {
+    const syncPlaybackState = async () => {
+      const state = await TrackPlayer.getState();
+      const isCurrentlyPlaying = state === State.Playing;
+      const isBuffering = state === State.Buffering;
+
+      if (isPlaying && !isCurrentlyPlaying && !isBuffering) {
+        // Store says play, but player is paused - start playing
+        setIsLoading(true);
+        await TrackPlayer.play();
+        // Don't clear loading here - let the PlaybackState event handle it
+      } else if (!isPlaying && isCurrentlyPlaying) {
+        // Store says pause, but player is playing - pause it
+        await TrackPlayer.pause();
+      }
+    };
+
+    if (currentTrack) {
+      syncPlaybackState();
+    }
+  }, [isPlaying, currentTrack, setIsLoading]);
+
   // Update store when playback state changes
   useTrackPlayerEvents([Event.PlaybackState], async (event) => {
     if (event.type === Event.PlaybackState) {
       const state = await TrackPlayer.getState();
-      setIsPlaying(state === State.Playing);
+      const isActuallyPlaying = state === State.Playing;
+      const isBuffering = state === State.Buffering;
+
+      setIsPlaying(isActuallyPlaying);
+
+      // Clear loading state when playing or stopped, set it when buffering
+      if (isActuallyPlaying || state === State.Paused || state === State.Stopped) {
+        setIsLoading(false);
+      } else if (isBuffering) {
+        setIsLoading(true);
+      }
     }
   });
 
@@ -145,6 +187,15 @@ export function AudioPlayer() {
       await TrackPlayer.pause();
     } else {
       await TrackPlayer.play();
+    }
+  };
+
+  const handleLivePlayStop = () => {
+    // For live mode - toggle between play and stop
+    if (isPlaying) {
+      stopTrack();
+    } else {
+      setIsPlaying(true);
     }
   };
 
@@ -227,7 +278,7 @@ export function AudioPlayer() {
                   style={styles.scrubberPlayButton}
                 >
                   {isLoading ? (
-                    <Ionicons name="hourglass-outline" size={20} color={textColor} />
+                    <Icon name="loading" size={20} color={textColor} />
                   ) : (
                     <Ionicons
                       name={isPlaying ? 'pause' : 'play'}
@@ -298,15 +349,15 @@ export function AudioPlayer() {
             ) : (
               <View style={styles.controlsRow}>
                 <Pressable
-                  onPress={handlePlayPause}
+                  onPress={handleLivePlayStop}
                   disabled={isLoading}
                   style={styles.playButton}
                 >
                   {isLoading ? (
-                    <Ionicons name="hourglass-outline" size={24} color={textColor} />
+                    <Icon name="loading" size={24} color={textColor} />
                   ) : (
-                    <Ionicons
-                      name={isPlaying ? 'pause' : 'play'}
+                    <Icon
+                      name={isPlaying ? 'stop' : 'play'}
                       size={24}
                       color={textColor}
                     />
@@ -317,10 +368,6 @@ export function AudioPlayer() {
                   <View style={[styles.liveDot, { backgroundColor: '#ff0000' }]} />
                   <ThemedText type="player" style={styles.liveIndicatorText}>Streaming Live</ThemedText>
                 </View>
-
-                <Pressable onPress={() => queueSheetRef.current?.present()} style={styles.queueButton}>
-                  <Ionicons name="list" size={22} color={textColor} />
-                </Pressable>
 
                 <Pressable onPress={handleClose} style={styles.closeButton}>
                   <Ionicons name="close" size={22} color={textColor} />
@@ -337,7 +384,7 @@ export function AudioPlayer() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 125, // Above the menu
+    bottom: 120, // Above the menu
     left: 0,
     right: 0,
     paddingVertical: 8,
