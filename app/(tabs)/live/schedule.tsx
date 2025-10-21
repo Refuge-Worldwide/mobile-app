@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -135,62 +135,73 @@ export default function Schedule() {
   }
 
   const groupedSchedule = scheduleData?.schedule ? groupScheduleByDate(scheduleData.schedule) : {};
+  const isEmpty = !scheduleData?.schedule || scheduleData.schedule.length === 0;
 
   return (
     <ThemedView style={[styles.container]}>
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View>
-          {Object.entries(groupedSchedule).map(([dateKey, items]) => {
-            const firstItem = items[0];
-            const { date } = formatDateTime(firstItem.date);
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={isEmpty ? styles.scrollContentEmpty : undefined}
+        showsVerticalScrollIndicator={false}
+      >
+        {isEmpty ? (
+          <View style={styles.emptyContainer}>
+            <ThemedText style={{ textAlign: 'center' }}>We are updating the schedule,{"\n"} please check back soon.</ThemedText>
+          </View>
+        ) : (
+          <View>
+            {Object.entries(groupedSchedule).map(([dateKey, items]) => {
+              const firstItem = items[0];
+              const { date } = formatDateTime(firstItem.date);
 
-            return (
-              <View key={dateKey}>
-                <View style={[styles.dateHeader, { backgroundColor: textColor }]}>
-                  <ThemedText
-                    style={[styles.dateText, { color: backgroundColor }]}
-                  >
-                    {date}
-                  </ThemedText>
-                </View>
-
-                {items.map((item) => {
-                  const { time } = formatDateTime(item.date);
-
-                  const titleParts = item.title.split(' — ');
-                  const showName = titleParts[0]?.trim() || item.title;
-                  const artist = titleParts[1]?.trim() || '';
-
-                  return (
-                    <View
-                      key={item.slug}
-                      style={[
-                        styles.scheduleItem,
-                        { borderBottomColor: textColor }
-                      ]}
+              return (
+                <View key={dateKey}>
+                  <View style={[styles.dateHeader, { backgroundColor: textColor }]}>
+                    <ThemedText
+                      style={[styles.dateText, { color: backgroundColor }]}
                     >
-                      <View style={styles.timeContainer}>
-                        <ThemedText>
-                          {time}
-                        </ThemedText>
-                      </View>
-                      <View style={styles.showInfo}>
-                        <ThemedText>
-                          {showName}
-                        </ThemedText>
-                        {artist && (
+                      {date}
+                    </ThemedText>
+                  </View>
+
+                  {items.map((item) => {
+                    const { time } = formatDateTime(item.date);
+
+                    const titleParts = item.title.split(' — ');
+                    const showName = titleParts[0]?.trim() || item.title;
+                    const artist = titleParts[1]?.trim() || '';
+
+                    return (
+                      <View
+                        key={item.slug}
+                        style={[
+                          styles.scheduleItem,
+                          { borderBottomColor: textColor }
+                        ]}
+                      >
+                        <View style={styles.timeContainer}>
                           <ThemedText>
-                            {artist}
+                            {time}
                           </ThemedText>
-                        )}
+                        </View>
+                        <View style={styles.showInfo}>
+                          <ThemedText>
+                            {showName}
+                          </ThemedText>
+                          {artist && (
+                            <ThemedText>
+                              {artist}
+                            </ThemedText>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
-              </View>
-            );
-          })}
-        </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
     </ThemedView >
   );
@@ -203,6 +214,9 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+  },
+  scrollContentEmpty: {
+    flexGrow: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -222,6 +236,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dateHeader: {
     alignItems: 'center',

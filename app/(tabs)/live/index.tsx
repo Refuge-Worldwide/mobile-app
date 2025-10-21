@@ -24,7 +24,6 @@ export default function Live() {
     try {
       const res = await fetch('https://refugeworldwide.com/api/schedule');
       const data = await res.json();
-      // Assuming the API returns an array of shows with a "live" property
       setLiveNow(data.liveNow);
     } catch (error) {
       console.error('Failed to fetch live show:', error);

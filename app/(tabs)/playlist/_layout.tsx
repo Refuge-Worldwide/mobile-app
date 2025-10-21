@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/BackButton';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Stack } from 'expo-router';
 
@@ -14,6 +15,15 @@ export default function Layout() {
         headerTintColor: textColor,
         headerShadowVisible: false,
         headerTitle: '',
+        headerBackTitle: '',
+        headerBackButtonDisplayMode: 'minimal',
+        headerBackVisible: false,
+        headerLeft: ({ canGoBack }) => {
+          if (canGoBack) {
+            return <BackButton />;
+          }
+          return null;
+        },
       }}
     />
   );
