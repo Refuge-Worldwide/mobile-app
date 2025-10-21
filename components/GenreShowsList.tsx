@@ -119,25 +119,21 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
     );
   };
 
-  const ListHeaderComponent = () => (
-    <View style={{ backgroundColor }}>
-      <ThemedText type="title">
-        {genre}
-      </ThemedText>
-    </View>
-  );
-
   return (
     <ThemedView style={styles.container}>
+      <View style={[styles.headerContainer, { backgroundColor, borderBottomColor: textColor }]}>
+        <View style={styles.headerContent}>
+          <ThemedText type="title">
+            {genre}
+          </ThemedText>
+        </View>
+      </View>
       {shows.length === 0 && !loading ? (
-        <>
-          <ListHeaderComponent />
-          <View style={styles.emptyState}>
-            <ThemedText style={styles.emptyText}>
-              No shows found for "{genre}"
-            </ThemedText>
-          </View>
-        </>
+        <View style={styles.emptyState}>
+          <ThemedText style={styles.emptyText}>
+            No shows found for "{genre}"
+          </ThemedText>
+        </View>
       ) : (
         <FlatList
           data={shows}
@@ -145,11 +141,9 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
           keyExtractor={(item) => item.id}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
-          ListHeaderComponent={ListHeaderComponent}
           ListFooterComponent={renderFooter}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          stickyHeaderIndices={[0]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -168,12 +162,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerContainer: {
+    borderBottomWidth: 1,
+  },
+  headerContent: {
+    paddingHorizontal: 12,
+    paddingBottom: 4,
+  },
   titleContainer: {
     paddingBottom: 4,
     borderBottomWidth: 1,
   },
   listContent: {
     paddingHorizontal: 12,
+    paddingTop: 8,
     paddingBottom: 16,
   },
   footer: {

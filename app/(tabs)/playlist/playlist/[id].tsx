@@ -128,24 +128,21 @@ export default function PlaylistDetailScreen() {
     );
   };
 
-  const ListHeaderComponent = () => (
-    <View style={{ backgroundColor }}>
-      <ThemedText type="title">
-        {getPlaylistTitle()}
-      </ThemedText>
-    </View>
-  );
-
   return (
     <ThemedView style={styles.container}>
+      <View style={[styles.headerContainer, { backgroundColor, borderBottomColor: textColor }]}>
+        <View style={styles.headerContent}>
+          <ThemedText type="title">
+            {getPlaylistTitle()}
+          </ThemedText>
+        </View>
+      </View>
       <FlatList
         data={shows}
         renderItem={renderShowItem}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={ListHeaderComponent}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[0]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -162,6 +159,13 @@ export default function PlaylistDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerContainer: {
+    borderBottomWidth: 1,
+  },
+  headerContent: {
+    paddingHorizontal: 12,
+    paddingBottom: 4,
   },
   loadingContainer: {
     flex: 1,
@@ -185,6 +189,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 12,
+    paddingTop: 8,
     paddingBottom: 24,
   },
   title: {
