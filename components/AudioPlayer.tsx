@@ -253,7 +253,7 @@ export function AudioPlayer() {
           {/* Middle - Track info and controls */}
           <View style={styles.middleContainer}>
             {/* Show title */}
-            <View style={{ backgroundColor: textColor, marginBottom: 1 }}>
+            <View style={[styles.titleContainer, { backgroundColor: textColor }]}>
               <ThemedText type="player" style={[styles.title, { color: backgroundColor }]} numberOfLines={1}>
                 {currentTrack?.title || ''}
               </ThemedText>
@@ -261,34 +261,18 @@ export function AudioPlayer() {
 
             {/* Controls row - full width scrubber for archive, controls for live */}
             {!isLiveMode ? (
-              <Pressable
-                style={styles.scrubberRow}
-                onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
-                onPress={(e) => {
-                  const { locationX } = e.nativeEvent;
-                  const percentage = locationX / progressBarWidth;
-                  const newPosition = percentage * duration;
-                  handleSeekComplete(newPosition);
-                }}
-              >
-                {/* Play button on left */}
+              <View style={styles.controlsWrapper}>
                 <Pressable
-                  onPress={handlePlayPause}
-                  disabled={isLoading}
-                  style={styles.scrubberPlayButton}
+                  style={styles.scrubberRow}
+                  onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
+                  onPress={(e) => {
+                    const { locationX } = e.nativeEvent;
+                    const percentage = locationX / progressBarWidth;
+                    const newPosition = percentage * duration;
+                    handleSeekComplete(newPosition);
+                  }}
                 >
-                  {isLoading ? (
-                    <Icon name="loading" size={20} color={textColor} />
-                  ) : (
-                    <Ionicons
-                      name={isPlaying ? 'pause' : 'play'}
-                      size={20}
-                      color={textColor}
-                    />
-                  )}
-                </Pressable>
-
-                {/* Progress fill */}
+                {/* Progress fill - just the background color bar */}
                 <View
                   style={[
                     styles.scrubberFill,
@@ -299,53 +283,93 @@ export function AudioPlayer() {
                   ]}
                 />
 
-                {/* Time text container */}
-                <View style={styles.scrubberTimeContainer}>
-                  {/* Inverted text (shows on filled portion) */}
-                  <View style={[styles.scrubberTimeWrapper, { overflow: 'hidden' }]}>
+                {/* UI Elements layer - fixed positions with both normal and inverted versions */}
+                <View style={styles.scrubberContentLayer} pointerEvents="box-none">
+                  {/* Play button - normal color version */}
+                  <Pressable
+                    onPress={handlePlayPause}
+                    disabled={isLoading}
+                    style={styles.scrubberPlayButton}
+                  >
+                    {isLoading ? (
+                      <Icon name="loading" size={20} color={textColor} />
+                    ) : (
+                      <Ionicons
+                        name={isPlaying ? 'pause' : 'play'}
+                        size={20}
+                        color={textColor}
+                      />
+                    )}
+                  </Pressable>
+
+                  {/* Time text - normal color version */}
+                  <View style={styles.scrubberTimeContainer} pointerEvents="none">
                     <ThemedText
                       type="player"
-                      style={[
-                        styles.scrubberTime,
-                        {
-                          color: backgroundColor,
-                          width: `${((position / (duration || 1)) * 100)}%`,
-                        },
-                      ]}
-                    >
-                      {getTimeElapsed()}
-                    </ThemedText>
-                  </View>
-                  {/* Normal text (shows on unfilled portion) */}
-                  <View style={[styles.scrubberTimeWrapper, { overflow: 'hidden' }]}>
-                    <ThemedText
-                      type="player"
-                      style={[
-                        styles.scrubberTime,
-                        {
-                          color: textColor,
-                          width: `${(100 - (position / (duration || 1)) * 100)}%`,
-                        },
-                      ]}
+                      style={[styles.scrubberTime, { color: textColor }]}
                     >
                       {getTimeElapsed()}
                     </ThemedText>
                   </View>
                 </View>
 
-                {/* Buttons container on right */}
-                <View style={styles.scrubberButtonsContainer}>
+                {/* Inverted UI Elements layer - clipped overlay */}
+                <View
+                  style={[
+                    styles.scrubberInvertedLayer,
+                    {
+                      width: `${((position / (duration || 1)) * 100)}%`,
+                    },
+                  ]}
+                  pointerEvents="box-none"
+                >
+                  {/* Full-width container inside clipped area to maintain proper positioning */}
+                  <View style={[styles.scrubberInvertedContent, { width: progressBarWidth }]}>
+                    {/* Play button - inverted color version - absolute left position */}
+                    <View style={styles.scrubberPlayButtonInverted}>
+                      <Pressable
+                        onPress={handlePlayPause}
+                        disabled={isLoading}
+                        style={styles.scrubberPlayButton}
+                      >
+                        {isLoading ? (
+                          <Icon name="loading" size={20} color={backgroundColor} />
+                        ) : (
+                          <Ionicons
+                            name={isPlaying ? 'pause' : 'play'}
+                            size={20}
+                            color={backgroundColor}
+                          />
+                        )}
+                      </Pressable>
+                    </View>
+
+                    {/* Time text - inverted color version - absolute right position */}
+                    <View style={styles.scrubberTimeContainerInverted} pointerEvents="none">
+                      <ThemedText
+                        type="player"
+                        style={[styles.scrubberTime, { color: backgroundColor }]}
+                      >
+                        {getTimeElapsed()}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </View>
+                </Pressable>
+
+                {/* Buttons outside slider */}
+                <View style={styles.externalButtonsContainer}>
                   {/* Queue button */}
-                  <Pressable onPress={() => queueSheetRef.current?.present()} style={styles.scrubberButton}>
+                  <Pressable onPress={() => queueSheetRef.current?.present()} style={styles.externalButton}>
                     <Ionicons name="list" size={18} color={textColor} />
                   </Pressable>
 
                   {/* Close button */}
-                  <Pressable onPress={handleClose} style={styles.scrubberButton}>
+                  <Pressable onPress={handleClose} style={styles.externalButton}>
                     <Ionicons name="close" size={18} color={textColor} />
                   </Pressable>
                 </View>
-              </Pressable>
+              </View>
             ) : (
               <View style={styles.controlsRow}>
                 <Pressable
@@ -396,7 +420,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'flex-start',
-    gap: 8,
+    gap: 0,
   },
   imageContainer: {
     width: 56,
@@ -425,21 +449,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  titleContainer: {
+    height: 27,
+    justifyContent: 'center',
+    marginBottom: 1,
+  },
   title: {
     paddingHorizontal: 4,
-    paddingVertical: 2,
+  },
+  controlsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
   },
   scrubberRow: {
     position: 'relative',
-    height: 24,
+    height: 28,
+    overflow: 'hidden',
+    flex: 1,
+  },
+  scrubberFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    height: '100%',
+    zIndex: 1,
+  },
+  scrubberContentLayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
+    zIndex: 2,
+  },
+  scrubberInvertedLayer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    height: '100%',
     overflow: 'hidden',
+    zIndex: 3,
+  },
+  scrubberInvertedContent: {
+    position: 'relative',
+    height: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   scrubberPlayButton: {
     paddingHorizontal: 4,
     paddingVertical: 2,
-    zIndex: 3,
+  },
+  scrubberPlayButtonInverted: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   scrubberQueueButton: {
     paddingHorizontal: 4,
@@ -467,41 +538,39 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
   },
-  scrubberFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    height: '100%',
-    zIndex: 1,
-  },
   scrubberTimeContainer: {
     position: 'absolute',
-    right: 70,
+    right: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrubberTimeContainerInverted: {
+    position: 'absolute',
+    right: 8,
     top: 0,
     bottom: 0,
-    flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 2,
+    justifyContent: 'center',
   },
   scrubberButtonsContainer: {
+    position: 'absolute',
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  scrubberButtonsContainerInverted: {
     position: 'absolute',
     right: 0,
     top: 0,
     bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 3,
     gap: 4,
   },
   scrubberButton: {
     paddingHorizontal: 4,
     paddingVertical: 2,
-  },
-  scrubberTimeWrapper: {
-    position: 'absolute',
-    right: 0,
-    alignItems: 'flex-end',
   },
   scrubberTime: {
     textAlign: 'right',
@@ -524,7 +593,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    marginTop: 4,
+    height: 28,
   },
   slider: {
     flex: 1,
@@ -593,8 +662,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    marginLeft: 8,
   },
   liveDot: {
     width: 8,
@@ -602,5 +671,15 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   liveIndicatorText: {
+  },
+  externalButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 4,
+  },
+  externalButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
 });
