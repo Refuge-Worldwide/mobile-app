@@ -4,6 +4,7 @@ export interface Show {
   date: string; // ISO timestamp
   slug: string;
   mixcloudLink?: string;
+  audioFile?: string;
   coverImage?: string;
   genres: string[];
   artwork?: string;

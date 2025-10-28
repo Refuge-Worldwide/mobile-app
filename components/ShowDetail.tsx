@@ -67,6 +67,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
         date: data.show.date,
         slug: data.show.slug,
         mixcloudLink: data.show.mixcloudLink,
+        audioFile: data.show.audioFile?.url || data.show.audioFile,
         coverImage: data.show.coverImage?.url || data.show.coverImage,
         genres: data.show.genresCollection?.items?.map((g: any) => g.name) || [],
         artwork: data.show.coverImage?.url,
@@ -174,7 +175,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
             title={show.title}
             date={formatDate(show.date)}
             genres={show.genres}
-            audioUrl={show.mixcloudLink}
+            audioUrl={show.audioFile}
           />
 
           {/* Description */}
@@ -236,7 +237,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                     title={relatedShow.title}
                     date={formatDate(relatedShow.date)}
                     genres={relatedShow.genres}
-                    audioUrl={relatedShow.mixcloudLink}
+                    audioUrl={relatedShow.audioFile}
                     onPress={() => handleRelatedShowPress(relatedShow.slug)}
                   />
                 </View>

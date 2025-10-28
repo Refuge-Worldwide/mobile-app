@@ -15,6 +15,7 @@ const logoAssets: Record<string, Record<string, any>> = {
   'light-text': require('../assets/images/logo-light-text.png'),
   'ochre-background': require('../assets/images/logo-ochre-background.png'),
   'ochre-text': require('../assets/images/logo-ochre-text.png'),
+  'olive-background': require('../assets/images/logo-olive-background.png'),
   'olive-text': require('../assets/images/logo-olive-text.png'),
   'pink-background': require('../assets/images/logo-pink-background.png'),
   'pink-text': require('../assets/images/logo-pink-text.png'),
