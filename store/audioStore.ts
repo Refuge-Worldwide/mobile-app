@@ -23,6 +23,7 @@ interface AudioStore {
   clearTrack: () => void;
   stopTrack: () => void;
   setLiveTrack: (liveData: { title: string; artwork?: string }) => void;
+  setLiveTrackChannel2: (liveData: { title: string; artwork?: string }) => void;
 }
 
 // Optimize image URL for faster loading (small size for player)
@@ -71,6 +72,29 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
         url: 'https://streaming.radio.co/s3699c5e49/listen',
         title: liveData.title,
         artist: 'Live on Refuge Worldwide',
+        artwork: optimizeImageForPlayer(liveData.artwork),
+        mode: 'live',
+        isLive: true,
+      },
+      playbackMode: 'live',
+    });
+  },
+  setLiveTrackChannel2: (liveData) => {
+    const state = get();
+    // Check if we're already on the channel 2 live stream
+    if (state.currentTrack?.isLive && state.currentTrack?.id === 'live-stream-ch2') {
+      // Just resume/play the existing track - don't create a new one
+      set({ isPlaying: true });
+      return;
+    }
+
+    // Otherwise set up a new live track for channel 2
+    set({
+      currentTrack: {
+        id: 'live-stream-ch2',
+        url: 'https://s4.radio.co/s8ce53d687/listen',
+        title: liveData.title,
+        artist: 'Live on Refuge Worldwide - Channel 2',
         artwork: optimizeImageForPlayer(liveData.artwork),
         mode: 'live',
         isLive: true,

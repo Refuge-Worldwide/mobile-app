@@ -272,89 +272,89 @@ export function AudioPlayer() {
                     handleSeekComplete(newPosition);
                   }}
                 >
-                {/* Progress fill - just the background color bar */}
-                <View
-                  style={[
-                    styles.scrubberFill,
-                    {
-                      backgroundColor: textColor,
-                      width: `${((position / (duration || 1)) * 100)}%`,
-                    },
-                  ]}
-                />
+                  {/* Progress fill - just the background color bar */}
+                  <View
+                    style={[
+                      styles.scrubberFill,
+                      {
+                        backgroundColor: textColor,
+                        width: `${((position / (duration || 1)) * 100)}%`,
+                      },
+                    ]}
+                  />
 
-                {/* UI Elements layer - fixed positions with both normal and inverted versions */}
-                <View style={styles.scrubberContentLayer} pointerEvents="box-none">
-                  {/* Play button - normal color version */}
-                  <Pressable
-                    onPress={handlePlayPause}
-                    disabled={isLoading}
-                    style={styles.scrubberPlayButton}
-                  >
-                    {isLoading ? (
-                      <Icon name="loading" size={20} color={textColor} />
-                    ) : (
-                      <Ionicons
-                        name={isPlaying ? 'pause' : 'play'}
-                        size={20}
-                        color={textColor}
-                      />
-                    )}
-                  </Pressable>
-
-                  {/* Time text - normal color version */}
-                  <View style={styles.scrubberTimeContainer} pointerEvents="none">
-                    <ThemedText
-                      type="player"
-                      style={[styles.scrubberTime, { color: textColor }]}
+                  {/* UI Elements layer - fixed positions with both normal and inverted versions */}
+                  <View style={styles.scrubberContentLayer} pointerEvents="box-none">
+                    {/* Play button - normal color version */}
+                    <Pressable
+                      onPress={handlePlayPause}
+                      disabled={isLoading}
+                      style={styles.scrubberPlayButton}
                     >
-                      {getTimeElapsed()}
-                    </ThemedText>
-                  </View>
-                </View>
+                      {isLoading ? (
+                        <Icon name="loading" size={20} color={textColor} />
+                      ) : (
+                        <Ionicons
+                          name={isPlaying ? 'pause' : 'play'}
+                          size={20}
+                          color={textColor}
+                        />
+                      )}
+                    </Pressable>
 
-                {/* Inverted UI Elements layer - clipped overlay */}
-                <View
-                  style={[
-                    styles.scrubberInvertedLayer,
-                    {
-                      width: `${((position / (duration || 1)) * 100)}%`,
-                    },
-                  ]}
-                  pointerEvents="box-none"
-                >
-                  {/* Full-width container inside clipped area to maintain proper positioning */}
-                  <View style={[styles.scrubberInvertedContent, { width: progressBarWidth }]}>
-                    {/* Play button - inverted color version - absolute left position */}
-                    <View style={styles.scrubberPlayButtonInverted}>
-                      <Pressable
-                        onPress={handlePlayPause}
-                        disabled={isLoading}
-                        style={styles.scrubberPlayButton}
-                      >
-                        {isLoading ? (
-                          <Icon name="loading" size={20} color={backgroundColor} />
-                        ) : (
-                          <Ionicons
-                            name={isPlaying ? 'pause' : 'play'}
-                            size={20}
-                            color={backgroundColor}
-                          />
-                        )}
-                      </Pressable>
-                    </View>
-
-                    {/* Time text - inverted color version - absolute right position */}
-                    <View style={styles.scrubberTimeContainerInverted} pointerEvents="none">
+                    {/* Time text - normal color version */}
+                    <View style={styles.scrubberTimeContainer} pointerEvents="none">
                       <ThemedText
                         type="player"
-                        style={[styles.scrubberTime, { color: backgroundColor }]}
+                        style={[styles.scrubberTime, { color: textColor }]}
                       >
                         {getTimeElapsed()}
                       </ThemedText>
                     </View>
                   </View>
-                </View>
+
+                  {/* Inverted UI Elements layer - clipped overlay */}
+                  <View
+                    style={[
+                      styles.scrubberInvertedLayer,
+                      {
+                        width: `${((position / (duration || 1)) * 100)}%`,
+                      },
+                    ]}
+                    pointerEvents="box-none"
+                  >
+                    {/* Full-width container inside clipped area to maintain proper positioning */}
+                    <View style={[styles.scrubberInvertedContent, { width: progressBarWidth }]}>
+                      {/* Play button - inverted color version - absolute left position */}
+                      <View style={styles.scrubberPlayButtonInverted}>
+                        <Pressable
+                          onPress={handlePlayPause}
+                          disabled={isLoading}
+                          style={styles.scrubberPlayButton}
+                        >
+                          {isLoading ? (
+                            <Icon name="loading" size={20} color={backgroundColor} />
+                          ) : (
+                            <Ionicons
+                              name={isPlaying ? 'pause' : 'play'}
+                              size={20}
+                              color={backgroundColor}
+                            />
+                          )}
+                        </Pressable>
+                      </View>
+
+                      {/* Time text - inverted color version - absolute right position */}
+                      <View style={styles.scrubberTimeContainerInverted} pointerEvents="none">
+                        <ThemedText
+                          type="player"
+                          style={[styles.scrubberTime, { color: backgroundColor }]}
+                        >
+                          {getTimeElapsed()}
+                        </ThemedText>
+                      </View>
+                    </View>
+                  </View>
                 </Pressable>
 
                 {/* Buttons outside slider */}
@@ -362,11 +362,6 @@ export function AudioPlayer() {
                   {/* Queue button */}
                   <Pressable onPress={() => queueSheetRef.current?.present()} style={styles.externalButton}>
                     <Ionicons name="list" size={18} color={textColor} />
-                  </Pressable>
-
-                  {/* Close button */}
-                  <Pressable onPress={handleClose} style={styles.externalButton}>
-                    <Ionicons name="close" size={18} color={textColor} />
                   </Pressable>
                 </View>
               </View>
@@ -386,15 +381,6 @@ export function AudioPlayer() {
                       color={textColor}
                     />
                   )}
-                </Pressable>
-
-                <View style={styles.liveIndicatorContainer}>
-                  <View style={[styles.liveDot, { backgroundColor: '#ff0000' }]} />
-                  <ThemedText type="player" style={styles.liveIndicatorText}>Streaming Live</ThemedText>
-                </View>
-
-                <Pressable onPress={handleClose} style={styles.closeButton}>
-                  <Ionicons name="close" size={22} color={textColor} />
                 </Pressable>
               </View>
             )}
@@ -652,11 +638,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-  },
-  closeButton: {
-    padding: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   liveIndicatorContainer: {
     flex: 1,
