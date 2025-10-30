@@ -101,11 +101,11 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
     return (
       <ShowCard
         imageUrl={item.coverImage || item.artwork}
-        audioUrl="https://downloads.ctfassets.net/taoiy3h84mql/4js8WfDtP9bkEDjpg4hFzu/a04cd029a0a8967eca15c7191297b6a6/Dub_Dal_takeover__Body__Mind___Bass_-_Aarti_Kriplani___Zena__-_03_Oct_2025.mp3"
+        audioUrl={item.audioFile}
         title={item.title}
         date={formatDate(item.date)}
         genres={item.genres}
-        onPress={() => router.push(`/(tabs)/${currentTab}/${item.slug}`)}
+        onPress={() => router.push(`/(tabs)/${currentTab}/${item.slug}` as any)}
       />
     );
   };
