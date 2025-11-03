@@ -7,7 +7,7 @@ import { useAudioStore } from '@/store/audioStore';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Dimensions, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Live() {
@@ -17,6 +17,7 @@ export default function Live() {
   const insets = useSafeAreaInsets();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
+  const screenHeight = Dimensions.get('window').height;
 
   const { currentTrack, isPlaying, isLoading, setLiveTrack, setLiveTrackChannel2, stopTrack } = useAudioStore();
   const isCurrentlyPlayingLive = currentTrack?.isLive && currentTrack?.id === 'live-stream' && isPlaying;
@@ -119,6 +120,14 @@ export default function Live() {
     setRefreshing(false);
   }, [fetchLiveShow]);
 
+  const isBothChannelsLive = liveNow && liveNowCh2 && liveNowCh2.status === 'online';
+
+  // Calculate responsive padding for single channel to center content
+  // Account for: header (~66px), player (~84px at bottom: 120), buttons (~40px), safe areas
+  const FIXED_ELEMENTS_HEIGHT = 66 + 120 + 40; // header + player position + buttons
+  const AVAILABLE_HEIGHT = screenHeight - insets.top - insets.bottom - FIXED_ELEMENTS_HEIGHT;
+  const singleChannelPaddingTop = AVAILABLE_HEIGHT * 0.15; // Use 15% of available height for top padding
+
   return (
     <ThemedView style={[styles.liveContainer, { paddingTop: insets.top + 8 }]}>
       <View style={styles.header}>
@@ -127,7 +136,10 @@ export default function Live() {
 
       <ScrollView
         style={styles.scrollViewContainer}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          !isBothChannelsLive && { paddingTop: singleChannelPaddingTop }
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
