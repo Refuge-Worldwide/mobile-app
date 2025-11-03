@@ -196,6 +196,7 @@ export default function Archive() {
         genres={item.genres}
         onPress={() => router.push(`/(tabs)/radio/${item.slug}`)}
         showId={item.id}
+        slug={item.slug}
       />
     );
   };

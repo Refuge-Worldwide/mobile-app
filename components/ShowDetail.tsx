@@ -177,6 +177,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
             genres={show.genres}
             audioUrl={show.audioFile}
             showId={show.id}
+            slug={show.slug}
           />
 
           {/* Description */}
@@ -241,6 +242,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                     audioUrl={relatedShow.audioFile}
                     onPress={() => handleRelatedShowPress(relatedShow.slug)}
                     showId={relatedShow.id}
+                    slug={relatedShow.slug}
                   />
                 </View>
               ))}

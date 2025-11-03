@@ -16,6 +16,7 @@ interface ShowCardProps {
   audioUrl?: string;
   onPress?: () => void;
   showId?: string;
+  slug?: string;
 }
 
 export function ShowCard({
@@ -27,6 +28,7 @@ export function ShowCard({
   audioUrl,
   onPress,
   showId,
+  slug,
 }: ShowCardProps) {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
@@ -74,6 +76,7 @@ export function ShowCard({
         mode: 'archive',
         isLive: false,
         showId: showId,
+        slug: slug,
       });
     }
   };

@@ -125,6 +125,7 @@ export default function PlaylistDetailScreen() {
         audioUrl={item.mixcloudLink}
         onPress={() => handleShowPress(item.slug)}
         showId={item.id}
+        slug={item.slug}
       />
     );
   };

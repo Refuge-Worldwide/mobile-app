@@ -107,6 +107,7 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
         genres={item.genres}
         onPress={() => router.push(`/(tabs)/${currentTab}/${item.slug}` as any)}
         showId={item.id}
+        slug={item.slug}
       />
     );
   };
