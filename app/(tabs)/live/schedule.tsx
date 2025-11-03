@@ -1,8 +1,8 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Artist {
@@ -47,6 +47,39 @@ interface ScheduleData {
   };
 }
 
+function PulsingDot({ color }: { color: string }) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 0.3,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+
+    return () => pulse.stop();
+  }, [pulseAnim]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.liveDot,
+        { backgroundColor: color, opacity: pulseAnim }
+      ]}
+    />
+  );
+}
+
 export default function Schedule() {
   const [scheduleData, setScheduleData] = useState<ScheduleData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,6 +109,10 @@ export default function Schedule() {
     }
   };
 
+  const getUserTimezone = () => {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  };
+
   const formatDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString);
     const today = new Date();
@@ -98,6 +135,13 @@ export default function Schedule() {
       date: isToday ? 'Today' : dateFormat.format(date),
       isToday,
     };
+  };
+
+  const isShowLive = (startTime: string, endTime: string) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    return now >= start && now <= end;
   };
 
   const groupScheduleByDate = (schedule: ScheduleItem[]) => {
@@ -166,6 +210,7 @@ export default function Schedule() {
 
                   {items.map((item) => {
                     const { time } = formatDateTime(item.date);
+                    const live = isShowLive(item.date, item.dateEnd);
 
                     const titleParts = item.title.split(' — ');
                     const showName = titleParts[0]?.trim() || item.title;
@@ -194,12 +239,20 @@ export default function Schedule() {
                             </ThemedText>
                           )}
                         </View>
+                        <View style={styles.liveIndicatorContainer}>
+                          {live && <PulsingDot color={textColor} />}
+                        </View>
                       </View>
                     );
                   })}
                 </View>
               );
             })}
+          </View>
+        )}
+        {!isEmpty && (
+          <View style={styles.timezoneContainer}>
+            <ThemedText style={styles.timezoneText}>Displayed in your timezone: {getUserTimezone()}</ThemedText>
           </View>
         )}
       </ScrollView>
@@ -217,6 +270,17 @@ const styles = StyleSheet.create({
   },
   scrollContentEmpty: {
     flexGrow: 1,
+  },
+  timezoneContainer: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  timezoneText: {
+    fontSize: 12,
+    opacity: 0.7,
+    fontStyle: 'italic',
   },
   loadingContainer: {
     flex: 1,
@@ -261,5 +325,15 @@ const styles = StyleSheet.create({
   },
   showInfo: {
     flex: 5,
+  },
+  liveIndicatorContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 24,
+  },
+  liveDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 99,
   },
 });
