@@ -10,6 +10,7 @@ export interface Track {
   artwork?: string;
   mode: PlaybackMode;
   isLive?: boolean;
+  showId?: string;
 }
 
 interface AudioStore {
@@ -22,8 +23,9 @@ interface AudioStore {
   setIsLoading: (isLoading: boolean) => void;
   clearTrack: () => void;
   stopTrack: () => void;
-  setLiveTrack: (liveData: { title: string; artwork?: string }) => void;
-  setLiveTrackChannel2: (liveData: { title: string; artwork?: string }) => void;
+  setLiveTrack: (liveData: { title: string; artwork?: string; showId?: string }) => void;
+  setLiveTrackChannel2: (liveData: { title: string; artwork?: string; showId?: string }) => void;
+  isShowPlaying: (showId: string) => boolean;
 }
 
 // Optimize image URL for faster loading (small size for player)
@@ -56,6 +58,10 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   clearTrack: () => set({ currentTrack: null, isPlaying: false, isLoading: false }),
   stopTrack: () => set({ isPlaying: false }),
+  isShowPlaying: (showId: string) => {
+    const state = get();
+    return state.currentTrack?.showId === showId && state.isPlaying;
+  },
   setLiveTrack: (liveData) => {
     const state = get();
     // Check if we're already on the live stream
@@ -75,6 +81,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
         artwork: optimizeImageForPlayer(liveData.artwork),
         mode: 'live',
         isLive: true,
+        showId: liveData.showId,
       },
       playbackMode: 'live',
     });
@@ -98,6 +105,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
         artwork: optimizeImageForPlayer(liveData.artwork),
         mode: 'live',
         isLive: true,
+        showId: liveData.showId,
       },
       playbackMode: 'live',
     });

@@ -124,6 +124,7 @@ export default function PlaylistDetailScreen() {
         genres={item.genres}
         audioUrl={item.mixcloudLink}
         onPress={() => handleShowPress(item.slug)}
+        showId={item.id}
       />
     );
   };

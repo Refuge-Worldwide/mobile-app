@@ -6,6 +6,7 @@ import { ActivityIndicator, type StyleProp, type TextStyle } from 'react-native'
 // Define available icon names
 export type IconName =
   | 'play'
+  | 'pause'
   | 'stop'
   | 'loading'
   | 'heart'
@@ -35,6 +36,8 @@ export function Icon({
     switch (name) {
       case 'play':
         return <Ionicons name="play-sharp" size={size} color={iconColor} style={style} />;
+      case 'pause':
+        return <Ionicons name="pause-sharp" size={size} color={iconColor} style={style} />;
       case 'stop':
         return <Ionicons name="stop-sharp" size={size} color={iconColor} style={style} />;
       case 'loading':

@@ -176,6 +176,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
             date={formatDate(show.date)}
             genres={show.genres}
             audioUrl={show.audioFile}
+            showId={show.id}
           />
 
           {/* Description */}
@@ -239,6 +240,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                     genres={relatedShow.genres}
                     audioUrl={relatedShow.audioFile}
                     onPress={() => handleRelatedShowPress(relatedShow.slug)}
+                    showId={relatedShow.id}
                   />
                 </View>
               ))}

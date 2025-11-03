@@ -138,6 +138,7 @@ export default function SearchScreen() {
               date={formatDate(item.date)}
               genres={item.genres}
               onPress={() => router.push(`/(tabs)/search/${item.slug}`)}
+              showId={item.id}
             />
           )}
           contentContainerStyle={styles.listContent}

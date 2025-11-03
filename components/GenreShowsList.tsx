@@ -106,6 +106,7 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
         date={formatDate(item.date)}
         genres={item.genres}
         onPress={() => router.push(`/(tabs)/${currentTab}/${item.slug}` as any)}
+        showId={item.id}
       />
     );
   };

@@ -62,6 +62,7 @@ export default function Live() {
         setLiveTrack({
           title: liveNow.title,
           artwork: liveNow.artwork,
+          showId: liveNow.slug || 'live-stream',
         });
       }
     }
@@ -77,6 +78,7 @@ export default function Live() {
         setLiveTrackChannel2({
           title: liveNowCh2.title,
           artwork: liveNow?.artwork, // Use Channel 1 artwork as fallback since Ch2 doesn't have artwork
+          showId: 'live-stream-ch2',
         });
       }
     }

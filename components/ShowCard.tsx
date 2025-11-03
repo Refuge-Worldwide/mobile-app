@@ -15,6 +15,7 @@ interface ShowCardProps {
   genres: string[];
   audioUrl?: string;
   onPress?: () => void;
+  showId?: string;
 }
 
 export function ShowCard({
@@ -25,6 +26,7 @@ export function ShowCard({
   genres,
   audioUrl,
   onPress,
+  showId,
 }: ShowCardProps) {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
@@ -51,6 +53,14 @@ export function ShowCard({
   };
 
   const setTrack = useAudioStore((state) => state.setTrack);
+  const stopTrack = useAudioStore((state) => state.stopTrack);
+  const currentTrack = useAudioStore((state) => state.currentTrack);
+  const isPlaying = useAudioStore((state) => state.isPlaying);
+  const isLoading = useAudioStore((state) => state.isLoading);
+
+  // Check if this specific show is currently playing or loading
+  const isThisShowPlaying = showId && currentTrack?.showId === showId && isPlaying;
+  const isThisShowLoading = showId && currentTrack?.showId === showId && isLoading;
 
   const handlePlayPress = (e: any) => {
     e.stopPropagation();
@@ -63,8 +73,14 @@ export function ShowCard({
         artwork: imageUrl,
         mode: 'archive',
         isLive: false,
+        showId: showId,
       });
     }
+  };
+
+  const handlePausePress = (e: any) => {
+    e.stopPropagation();
+    stopTrack();
   };
 
   const handleQueuePress = async (e: any) => {
@@ -104,13 +120,22 @@ export function ShowCard({
             <>
               <Pressable
                 style={[styles.iconButton, { backgroundColor: textColor }]}
-                onPress={handlePlayPress}
+                onPress={isThisShowPlaying ? handlePausePress : handlePlayPress}
+                disabled={isThisShowLoading}
               >
-                <Icon
-                  name="play"
-                  size={40}
-                  color={backgroundColor}
-                />
+                {isThisShowLoading ? (
+                  <Icon
+                    name="loading"
+                    size={24}
+                    color={backgroundColor}
+                  />
+                ) : (
+                  <Icon
+                    name={isThisShowPlaying ? "pause" : "play"}
+                    size={40}
+                    color={backgroundColor}
+                  />
+                )}
               </Pressable>
               <Pressable
                 style={[styles.iconButton, { backgroundColor: textColor, marginLeft: -8 }]}
