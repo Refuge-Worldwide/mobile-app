@@ -3,6 +3,7 @@ import { useAudioStore } from '@/store/audioStore';
 import { Image } from 'expo-image';
 import { useRouter, useSegments } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 import TrackPlayer from 'react-native-track-player';
 import { Icon } from './Icon';
 import { ThemedText } from './ThemedText';
@@ -97,8 +98,25 @@ export function ShowCard({
           artist: date,
           artwork: imageUrl,
         });
+
+        // Show success notification
+        Toast.show({
+          type: 'success',
+          text1: 'Show added to queue',
+          visibilityTime: 2000,
+          position: 'bottom',
+        });
       } catch (error) {
         console.error('Error adding to queue:', error);
+
+        // Show error notification
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to add to queue',
+          text2: 'Please try again',
+          visibilityTime: 2000,
+          position: 'bottom',
+        });
       }
     }
   };
