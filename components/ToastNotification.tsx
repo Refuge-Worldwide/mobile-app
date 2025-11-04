@@ -8,7 +8,6 @@ export function ToastNotification() {
   const textColor = Colors[colorScheme ?? 'light'].text;
   const backgroundColor = Colors[colorScheme ?? 'light'].background;
 
-  // Custom toast configuration with dynamic theme colors
   const toastConfig: ToastConfig = {
     success: (props) => (
       <View style={{ zIndex: 9999 }}>
