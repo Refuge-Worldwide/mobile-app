@@ -3,7 +3,7 @@ import { useAudioStore } from '@/store/audioStore';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -23,9 +23,8 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   const [queue, setQueue] = useState<Track[]>([]);
   const [progressBarWidth, setProgressBarWidth] = useState(300);
   const [showDescription, setShowDescription] = useState<string | null>(null);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [isDescriptionLong, setIsDescriptionLong] = useState(false);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const router = useRouter();
 
   const { currentTrack, isPlaying, isLoading, playbackMode } = useAudioStore();
   const { position, duration } = useProgress();
@@ -168,14 +167,23 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     }
   };
 
+  const handleTitlePress = () => {
+    if (currentTrack?.slug) {
+      bottomSheetRef.current?.dismiss();
+
+      // Always navigate to radio tab when clicking from queue preview
+      router.push(`/(tabs)/radio/${currentTrack.slug}` as any);
+    }
+  };
+
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
-      snapPoints={['85%', '95%']}
+      snapPoints={['65%', '95%']}
       enablePanDownToClose
       enableContentPanningGesture={false}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor }}
+      backgroundStyle={{ backgroundColor, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
       handleIndicatorStyle={{ backgroundColor: textColor }}
       onChange={handleSheetChange}
     >
@@ -183,8 +191,8 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
         <BottomSheetScrollView contentContainerStyle={styles.scrollContent}>
           {/* Current Show Info - Image at top with scrubber overlay */}
           {currentTrack && (
-            <>
-              {/* Show Image Container (16:9) with scrubber overlay at bottom */}
+            <View>
+              {/* Show Image Container (16:9) */}
               <View style={styles.imageContainer}>
                 {currentTrack.artwork ? (
                   <Image
@@ -197,179 +205,155 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
                 ) : (
                   <View style={[styles.image, { backgroundColor: textColor }]} />
                 )}
+              </View>
 
-                {/* Top gradient fade overlay */}
-                <LinearGradient
-                  colors={[backgroundColor, 'transparent']}
-                  style={styles.topGradient}
-                />
+              {/* Timeline Scrubber below image (only for archive mode) */}
+              {!isLiveMode && (
+                <View style={[styles.scrubberContainer, { borderColor: textColor, backgroundColor }]}>
+                  <Pressable
+                    style={styles.scrubberRow}
+                    onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
+                    onPress={(e) => {
+                      const { locationX } = e.nativeEvent;
+                      const percentage = locationX / progressBarWidth;
+                      const newPosition = percentage * duration;
+                      handleSeekComplete(newPosition);
+                    }}
+                  >
+                    {/* Progress fill */}
+                    <View
+                      style={[
+                        styles.scrubberFill,
+                        {
+                          backgroundColor: textColor,
+                          width: `${((position / (duration || 1)) * 100)}%`,
+                        },
+                      ]}
+                    />
 
-                {/* Timeline Scrubber overlaid at bottom of image (only for archive mode) */}
-                {!isLiveMode && (
-                  <View style={[styles.scrubberContainer, { borderColor: textColor, backgroundColor: `${backgroundColor}CC` }]}>
-                    <Pressable
-                      style={styles.scrubberRow}
-                      onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
-                      onPress={(e) => {
-                        const { locationX } = e.nativeEvent;
-                        const percentage = locationX / progressBarWidth;
-                        const newPosition = percentage * duration;
-                        handleSeekComplete(newPosition);
-                      }}
+                    {/* UI Elements layer */}
+                    <View style={styles.scrubberContentLayer} pointerEvents="box-none">
+                      {/* Play button */}
+                      <Pressable
+                        onPress={handlePlayPause}
+                        disabled={isLoading}
+                        style={styles.scrubberPlayButton}
+                      >
+                        {isLoading ? (
+                          <Icon name="loading" size={20} color={textColor} />
+                        ) : (
+                          <Icon
+                            name={isPlaying ? 'pause' : 'play'}
+                            size={30}
+                            color={textColor}
+                          />
+                        )}
+                      </Pressable>
+
+                      {/* Time text */}
+                      <View style={styles.scrubberTimeContainer} pointerEvents="none">
+                        <ThemedText style={{ color: textColor }}>
+                          {formatTime(position)} / {formatTime(duration)}
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    {/* Inverted UI Elements layer */}
+                    <View
+                      style={[
+                        styles.scrubberInvertedLayer,
+                        {
+                          width: `${((position / (duration || 1)) * 100)}%`,
+                        },
+                      ]}
+                      pointerEvents="box-none"
                     >
-                      {/* Progress fill */}
-                      <View
-                        style={[
-                          styles.scrubberFill,
-                          {
-                            backgroundColor: textColor,
-                            width: `${((position / (duration || 1)) * 100)}%`,
-                          },
-                        ]}
-                      />
+                      <View style={[styles.scrubberInvertedContent, { width: progressBarWidth }]}>
+                        {/* Play button inverted */}
+                        <View style={styles.scrubberPlayButtonInverted}>
+                          <Pressable
+                            onPress={handlePlayPause}
+                            disabled={isLoading}
+                            style={styles.scrubberPlayButton}
+                          >
+                            {isLoading ? (
+                              <Icon name="loading" size={20} color={backgroundColor} />
+                            ) : (
+                              <Icon
+                                name={isPlaying ? 'pause' : 'play'}
+                                size={30}
+                                color={backgroundColor}
+                              />
+                            )}
+                          </Pressable>
+                        </View>
 
-                      {/* UI Elements layer */}
-                      <View style={styles.scrubberContentLayer} pointerEvents="box-none">
-                        {/* Play button */}
-                        <Pressable
-                          onPress={handlePlayPause}
-                          disabled={isLoading}
-                          style={styles.scrubberPlayButton}
-                        >
-                          {isLoading ? (
-                            <Icon name="loading" size={20} color={textColor} />
-                          ) : (
-                            <Ionicons
-                              name={isPlaying ? 'pause' : 'play'}
-                              size={20}
-                              color={textColor}
-                            />
-                          )}
-                        </Pressable>
-
-                        {/* Time text */}
-                        <View style={styles.scrubberTimeContainer} pointerEvents="none">
-                          <ThemedText style={[styles.scrubberTime, { color: textColor }]}>
+                        {/* Time text inverted */}
+                        <View style={styles.scrubberTimeContainerInverted} pointerEvents="none">
+                          <ThemedText style={{ color: backgroundColor }}>
                             {formatTime(position)} / {formatTime(duration)}
                           </ThemedText>
                         </View>
                       </View>
-
-                      {/* Inverted UI Elements layer */}
-                      <View
-                        style={[
-                          styles.scrubberInvertedLayer,
-                          {
-                            width: `${((position / (duration || 1)) * 100)}%`,
-                          },
-                        ]}
-                        pointerEvents="box-none"
-                      >
-                        <View style={[styles.scrubberInvertedContent, { width: progressBarWidth }]}>
-                          {/* Play button inverted */}
-                          <View style={styles.scrubberPlayButtonInverted}>
-                            <Pressable
-                              onPress={handlePlayPause}
-                              disabled={isLoading}
-                              style={styles.scrubberPlayButton}
-                            >
-                              {isLoading ? (
-                                <Icon name="loading" size={20} color={backgroundColor} />
-                              ) : (
-                                <Ionicons
-                                  name={isPlaying ? 'pause' : 'play'}
-                                  size={20}
-                                  color={backgroundColor}
-                                />
-                              )}
-                            </Pressable>
-                          </View>
-
-                          {/* Time text inverted */}
-                          <View style={styles.scrubberTimeContainerInverted} pointerEvents="none">
-                            <ThemedText style={[styles.scrubberTime, { color: backgroundColor }]}>
-                              {formatTime(position)} / {formatTime(duration)}
-                            </ThemedText>
-                          </View>
-                        </View>
-                      </View>
-                    </Pressable>
-                  </View>
-                )}
-              </View>
+                    </View>
+                  </Pressable>
+                </View>
+              )}
 
               {/* Content below image - full width */}
               <View style={styles.showContentWrapper}>
                 {/* Title Row - Full Width */}
                 <View style={[styles.titleRow, { borderBottomColor: textColor }]}>
-                  <View style={[styles.dateBox, { backgroundColor: textColor }]}>
-                    <ThemedText style={{ color: backgroundColor, paddingTop: 2, marginBottom: -1.5 }}>
-                      {currentTrack.artist || 'Unknown'}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.titleContainer}>
+                  <Pressable
+                    style={styles.titlePressable}
+                    onPress={handleTitlePress}
+                    disabled={!currentTrack?.slug}
+                  >
                     <ThemedText>
                       {currentTrack.title}
                     </ThemedText>
-                  </View>
+                  </Pressable>
                 </View>
 
-                {/* Padded Content Area */}
-                <View style={styles.paddedContent}>
-                  {/* Description */}
-                  {showDescription && (
-                    <View style={styles.descriptionContainer}>
-                      <ThemedText
-                        numberOfLines={isDescriptionExpanded ? undefined : 5}
-                        onTextLayout={(e) => {
-                          if (e.nativeEvent.lines.length > 5) {
-                            setIsDescriptionLong(true);
-                          }
-                        }}
-                      >
-                        {showDescription}
-                      </ThemedText>
-                      {isDescriptionLong && (
-                        <Pressable
-                          onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                          style={styles.viewMoreButton}
-                        >
-                          <ThemedText style={[styles.viewMoreText, { color: textColor }]}>
-                            {isDescriptionExpanded ? 'View less' : 'View more'}
-                          </ThemedText>
-                        </Pressable>
-                      )}
-                    </View>
-                  )}
-
-                  {/* Action Buttons */}
-                  <View style={styles.actionButtons}>
-                    <Pressable style={styles.actionButton}>
-                      <Icon
-                        name="heart-outline"
-                        size={24}
-                      />
-                    </Pressable>
-                    <Pressable style={styles.actionButton}>
-                      <Icon name="share" size={24} />
-                    </Pressable>
+                {showDescription && (
+                  <View style={styles.descriptionContainer}>
+                    <ThemedText numberOfLines={3}>
+                      {showDescription}
+                    </ThemedText>
                   </View>
+                )}
+
+                {/* Action Buttons */}
+                <View style={styles.actionButtons}>
+                  <Pressable style={styles.actionButton}>
+                    <Icon
+                      name="heart-outline"
+                      size={24}
+                    />
+                  </Pressable>
+                  <Pressable
+                    style={styles.viewShowButton}
+                    onPress={handleTitlePress}
+                    disabled={!currentTrack?.slug}
+                  >
+                    <ThemedText style={styles.viewShowText}>view show</ThemedText>
+                  </Pressable>
                 </View>
               </View>
-            </>
+            </View>
           )}
 
           {/* Queue Section */}
           <View style={styles.queueSection}>
-            <View style={styles.queueHeader}>
-              <ThemedText type="subtitle" style={styles.queueHeaderTitle}>
+            <View style={[styles.queueHeader, { borderBottomColor: textColor, borderBottomWidth: 1 }]}>
+              <ThemedText type="subtitle" style={[styles.queueHeaderTitle]}>
                 Up Next ({queue.length})
               </ThemedText>
             </View>
 
             {queue.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <ThemedText style={styles.emptyText}>No tracks in queue</ThemedText>
+                <ThemedText style={styles.emptyText}>No shows in queue</ThemedText>
               </View>
             ) : (
               <DraggableFlatList
@@ -438,6 +422,7 @@ QueuePreview.displayName = 'QueuePreview';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 12,
   },
   scrollContent: {
     paddingBottom: 32,
@@ -455,14 +440,6 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  // Top gradient fade
-  topGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-  },
   // Content wrapper
   showContentWrapper: {
     paddingBottom: 24,
@@ -474,31 +451,27 @@ const styles = StyleSheet.create({
     gap: 0,
     borderBottomWidth: 1,
   },
-  dateBox: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    justifyContent: 'center',
-    alignSelf: 'stretch',
-  },
   titleContainer: {
     flex: 1,
     justifyContent: 'center',
-    padding: 4,
+    paddingVertical: 4,
+    paddingTop: 6,
+  },
+  titlePressable: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 4,
     paddingTop: 6,
   },
   // Padded content area
   paddedContent: {
-    paddingHorizontal: 12,
+    // paddingHorizontal handled by showContentWrapper
   },
-  // Scrubber - positioned at bottom of image with semi-transparent background
+  // Scrubber - positioned below image
   scrubberContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: 1,
+    borderBottomWidth: 1,
     overflow: 'hidden',
-    // backgroundColor set inline with theme color + opacity
+    // backgroundColor set inline with theme color
   },
   scrubberRow: {
     position: 'relative',
@@ -563,42 +536,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // scrubberTime: {
-  //   fontSize: 12,
-  //   textAlign: 'right',
-  // },
   // Description
   descriptionContainer: {
-    marginTop: 4,
-  },
-  viewMoreButton: {
     marginTop: 8,
-    alignSelf: 'flex-start',
+    paddingBottom: 4,
   },
   viewMoreText: {
-    fontSize: 14,
-    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   // Action Buttons
   actionButtons: {
     flexDirection: 'row',
     gap: 16,
-    marginTop: 16,
+    marginTop: 4,
+    paddingBottom: 8,
   },
   actionButton: {
-    padding: 8,
+    padding: 0,
+  },
+  viewShowButton: {
+    padding: 0,
+  },
+  viewShowText: {
+    textDecorationLine: 'underline',
   },
   // Queue Section
   queueSection: {
-    paddingTop: 8,
+    paddingTop: 0,
   },
   queueHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   queueHeaderTitle: {
     fontSize: 18,
@@ -617,8 +587,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
     borderBottomWidth: 1,
   },
   queueItemDragging: {
@@ -626,7 +594,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   queueImageContainer: {
-    width: 80,
+    width: 100,
     aspectRatio: 16 / 9,
     overflow: 'hidden',
   },

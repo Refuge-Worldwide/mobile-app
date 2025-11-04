@@ -287,9 +287,9 @@ export function AudioPlayer() {
                       {isLoading ? (
                         <Icon name="loading" size={20} color={textColor} />
                       ) : (
-                        <Ionicons
+                        <Icon
                           name={isPlaying ? 'pause' : 'play'}
-                          size={20}
+                          size={30}
                           color={textColor}
                         />
                       )}
@@ -328,9 +328,9 @@ export function AudioPlayer() {
                           {isLoading ? (
                             <Icon name="loading" size={20} color={backgroundColor} />
                           ) : (
-                            <Ionicons
+                            <Icon
                               name={isPlaying ? 'pause' : 'play'}
-                              size={20}
+                              size={30}
                               color={backgroundColor}
                             />
                           )}

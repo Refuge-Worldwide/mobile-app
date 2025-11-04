@@ -183,23 +183,27 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
           {/* Description */}
           {show.description && (
             <View style={styles.descriptionContainer}>
+              {!isDescriptionLong && (
+                <ThemedText
+                  onTextLayout={(e) => {
+                    if (e.nativeEvent.lines.length > 5) {
+                      setIsDescriptionLong(true);
+                    }
+                  }}
+                  style={{ position: 'absolute', opacity: 0 }}
+                >
+                  {show.description}
+                </ThemedText>
+              )}
               <ThemedText
                 numberOfLines={isDescriptionExpanded ? undefined : 5}
-                onTextLayout={(e) => {
-                  if (e.nativeEvent.lines.length > 5) {
-                    setIsDescriptionLong(true);
-                  }
-                }}
               >
                 {show.description}
               </ThemedText>
               {isDescriptionLong && (
-                <Pressable
-                  onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                  style={styles.viewMoreButton}
-                >
+                <Pressable onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
                   <ThemedText style={[styles.viewMoreText, { color: textColor }]}>
-                    {isDescriptionExpanded ? 'View less' : 'View more'}
+                    {isDescriptionExpanded ? 'show less' : 'show more'}
                   </ThemedText>
                 </Pressable>
               )}
@@ -279,14 +283,9 @@ const styles = StyleSheet.create({
   },
   descriptionContainer: {
     marginTop: 4,
-  },
-  viewMoreButton: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
+    paddingBottom: 4,
   },
   viewMoreText: {
-    fontSize: 14,
-    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   relatedShowsSection: {
@@ -295,9 +294,9 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     gap: 16,
-    marginTop: 16,
+    marginTop: 4,
   },
   actionButton: {
-    padding: 8,
+    padding: 0,
   },
 });

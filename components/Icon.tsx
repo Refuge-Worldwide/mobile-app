@@ -14,6 +14,7 @@ export type IconName =
   | 'add-to-queue'
   | 'plus'
   | 'share'
+  | 'open-outline'
 
 interface IconProps {
   name: IconName;
@@ -55,6 +56,8 @@ export function Icon({
         return <Ionicons name="add" size={size} color={iconColor} style={style} />;
       case 'share':
         return <Ionicons name="share-outline" size={size} color={iconColor} style={style} />;
+      case 'open-outline':
+        return <Ionicons name="open-outline" size={size} color={iconColor} style={style} />;
       default:
         return null;
     }
