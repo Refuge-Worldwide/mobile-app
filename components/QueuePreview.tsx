@@ -336,7 +336,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
                     onPress={handleTitlePress}
                     disabled={!currentTrack?.slug}
                   >
-                    <ThemedText style={styles.viewShowText}>view show</ThemedText>
+                    <ThemedText style={styles.viewShowText}>View show</ThemedText>
                   </Pressable>
                 </View>
               </View>
@@ -558,6 +558,7 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   viewShowText: {
+    paddingTop: 3,
     textDecorationLine: 'underline',
   },
   // Queue Section

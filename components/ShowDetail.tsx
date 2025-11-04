@@ -5,12 +5,14 @@ import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { isFavorited, toggleFavorite } from '@/lib/favorites';
+import { Artist } from '@/types/artists';
 import { Show } from '@/types/shows';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   ScrollView,
   Share,
@@ -19,6 +21,7 @@ import {
 } from 'react-native';
 
 const API_BASE_URL = 'https://refugeworldwide.com/api/shows';
+const ARTIST_API_BASE_URL = 'https://refugeworldwide.com/api/artists';
 
 interface ShowDetailProps {
   navigationPrefix: '/(tabs)/radio' | '/(tabs)/search';
@@ -35,6 +38,8 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [artistDetails, setArtistDetails] = useState<Map<string, Artist & { shows?: Show[] }>>(new Map());
+  const [artistsLoading, setArtistsLoading] = useState(false);
 
   const textColor = useThemeColor({}, 'text');
 
@@ -49,6 +54,12 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
       checkFavoriteStatus();
     }
   }, [user, show?.id]);
+
+  useEffect(() => {
+    if (show?.artists && show.artists.length > 0) {
+      fetchArtistDetails();
+    }
+  }, [show?.artists]);
 
   const fetchShow = async (showSlug: string) => {
     setLoading(true);
@@ -73,6 +84,11 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
         artwork: data.show.coverImage?.url,
         description: data.show.description,
         relatedShows: data.relatedShows || [],
+        artists: data.show.artistsCollection?.items?.map((a: any) => ({
+          id: a.sys?.id || a.id,
+          name: a.name,
+          slug: a.slug,
+        })) || [],
       };
 
       setShow(transformedShow);
@@ -137,6 +153,56 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
       Alert.alert('Error', 'Failed to update favorite');
     } else {
       setIsFavorite(!isFavorite);
+    }
+  };
+
+  const fetchArtistDetails = async () => {
+    if (!show?.artists) return;
+
+    setArtistsLoading(true);
+    const details = new Map<string, Artist & { shows?: Show[] }>();
+
+    try {
+      await Promise.all(
+        show.artists.map(async (artist) => {
+          try {
+            const response = await fetch(`${ARTIST_API_BASE_URL}/${artist.slug}`);
+            if (response.ok) {
+              const data = await response.json();
+
+              // Transform artist shows
+              const transformedShows: Show[] = (data.shows || []).map((s: any) => ({
+                id: s.id || '',
+                title: s.title || '',
+                date: s.date || '',
+                slug: s.slug || '',
+                mixcloudLink: s.mixcloudLink,
+                audioFile: s.audioFile,
+                coverImage: s.coverImage,
+                genres: Array.isArray(s.genres) ? s.genres : [],
+                artwork: s.coverImage,
+                description: s.description,
+              }));
+
+              const transformedArtist: Artist & { shows?: Show[] } = {
+                id: data.sys?.id || data.id,
+                name: data.name,
+                slug: data.slug,
+                photo: data.photo?.url || data.photo,
+                coverImage: data.coverImage?.url || data.coverImage,
+                bio: data.description,
+                shows: transformedShows,
+              };
+              details.set(artist.id, transformedArtist);
+            }
+          } catch (err) {
+            console.error(`Error fetching artist ${artist.slug}:`, err);
+          }
+        })
+      );
+      setArtistDetails(details);
+    } finally {
+      setArtistsLoading(false);
     }
   };
 
@@ -229,6 +295,46 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
           </View>
         </View>
 
+        {/* Artists */}
+        {show.artists && show.artists.length > 0 && (
+          <View style={[styles.artistsSection, { borderTopColor: textColor, borderTopWidth: 1 }]}>
+            <View>
+              {show.artists.map((artist, index) => {
+                const artistDetail = artistDetails.get(artist.id);
+                const artistImage = artistDetail?.photo || artistDetail?.coverImage;
+                const artistShows = artistDetail?.shows || [];
+
+                return (
+                  <View key={artist.id}>
+                    <Pressable
+                      onPress={() => router.push(`${navigationPrefix}/artist/${artist.slug}` as any)}
+                      style={[
+                        styles.artistItem,
+                        { borderBottomColor: textColor },
+                        !artistShows.length && index === show.artists!.length - 1 && styles.artistItemLast
+                      ]}
+                    >
+                      <View style={styles.artistContent}>
+                        {artistImage && (
+                          <Image
+                            source={{ uri: getImageUrl(artistImage) }}
+                            style={styles.artistImage}
+                          />
+                        )}
+                        <View style={styles.artistInfo}>
+                          <ThemedText style={styles.artistName}>
+                            {artist.name}
+                          </ThemedText>
+                        </View>
+                      </View>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* Related Shows */}
         {show.relatedShows && show.relatedShows.length > 0 && (
           <View style={styles.relatedShowsSection}>
@@ -279,7 +385,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   showCardWrapper: {
-    marginBottom: 42,
+    marginBottom: 24,
   },
   descriptionContainer: {
     marginTop: 4,
@@ -298,5 +404,51 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 0,
+  },
+  artistsSection: {
+    marginTop: 0,
+    marginBottom: 42,
+  },
+  artistsHeader: {
+    paddingBottom: 8,
+  },
+  artistItem: {
+    // paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  artistItemLast: {
+    borderBottomWidth: 0,
+  },
+  artistContent: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  artistImage: {
+    width: 80,
+    aspectRatio: 16 / 9
+  },
+  artistInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  artistName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  artistBio: {
+    fontSize: 13,
+    opacity: 0.8,
+  },
+  artistShowsSection: {
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+  },
+  artistShowsSectionLast: {
+    borderBottomWidth: 0,
+  },
+  artistShowsHeader: {
+    marginBottom: 10,
   },
 });

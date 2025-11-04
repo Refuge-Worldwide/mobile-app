@@ -1,3 +1,9 @@
+export interface Artist {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface Show {
   id: string;
   title: string;
@@ -10,6 +16,7 @@ export interface Show {
   artwork?: string;
   description?: string;
   relatedShows?: Show[];
+  artists?: Artist[];
 }
 
 export interface ShowsApiResponse {
