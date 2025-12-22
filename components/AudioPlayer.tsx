@@ -252,13 +252,6 @@ export function AudioPlayer() {
 
           {/* Middle - Track info and controls */}
           <View style={styles.middleContainer}>
-            {/* Show title */}
-            <View style={[styles.titleContainer, { backgroundColor: textColor }]}>
-              <ThemedText type="player" style={[styles.title, { color: backgroundColor }]} numberOfLines={1}>
-                {currentTrack?.title || ''}
-              </ThemedText>
-            </View>
-
             {/* Controls row - full width scrubber for archive, controls for live */}
             {!isLiveMode ? (
               <View style={styles.controlsWrapper}>
@@ -294,9 +287,9 @@ export function AudioPlayer() {
                       {isLoading ? (
                         <Icon name="loading" size={20} color={textColor} />
                       ) : (
-                        <Ionicons
+                        <Icon
                           name={isPlaying ? 'pause' : 'play'}
-                          size={20}
+                          size={30}
                           color={textColor}
                         />
                       )}
@@ -335,9 +328,9 @@ export function AudioPlayer() {
                           {isLoading ? (
                             <Icon name="loading" size={20} color={backgroundColor} />
                           ) : (
-                            <Ionicons
+                            <Icon
                               name={isPlaying ? 'pause' : 'play'}
-                              size={20}
+                              size={30}
                               color={backgroundColor}
                             />
                           )}
@@ -382,6 +375,15 @@ export function AudioPlayer() {
                     />
                   )}
                 </Pressable>
+
+                {/* Show title for live streams */}
+                <View style={styles.liveTitleContainer}>
+                  <ThemedText
+                    numberOfLines={1}
+                  >
+                    {currentTrack?.title}
+                  </ThemedText>
+                </View>
               </View>
             )}
           </View>
@@ -397,21 +399,23 @@ const styles = StyleSheet.create({
     bottom: 120, // Above the menu
     left: 0,
     right: 0,
-    paddingVertical: 8,
+    paddingVertical: 4,
     paddingHorizontal: 12,
     zIndex: 100,
     borderTopWidth: 1,
   },
   content: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     justifyContent: 'flex-start',
     gap: 0,
+    height: 40,
   },
   imageContainer: {
-    width: 56,
-    height: 56,
+    width: 71, // 16:9 aspect ratio with height of 40
+    height: 40,
     overflow: 'hidden',
+    marginRight: 0,
   },
   artwork: {
     width: '100%',
@@ -419,7 +423,7 @@ const styles = StyleSheet.create({
   },
   middleContainer: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     gap: 0,
   },
   leftContainer: {
@@ -445,12 +449,13 @@ const styles = StyleSheet.create({
   },
   controlsWrapper: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 0,
+    height: 40,
   },
   scrubberRow: {
     position: 'relative',
-    height: 28,
+    height: 40,
     overflow: 'hidden',
     flex: 1,
   },
@@ -578,8 +583,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
-    height: 28,
+    height: 40,
+    marginLeft: 4,
   },
   slider: {
     flex: 1,
@@ -662,5 +667,11 @@ const styles = StyleSheet.create({
   externalButton: {
     paddingHorizontal: 4,
     paddingVertical: 2,
+  },
+  liveTitleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: 4,
+    paddingRight: 4,
   },
 });

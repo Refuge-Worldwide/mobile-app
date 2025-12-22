@@ -10,7 +10,8 @@ export interface Track {
   artwork?: string;
   mode: PlaybackMode;
   isLive?: boolean;
-  showId?: string;
+  showId?: string; // Unique show ID for matching with show cards
+  slug?: string; // Show slug for API fetching
 }
 
 interface AudioStore {
@@ -28,7 +29,7 @@ interface AudioStore {
   isShowPlaying: (showId: string) => boolean;
 }
 
-// Optimize image URL for faster loading (small size for player)
+// Optimize image URL for faster loading (same as ShowCard)
 const optimizeImageForPlayer = (src: string | undefined): string | undefined => {
   if (!src) return undefined;
 
@@ -38,8 +39,8 @@ const optimizeImageForPlayer = (src: string | undefined): string | undefined => 
     return imageUrl;
   }
 
-  // Smaller size for audio player (150x150)
-  return `${imageUrl}?w=150&h=150&q=80&fm=jpg&fl=progressive&fit=fill`;
+  // Same optimization as ShowCard (590x332 with face detection)
+  return `${imageUrl}?w=590&h=332&q=80&fm=jpg&fl=progressive&f=faces&fit=fill`;
 };
 
 export const useAudioStore = create<AudioStore>((set, get) => ({

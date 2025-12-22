@@ -8,6 +8,9 @@
     "scheme": "refugeworldwideapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "preview": {
+      "distribution": "internal"
+    },
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",

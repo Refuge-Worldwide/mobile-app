@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import TrackPlayer from 'react-native-track-player';
 import { Icon } from './Icon';
 import { ThemedText } from './ThemedText';
+import { Toast } from './ToastNotification';
 
 interface ShowCardProps {
   imageUrl?: string;
@@ -16,6 +17,7 @@ interface ShowCardProps {
   audioUrl?: string;
   onPress?: () => void;
   showId?: string;
+  slug?: string;
 }
 
 export function ShowCard({
@@ -27,6 +29,7 @@ export function ShowCard({
   audioUrl,
   onPress,
   showId,
+  slug,
 }: ShowCardProps) {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
@@ -74,6 +77,7 @@ export function ShowCard({
         mode: 'archive',
         isLive: false,
         showId: showId,
+        slug: slug,
       });
     }
   };
@@ -94,8 +98,21 @@ export function ShowCard({
           artist: date,
           artwork: imageUrl,
         });
+
+        // Show success notification
+        Toast.show({
+          type: 'success',
+          text1: 'Show added to queue',
+        });
       } catch (error) {
         console.error('Error adding to queue:', error);
+
+        // Show error notification
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to add to queue',
+          text2: 'Please try again',
+        });
       }
     }
   };

@@ -1,5 +1,6 @@
 import { ColourPicker } from '@/components/ColourPicker';
 import { SplashScreen } from '@/components/SplashScreen';
+import { ToastNotification } from '@/components/ToastNotification';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ColorSchemeProvider } from '@/contexts/ColorSchemeContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -33,6 +34,7 @@ function RootLayoutContent() {
           </View>
         </ThemeProvider>
       </BottomSheetModalProvider>
+      <ToastNotification />
     </GestureHandlerRootView>
   );
 }
