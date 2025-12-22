@@ -375,6 +375,15 @@ export function AudioPlayer() {
                     />
                   )}
                 </Pressable>
+
+                {/* Show title for live streams */}
+                <View style={styles.liveTitleContainer}>
+                  <ThemedText
+                    numberOfLines={1}
+                  >
+                    {currentTrack?.title}
+                  </ThemedText>
+                </View>
               </View>
             )}
           </View>
@@ -574,8 +583,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
     height: 40,
+    marginLeft: 4,
   },
   slider: {
     flex: 1,
@@ -658,5 +667,11 @@ const styles = StyleSheet.create({
   externalButton: {
     paddingHorizontal: 4,
     paddingVertical: 2,
+  },
+  liveTitleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingLeft: 4,
+    paddingRight: 4,
   },
 });
