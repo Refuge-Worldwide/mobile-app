@@ -36,7 +36,7 @@ export const BottomSheet = forwardRef<BottomSheetModal, BottomSheetProps>(
         enablePanDownToClose
         enableContentPanningGesture={false}
         backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor }}
+        backgroundStyle={{ backgroundColor, borderRadius: 0 }}
         handleIndicatorStyle={{ backgroundColor: textColor }}
         keyboardBehavior="interactive"
         android_keyboardInputMode="adjustResize"

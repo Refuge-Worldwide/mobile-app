@@ -44,12 +44,12 @@ ThemedInput.displayName = 'ThemedInput';
 
 const styles = StyleSheet.create({
   input: {
-    height: 48,
+    height: 56,
     borderBottomWidth: 1,
     fontSize: 43,
     fontFamily: 'ABCArizonaFlare',
     paddingRight: 40,
     paddingLeft: 0,
-    lineHeight: 50
+    paddingVertical: 4,
   },
 });

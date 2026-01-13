@@ -173,12 +173,12 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   searchInput: {
-    height: 48,
+    height: 56,
     borderBottomWidth: 1,
     fontSize: 43,
     fontFamily: 'ABCArizonaFlare',
     paddingRight: 40,
-    lineHeight: 50,
+    paddingVertical: 4,
   },
   clearButton: {
     position: 'absolute',
