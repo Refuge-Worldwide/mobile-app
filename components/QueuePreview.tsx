@@ -8,7 +8,8 @@ import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from '
 import { Pressable, StyleSheet, View } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { Swipeable } from 'react-native-gesture-handler';
-import TrackPlayer, { Track, useProgress } from 'react-native-track-player';
+import TrackPlayer, { Track } from 'react-native-track-player';
+import { DraggableScrubber } from './DraggableScrubber';
 import { Icon } from './Icon';
 import { ThemedText } from './ThemedText';
 
@@ -21,13 +22,11 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
   const [queue, setQueue] = useState<Track[]>([]);
-  const [progressBarWidth, setProgressBarWidth] = useState(300);
   const [showDescription, setShowDescription] = useState<string | null>(null);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const router = useRouter();
 
-  const { currentTrack, isPlaying, isLoading, playbackMode } = useAudioStore();
-  const { position, duration } = useProgress();
+  const { currentTrack, isPlaying, isLoading, playbackMode} = useAudioStore();
   const isLiveMode = playbackMode === 'live' || currentTrack?.isLive;
   const defaultBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
 
@@ -148,16 +147,6 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     }
   };
 
-  const handleSeekComplete = async (value: number) => {
-    await TrackPlayer.seekTo(value);
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const handlePlayPause = async () => {
     const state = await TrackPlayer.getState();
     if (state === 'playing') {
@@ -210,93 +199,11 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
               {/* Timeline Scrubber below image (only for archive mode) */}
               {!isLiveMode && (
                 <View style={[styles.scrubberContainer, { borderColor: textColor, backgroundColor }]}>
-                  <Pressable
-                    style={styles.scrubberRow}
-                    onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
-                    onPress={(e) => {
-                      const { locationX } = e.nativeEvent;
-                      const percentage = locationX / progressBarWidth;
-                      const newPosition = percentage * duration;
-                      handleSeekComplete(newPosition);
-                    }}
-                  >
-                    {/* Progress fill */}
-                    <View
-                      style={[
-                        styles.scrubberFill,
-                        {
-                          backgroundColor: textColor,
-                          width: `${((position / (duration || 1)) * 100)}%`,
-                        },
-                      ]}
-                    />
-
-                    {/* UI Elements layer */}
-                    <View style={styles.scrubberContentLayer} pointerEvents="box-none">
-                      {/* Play button */}
-                      <Pressable
-                        onPress={handlePlayPause}
-                        disabled={isLoading}
-                        style={styles.scrubberPlayButton}
-                      >
-                        {isLoading ? (
-                          <Icon name="loading" size={20} color={textColor} />
-                        ) : (
-                          <Icon
-                            name={isPlaying ? 'pause' : 'play'}
-                            size={30}
-                            color={textColor}
-                          />
-                        )}
-                      </Pressable>
-
-                      {/* Time text */}
-                      <View style={styles.scrubberTimeContainer} pointerEvents="none">
-                        <ThemedText style={{ color: textColor }}>
-                          {formatTime(position)} / {formatTime(duration)}
-                        </ThemedText>
-                      </View>
-                    </View>
-
-                    {/* Inverted UI Elements layer */}
-                    <View
-                      style={[
-                        styles.scrubberInvertedLayer,
-                        {
-                          width: `${((position / (duration || 1)) * 100)}%`,
-                        },
-                      ]}
-                      pointerEvents="box-none"
-                    >
-                      <View style={[styles.scrubberInvertedContent, { width: progressBarWidth }]}>
-                        {/* Play button inverted */}
-                        <View style={styles.scrubberPlayButtonInverted}>
-                          <Pressable
-                            onPress={handlePlayPause}
-                            disabled={isLoading}
-                            style={styles.scrubberPlayButton}
-                          >
-                            {isLoading ? (
-                              <Icon name="loading" size={20} color={backgroundColor} />
-                            ) : (
-                              <Icon
-                                name={isPlaying ? 'pause' : 'play'}
-                                size={30}
-                                color={backgroundColor}
-                              />
-                            )}
-                          </Pressable>
-                        </View>
-
-                        {/* Time text inverted */}
-                        <View style={styles.scrubberTimeContainerInverted} pointerEvents="none">
-                          <ThemedText style={{ color: backgroundColor }}>
-                            {formatTime(position)} / {formatTime(duration)}
-                          </ThemedText>
-                        </View>
-                      </View>
-                    </View>
-                  </Pressable>
+                  <DraggableScrubber
+                    onPlayPause={handlePlayPause}
+                    isPlaying={isPlaying}
+                    isLoading={isLoading}
+                  />
                 </View>
               )}
 
@@ -472,69 +379,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     overflow: 'hidden',
     // backgroundColor set inline with theme color
-  },
-  scrubberRow: {
-    position: 'relative',
-    height: 40,
-    overflow: 'hidden',
-  },
-  scrubberFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    height: '100%',
-    zIndex: 1,
-  },
-  scrubberContentLayer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  scrubberInvertedLayer: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    height: '100%',
-    overflow: 'hidden',
-    zIndex: 3,
-  },
-  scrubberInvertedContent: {
-    position: 'relative',
-    height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  scrubberPlayButton: {
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-  },
-  scrubberPlayButtonInverted: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-  scrubberTimeContainer: {
-    position: 'absolute',
-    right: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scrubberTimeContainerInverted: {
-    position: 'absolute',
-    right: 8,
-    top: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   // Description
   descriptionContainer: {

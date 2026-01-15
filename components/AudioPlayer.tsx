@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import TrackPlayer, { AppKilledPlaybackBehavior, Capability, Event, State, useProgress, useTrackPlayerEvents } from 'react-native-track-player';
+import TrackPlayer, { AppKilledPlaybackBehavior, Capability, Event, State, useTrackPlayerEvents } from 'react-native-track-player';
+import { DraggableScrubber } from './DraggableScrubber';
 import { Icon } from './Icon';
 import { QueuePreview, QueuePreviewRef } from './QueuePreview';
 import { ThemedText } from './ThemedText';
@@ -13,9 +14,7 @@ export function AudioPlayer() {
   const { currentTrack, isPlaying, isLoading, setIsPlaying, setIsLoading, clearTrack, stopTrack, playbackMode } = useAudioStore();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
-  const { position, duration } = useProgress();
   const [isVisible, setIsVisible] = useState(false);
-  const [progressBarWidth, setProgressBarWidth] = useState(300);
 
   const queueSheetRef = useRef<QueuePreviewRef>(null);
   const slideAnim = useRef(new Animated.Value(100)).current; // Start below screen
@@ -206,19 +205,6 @@ export function AudioPlayer() {
     });
   };
 
-  const handleSeekComplete = async (value: number) => {
-    await TrackPlayer.seekTo(value);
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getTimeElapsed = () => {
-    return formatTime(position);
-  };
 
   // Don't render anything if no track and not visible
   if (!currentTrack && !isVisible) return null;
@@ -252,111 +238,19 @@ export function AudioPlayer() {
 
           {/* Middle - Track info and controls */}
           <View style={styles.middleContainer}>
-            {/* Controls row - full width scrubber for archive, controls for live */}
+            {/* Controls row - draggable slider styled as full width bar */}
             {!isLiveMode ? (
               <View style={styles.controlsWrapper}>
-                <Pressable
-                  style={styles.scrubberRow}
-                  onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
-                  onPress={(e) => {
-                    const { locationX } = e.nativeEvent;
-                    const percentage = locationX / progressBarWidth;
-                    const newPosition = percentage * duration;
-                    handleSeekComplete(newPosition);
-                  }}
-                >
-                  {/* Progress fill - just the background color bar */}
-                  <View
-                    style={[
-                      styles.scrubberFill,
-                      {
-                        backgroundColor: textColor,
-                        width: `${((position / (duration || 1)) * 100)}%`,
-                      },
-                    ]}
-                  />
+                <DraggableScrubber
+                  onPlayPause={handlePlayPause}
+                  isPlaying={isPlaying}
+                  isLoading={isLoading}
+                />
 
-                  {/* UI Elements layer - fixed positions with both normal and inverted versions */}
-                  <View style={styles.scrubberContentLayer} pointerEvents="box-none">
-                    {/* Play button - normal color version */}
-                    <Pressable
-                      onPress={handlePlayPause}
-                      disabled={isLoading}
-                      style={styles.scrubberPlayButton}
-                    >
-                      {isLoading ? (
-                        <Icon name="loading" size={20} color={textColor} />
-                      ) : (
-                        <Icon
-                          name={isPlaying ? 'pause' : 'play'}
-                          size={30}
-                          color={textColor}
-                        />
-                      )}
-                    </Pressable>
-
-                    {/* Time text - normal color version */}
-                    <View style={styles.scrubberTimeContainer} pointerEvents="none">
-                      <ThemedText
-                        type="player"
-                        style={[styles.scrubberTime, { color: textColor }]}
-                      >
-                        {getTimeElapsed()}
-                      </ThemedText>
-                    </View>
-                  </View>
-
-                  {/* Inverted UI Elements layer - clipped overlay */}
-                  <View
-                    style={[
-                      styles.scrubberInvertedLayer,
-                      {
-                        width: `${((position / (duration || 1)) * 100)}%`,
-                      },
-                    ]}
-                    pointerEvents="box-none"
-                  >
-                    {/* Full-width container inside clipped area to maintain proper positioning */}
-                    <View style={[styles.scrubberInvertedContent, { width: progressBarWidth }]}>
-                      {/* Play button - inverted color version - absolute left position */}
-                      <View style={styles.scrubberPlayButtonInverted}>
-                        <Pressable
-                          onPress={handlePlayPause}
-                          disabled={isLoading}
-                          style={styles.scrubberPlayButton}
-                        >
-                          {isLoading ? (
-                            <Icon name="loading" size={20} color={backgroundColor} />
-                          ) : (
-                            <Icon
-                              name={isPlaying ? 'pause' : 'play'}
-                              size={30}
-                              color={backgroundColor}
-                            />
-                          )}
-                        </Pressable>
-                      </View>
-
-                      {/* Time text - inverted color version - absolute right position */}
-                      <View style={styles.scrubberTimeContainerInverted} pointerEvents="none">
-                        <ThemedText
-                          type="player"
-                          style={[styles.scrubberTime, { color: backgroundColor }]}
-                        >
-                          {getTimeElapsed()}
-                        </ThemedText>
-                      </View>
-                    </View>
-                  </View>
+                {/* Queue button */}
+                <Pressable onPress={() => queueSheetRef.current?.present()} style={styles.queueButtonExternal}>
+                  <Ionicons name="list" size={18} color={textColor} />
                 </Pressable>
-
-                {/* Buttons outside slider */}
-                <View style={styles.externalButtonsContainer}>
-                  {/* Queue button */}
-                  <Pressable onPress={() => queueSheetRef.current?.present()} style={styles.externalButton}>
-                    <Ionicons name="list" size={18} color={textColor} />
-                  </Pressable>
-                </View>
               </View>
             ) : (
               <View style={styles.controlsRow}>
@@ -452,6 +346,22 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     gap: 0,
     height: 40,
+  },
+  queueButtonExternal: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginLeft: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sliderOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    height: 40,
+    zIndex: 2,
   },
   scrubberRow: {
     position: 'relative',
@@ -588,12 +498,12 @@ const styles = StyleSheet.create({
   },
   slider: {
     flex: 1,
-    height: 20,
-    marginHorizontal: 4,
+    height: 40,
   },
   timeText: {
     fontSize: 12,
-    minWidth: 40,
+    minWidth: 45,
+    textAlign: 'right',
   },
   progressBarContainer: {
     flex: 1,
