@@ -85,7 +85,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
         description: data.show.description,
         relatedShows: data.relatedShows || [],
         artists: data.show.artistsCollection?.items?.map((a: any) => ({
-          id: a.sys?.id || a.id,
+          id: a.sys?.id || a.id || a.slug,
           name: a.name,
           slug: a.slug,
         })) || [],
@@ -185,7 +185,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
               }));
 
               const transformedArtist: Artist & { shows?: Show[] } = {
-                id: data.sys?.id || data.id,
+                id: data.sys?.id || data.id || data.slug,
                 name: data.name,
                 slug: data.slug,
                 photo: data.photo?.url || data.photo,
@@ -193,7 +193,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                 bio: data.description,
                 shows: transformedShows,
               };
-              details.set(artist.id, transformedArtist);
+              details.set(artist.slug, transformedArtist);
             }
           } catch (err) {
             console.error(`Error fetching artist ${artist.slug}:`, err);
@@ -300,27 +300,30 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
           <View style={[styles.artistsSection, { borderTopColor: textColor, borderTopWidth: 1 }]}>
             <View>
               {show.artists.map((artist, index) => {
-                const artistDetail = artistDetails.get(artist.id);
+                const artistDetail = artistDetails.get(artist.slug);
                 const artistImage = artistDetail?.photo || artistDetail?.coverImage;
-                const artistShows = artistDetail?.shows || [];
 
                 return (
-                  <View key={artist.id}>
+                  <View key={`${artist.slug}-${index}`}>
                     <Pressable
                       onPress={() => router.push(`${navigationPrefix}/artist/${artist.slug}` as any)}
                       style={[
                         styles.artistItem,
                         { borderBottomColor: textColor },
-                        !artistShows.length && index === show.artists!.length - 1 && styles.artistItemLast
                       ]}
                     >
                       <View style={styles.artistContent}>
-                        {artistImage && (
-                          <Image
-                            source={{ uri: getImageUrl(artistImage) }}
-                            style={styles.artistImage}
-                          />
-                        )}
+                        <View style={styles.artistImageContainer}>
+                          {artistImage ? (
+                            <Image
+                              source={{ uri: getImageUrl(artistImage) }}
+                              style={styles.artistImage}
+                              key={getImageUrl(artistImage)}
+                            />
+                          ) : (
+                            <View style={[styles.artistImage, styles.artistImageSkeleton, { backgroundColor: textColor, opacity: 0.1 }]} />
+                          )}
+                        </View>
                         <View style={styles.artistInfo}>
                           <ThemedText style={styles.artistName}>
                             {artist.name}
@@ -424,9 +427,16 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'center',
   },
-  artistImage: {
+  artistImageContainer: {
     width: 80,
-    aspectRatio: 16 / 9
+    aspectRatio: 16 / 9,
+  },
+  artistImage: {
+    width: '100%',
+    height: '100%',
+  },
+  artistImageSkeleton: {
+    borderRadius: 4,
   },
   artistInfo: {
     flex: 1,
