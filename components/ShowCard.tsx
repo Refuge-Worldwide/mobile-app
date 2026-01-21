@@ -47,6 +47,13 @@ export function ShowCard({
     return 'radio'; // Default fallback
   })();
 
+  // Default navigation for show card
+  const handleDefaultPress = () => {
+    if (slug) {
+      router.push(`/(tabs)/${currentTab}/show/${slug}` as any);
+    }
+  };
+
   const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
 
   const optimizeImage = (src: string | undefined): string => {
@@ -135,7 +142,7 @@ export function ShowCard({
   };
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable onPress={onPress || handleDefaultPress}>
       <View style={styles.imageContainer}>
         {imageUrl ? (
           <Image

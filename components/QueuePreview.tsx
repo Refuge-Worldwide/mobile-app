@@ -20,7 +20,7 @@ import DraggableFlatList, {
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { Swipeable } from "react-native-gesture-handler";
-import TrackPlayer from "react-native-track-player";
+import TrackPlayer, { State } from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
 import { Icon } from "./Icon";
 import { ThemedText } from "./ThemedText";
@@ -44,6 +44,8 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     queue,
     removeFromQueue,
     reorderQueue,
+    stopTrack,
+    setIsPlaying,
   } = useAudioStore();
   const isLiveMode = currentTrack?.isLive;
   const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
@@ -129,6 +131,14 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     }
   };
 
+  const handleLivePlayStop = () => {
+    if (isPlaying) {
+      stopTrack();
+    } else {
+      setIsPlaying(true);
+    }
+  };
+
   const handleTitlePress = () => {
     if (currentTrack?.slug && !isLiveMode) {
       bottomSheetRef.current?.dismiss();
@@ -176,6 +186,22 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
             <View
               style={[styles.titleRow, { borderBottomColor: textColor }]}
             >
+              {isLiveMode && (
+                <Pressable
+                  style={{ marginRight: 12, padding: 4 }}
+                  onPress={handleLivePlayStop}
+                  disabled={isLoading}
+                  accessibilityLabel={
+                    isPlaying ? "Stop live stream" : "Start live stream"
+                  }
+                >
+                  <Icon
+                    name={isPlaying ? "stop" : "play"}
+                    size={24}
+                    color={textColor}
+                  />
+                </Pressable>
+              )}
               <Pressable
                 style={styles.titlePressable}
                 onPress={handleTitlePress}
