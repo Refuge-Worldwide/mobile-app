@@ -1,6 +1,8 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useCallback, useEffect, useState } from "react";
-import { PanResponder, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { runOnJS } from "react-native-reanimated";
 import TrackPlayer, { useProgress } from "react-native-track-player";
 import { Icon } from "./Icon";
 import { ThemedText } from "./ThemedText";
@@ -27,47 +29,65 @@ export function DraggableScrubber({
   // Show loading immediately - no delay to avoid play button flash when changing tracks
   const showLoading = isLoading;
 
-  // PanResponder for draggable scrubber
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: (evt) => {
-      setIsSeeking(true);
-      const touchX = evt.nativeEvent.locationX;
-      const newPosition = (touchX / progressBarWidth) * (duration || 1);
-      setSeekPosition(Math.max(0, Math.min(newPosition, duration || 1)));
-    },
-    onPanResponderMove: (evt) => {
-      const touchX = evt.nativeEvent.locationX;
-      const newPosition = (touchX / progressBarWidth) * (duration || 1);
-      setSeekPosition(Math.max(0, Math.min(newPosition, duration || 1)));
-    },
-    onPanResponderRelease: async () => {
-      const finalPosition = seekPosition;
-      setIsSeeking(false);
+  // Helper functions to call from worklet
+  const startSeeking = useCallback((touchX: number) => {
+    setIsSeeking(true);
+    const newPosition = (touchX / progressBarWidth) * (duration || 1);
+    setSeekPosition(Math.max(0, Math.min(newPosition, duration || 1)));
+  }, [progressBarWidth, duration]);
 
-      // Only seek if we have a valid duration and the position has actually changed
-      if (
-        !duration ||
-        duration === 0 ||
-        Math.abs(finalPosition - position) < 0.5
-      ) {
-        setLastSeekPosition(null);
-        return;
-      }
+  const updateSeeking = useCallback((touchX: number) => {
+    const newPosition = (touchX / progressBarWidth) * (duration || 1);
+    setSeekPosition(Math.max(0, Math.min(newPosition, duration || 1)));
+  }, [progressBarWidth, duration]);
 
-      // Keep the seek position visible until the actual position catches up
-      setLastSeekPosition(finalPosition);
+  const finishSeeking = useCallback(async () => {
+    const finalPosition = seekPosition;
+    setIsSeeking(false);
 
-      // Perform the actual seek operation in the background
-      try {
-        await TrackPlayer.seekTo(finalPosition);
-      } catch (error) {
-        console.error("Error seeking:", error);
-        setLastSeekPosition(null);
-      }
-    },
-  });
+    // Only seek if we have a valid duration and the position has actually changed
+    if (
+      !duration ||
+      duration === 0 ||
+      Math.abs(finalPosition - position) < 0.5
+    ) {
+      setLastSeekPosition(null);
+      return;
+    }
+
+    // Keep the seek position visible until the actual position catches up
+    setLastSeekPosition(finalPosition);
+
+    // Perform the actual seek operation in the background
+    try {
+      await TrackPlayer.seekTo(finalPosition);
+    } catch (error) {
+      console.error("Error seeking:", error);
+      setLastSeekPosition(null);
+    }
+  }, [seekPosition, duration, position]);
+
+  // Gesture handler - activates on horizontal movement, fails on vertical
+  // This allows the bottom sheet to capture vertical gestures
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10]) // Activate after 10px horizontal movement
+    .failOffsetY([-10, 10]) // Fail if vertical movement exceeds 10px first
+    .onStart((event) => {
+      runOnJS(startSeeking)(event.x);
+    })
+    .onUpdate((event) => {
+      runOnJS(updateSeeking)(event.x);
+    })
+    .onEnd(() => {
+      runOnJS(finishSeeking)();
+    });
+
+  // Tap gesture for tapping to seek (separate from pan)
+  const tapGesture = Gesture.Tap()
+    .onEnd((event) => {
+      runOnJS(startSeeking)(event.x);
+      runOnJS(finishSeeking)();
+    });
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -179,7 +199,9 @@ export function DraggableScrubber({
       </View>
 
       {/* The actual draggable area - full width, transparent, on top */}
-      <View style={styles.fullWidthSlider} {...panResponder.panHandlers} />
+      <GestureDetector gesture={Gesture.Race(panGesture, tapGesture)}>
+        <Animated.View style={styles.fullWidthSlider} />
+      </GestureDetector>
 
       {/* Play/Pause button - interactive, on top of drag layer */}
       <Pressable
