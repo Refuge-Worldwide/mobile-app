@@ -148,25 +148,41 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     }
   };
 
+  // Custom handle component - only this area can drag the drawer
+  const renderHandle = useCallback(
+    () => (
+      <View style={{ backgroundColor }}>
+        {/* Handle indicator */}
+        <View style={styles.handleIndicatorContainer}>
+          <View
+            style={[styles.handleIndicator, { backgroundColor: textColor }]}
+          />
+        </View>
+
+        {/* Image - dragging here moves the drawer */}
+        <View style={styles.handleImageContainer}>
+          {currentTrack?.artwork ? (
+            <Image
+              source={{ uri: currentTrack.artwork }}
+              placeholder={{ blurhash: defaultBlurhash }}
+              transition={300}
+              style={styles.image}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.image, { backgroundColor: textColor }]} />
+          )}
+        </View>
+      </View>
+    ),
+    [currentTrack, textColor, backgroundColor],
+  );
+
   const renderHeader = () => (
     <View>
       {/* Current Show Info */}
       {currentTrack && (
         <View>
-          <View style={styles.imageContainer}>
-            {currentTrack.artwork ? (
-              <Image
-                source={{ uri: currentTrack.artwork }}
-                placeholder={{ blurhash: defaultBlurhash }}
-                transition={300}
-                style={styles.image}
-                contentFit="cover"
-              />
-            ) : (
-              <View style={[styles.image, { backgroundColor: textColor }]} />
-            )}
-          </View>
-
           {!isLiveMode && (
             <View
               style={[
@@ -310,13 +326,14 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
       ref={bottomSheetRef}
       snapPoints={["65%", "95%"]}
       enablePanDownToClose
+      enableContentPanningGesture={false}
       backdropComponent={renderBackdrop}
+      handleComponent={renderHandle}
       backgroundStyle={{
         backgroundColor,
         borderTopLeftRadius: 0,
         borderTopRightRadius: 0,
       }}
-      handleIndicatorStyle={{ backgroundColor: textColor }}
       onChange={handleSheetChange}
     >
       <BottomSheetFlatList
@@ -357,6 +374,21 @@ const styles = StyleSheet.create({
   },
   emptyDrawer: {
     flex: 1,
+  },
+  // Handle area styles
+  handleIndicatorContainer: {
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  handleIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+  },
+  handleImageContainer: {
+    marginHorizontal: 12,
+    aspectRatio: 16 / 9,
+    overflow: "hidden",
   },
   // Image at top - no padding
   imageContainer: {
