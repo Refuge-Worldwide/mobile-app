@@ -24,7 +24,7 @@ const API_BASE_URL = "https://refugeworldwide.com/api/shows";
 const ARTIST_API_BASE_URL = "https://refugeworldwide.com/api/artists";
 
 interface ShowDetailProps {
-  navigationPrefix: "/(tabs)/radio" | "/(tabs)/search";
+  navigationPrefix: "/(tabs)/radio" | "/(tabs)/search" | "/(tabs)/live";
 }
 
 export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
@@ -118,7 +118,11 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   };
 
   const handleRelatedShowPress = (relatedSlug: string) => {
-    router.push(`${navigationPrefix}/${relatedSlug}`);
+    // Live tab has shows under /show/ subfolder, other tabs have shows directly
+    const showPath = navigationPrefix === "/(tabs)/live"
+      ? `${navigationPrefix}/show/${relatedSlug}`
+      : `${navigationPrefix}/${relatedSlug}`;
+    router.push(showPath as any);
   };
 
   const handleShare = async () => {

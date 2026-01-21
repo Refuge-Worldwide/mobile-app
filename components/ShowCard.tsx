@@ -38,11 +38,19 @@ export function ShowCard({
   const displayGenres = genres.slice(0, 3);
 
   // Determine which tab we're in
-  // segments structure: ['', '(tabs)', 'radio'|'live'|'search', ...]
-  // Get the tab name: could be 'radio', 'live', 'search', etc.
+  // segments structure varies:
+  // - Root tab: ['(tabs)', 'live']
+  // - Nested: ['(tabs)', 'live', 'show', 'slug-value']
+  // We need to find the tab name (radio, live, search, etc.)
   const currentTab = (() => {
-    if (segments.length > 2 && segments[1] === '(tabs)') {
-      return segments[2];
+    const segmentStrings = segments as string[];
+    const tabsIndex = segmentStrings.indexOf('(tabs)');
+    if (tabsIndex !== -1 && segmentStrings.length > tabsIndex + 1) {
+      const tabName = segmentStrings[tabsIndex + 1];
+      // Make sure it's a valid tab name, not a subroute
+      if (['radio', 'live', 'search', 'playlist', 'account'].includes(tabName)) {
+        return tabName;
+      }
     }
     return 'radio'; // Default fallback
   })();
