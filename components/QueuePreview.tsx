@@ -44,7 +44,6 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     queue,
     removeFromQueue,
     reorderQueue,
-    stopTrack,
     setIsPlaying,
   } = useAudioStore();
   const isLiveMode = currentTrack?.isLive;
@@ -132,11 +131,8 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   };
 
   const handleLivePlayStop = () => {
-    if (isPlaying) {
-      stopTrack();
-    } else {
-      setIsPlaying(true);
-    }
+    // Toggle play/pause for live streams
+    setIsPlaying(!isPlaying);
   };
 
   const handleTitlePress = () => {

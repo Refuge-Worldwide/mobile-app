@@ -70,12 +70,16 @@ export default function Live() {
     isLoading,
     setLiveTrack,
     setLiveTrackChannel2,
-    stopTrack,
+    setIsPlaying,
   } = useAudioStore();
-  const isCurrentlyPlayingLive =
-    currentTrack?.isLive && currentTrack?.id === "live-stream" && isPlaying;
-  const isCurrentlyPlayingLiveCh2 =
-    currentTrack?.isLive && currentTrack?.id === "live-stream-ch2" && isPlaying;
+
+  // Check if this live stream is the current track (regardless of play state)
+  const isLiveStreamLoaded = currentTrack?.isLive && currentTrack?.id === "live-stream";
+  const isLiveStreamCh2Loaded = currentTrack?.isLive && currentTrack?.id === "live-stream-ch2";
+
+  // Check if currently playing
+  const isCurrentlyPlayingLive = isLiveStreamLoaded && isPlaying;
+  const isCurrentlyPlayingLiveCh2 = isLiveStreamCh2Loaded && isPlaying;
 
   const fetchLiveShow = useCallback(async () => {
     try {
@@ -110,7 +114,10 @@ export default function Live() {
   const playFunction = async () => {
     if (isCurrentlyPlayingLive) {
       // Pause live playback (keeps player open)
-      stopTrack();
+      setIsPlaying(false);
+    } else if (isLiveStreamLoaded) {
+      // Live stream is already loaded, just resume
+      setIsPlaying(true);
     } else {
       // Start live playback - setLiveTrack will handle isPlaying and isLoading
       if (liveNow) {
@@ -126,7 +133,10 @@ export default function Live() {
   const playFunctionCh2 = async () => {
     if (isCurrentlyPlayingLiveCh2) {
       // Pause channel 2 live playback (keeps player open)
-      stopTrack();
+      setIsPlaying(false);
+    } else if (isLiveStreamCh2Loaded) {
+      // Channel 2 is already loaded, just resume
+      setIsPlaying(true);
     } else {
       // Start channel 2 live playback - setLiveTrackChannel2 will handle isPlaying and isLoading
       if (liveNowCh2) {

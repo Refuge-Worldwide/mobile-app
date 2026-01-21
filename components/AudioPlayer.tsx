@@ -25,7 +25,6 @@ export function AudioPlayer() {
     setIsPlaying,
     setIsLoading,
     clearTrack,
-    stopTrack,
     playNextFromQueue,
   } = useAudioStore();
   const textColor = useThemeColor({}, "text");
@@ -292,17 +291,12 @@ export function AudioPlayer() {
       try {
         const state = await TrackPlayer.getState();
         const isCurrentlyPlaying = state === State.Playing;
-        const isBuffering =
-          state === State.Buffering || state === State.Loading;
-        const isPaused = state === State.Paused;
+        const isCurrentlyPaused = state === State.Paused;
         const isReady = state === State.Ready;
 
-        if (
-          isPlaying &&
-          !isCurrentlyPlaying &&
-          !isBuffering &&
-          (isPaused || isReady)
-        ) {
+        // Only sync when player is in a stable state (not buffering/loading)
+        // This prevents fighting with transitional states
+        if (isPlaying && (isCurrentlyPaused || isReady)) {
           // Store says play, but player is paused/ready - start playing
           await TrackPlayer.play();
         } else if (!isPlaying && isCurrentlyPlaying) {
@@ -324,20 +318,24 @@ export function AudioPlayer() {
       if (event.type === Event.PlaybackState) {
         const state = await TrackPlayer.getState();
         const isActuallyPlaying = state === State.Playing;
+        const isActuallyPaused = state === State.Paused;
         const isBuffering =
           state === State.Buffering || state === State.Loading;
 
-        // Only update store if state has actually changed
-        if (isActuallyPlaying !== isPlaying) {
-          setIsPlaying(isActuallyPlaying);
+        // Only update isPlaying for definitive states (Playing or Paused)
+        // Ignore transitional states (Buffering, Loading, Ready, Connecting)
+        // This prevents flickering during state transitions
+        if (isActuallyPlaying && !isPlaying) {
+          setIsPlaying(true);
+        } else if (isActuallyPaused && isPlaying) {
+          setIsPlaying(false);
         }
 
-        // Update loading state - only clear loading when actually playing
-        // Keep loading true during Ready/Connecting states to avoid brief play button flash
+        // Update loading state
         if (isBuffering && !isLoading) {
           setIsLoading(true);
-        } else if (isActuallyPlaying && isLoading) {
-          // Only clear loading when we're actually playing
+        } else if ((isActuallyPlaying || isActuallyPaused) && isLoading) {
+          // Clear loading when we reach a stable state
           setIsLoading(false);
         }
       }
@@ -363,12 +361,8 @@ export function AudioPlayer() {
   };
 
   const handleLivePlayStop = () => {
-    // For live mode - toggle between play and stop
-    if (isPlaying) {
-      stopTrack();
-    } else {
-      setIsPlaying(true);
-    }
+    // Toggle play/pause for live streams
+    setIsPlaying(!isPlaying);
   };
 
   const handleClose = async () => {

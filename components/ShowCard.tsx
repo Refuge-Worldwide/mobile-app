@@ -72,7 +72,7 @@ export function ShowCard({
   };
 
   const setTrack = useAudioStore((state) => state.setTrack);
-  const stopTrack = useAudioStore((state) => state.stopTrack);
+  const setIsPlaying = useAudioStore((state) => state.setIsPlaying);
   const addToQueue = useAudioStore((state) => state.addToQueue);
   const currentTrack = useAudioStore((state) => state.currentTrack);
   const isPlaying = useAudioStore((state) => state.isPlaying);
@@ -84,26 +84,33 @@ export function ShowCard({
   const isThisShowLoading =
     showId && currentTrack?.showId === showId && isLoading;
 
-  const handlePlayPress = (e: any) => {
+  const handlePlayPress = async (e: any) => {
     e.stopPropagation();
-    if (audioUrl) {
-      setTrack({
-        id: title,
-        url: audioUrl,
-        title: title,
-        artist: date,
-        artwork: imageUrl,
-        mode: "archive",
-        isLive: false,
-        showId: showId,
-        slug: slug,
-      });
+    if (!audioUrl) return;
+
+    // If this show is already the current track, just resume playback
+    if (showId && currentTrack?.showId === showId) {
+      setIsPlaying(true);
+      return;
     }
+
+    // Otherwise load the new track
+    setTrack({
+      id: title,
+      url: audioUrl,
+      title: title,
+      artist: date,
+      artwork: imageUrl,
+      mode: "archive",
+      isLive: false,
+      showId: showId,
+      slug: slug,
+    });
   };
 
   const handlePausePress = (e: any) => {
     e.stopPropagation();
-    stopTrack();
+    setIsPlaying(false);
   };
 
   const handleQueuePress = async (e: any) => {
