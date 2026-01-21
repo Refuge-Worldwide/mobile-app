@@ -16,11 +16,11 @@ import {
   useState,
 } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import DraggableFlatList, {
+import {
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { Swipeable } from "react-native-gesture-handler";
-import TrackPlayer, { State } from "react-native-track-player";
+import TrackPlayer from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
 import { Icon } from "./Icon";
 import { ThemedText } from "./ThemedText";
@@ -179,9 +179,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
           )}
 
           <View style={styles.showContentWrapper}>
-            <View
-              style={[styles.titleRow, { borderBottomColor: textColor }]}
-            >
+            <View style={[styles.titleRow, { borderBottomColor: textColor }]}>
               {isLiveMode && (
                 <Pressable
                   style={{ marginRight: 12, padding: 4 }}
@@ -209,9 +207,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
 
             {showDescription && (
               <View style={styles.descriptionContainer}>
-                <ThemedText numberOfLines={3}>
-                  {showDescription}
-                </ThemedText>
+                <ThemedText numberOfLines={3}>{showDescription}</ThemedText>
               </View>
             )}
 
@@ -251,12 +247,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     <ScaleDecorator>
       <Swipeable
         renderRightActions={() => (
-          <View
-            style={[
-              styles.deleteAction,
-              { backgroundColor: "#ff3b30" },
-            ]}
-          >
+          <View style={[styles.deleteAction, { backgroundColor: "#ff3b30" }]}>
             <Ionicons name="trash" size={24} color="white" />
           </View>
         )}
@@ -281,10 +272,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
               />
             ) : (
               <View
-                style={[
-                  styles.queueImage,
-                  { backgroundColor: textColor },
-                ]}
+                style={[styles.queueImage, { backgroundColor: textColor }]}
               />
             )}
           </View>
