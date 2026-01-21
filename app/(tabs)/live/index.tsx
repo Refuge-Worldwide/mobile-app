@@ -4,11 +4,14 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAudioStore } from "@/store/audioStore";
+import { Colors } from "@/constants/Colors";
+import { useColorSchemeContext } from "@/contexts/ColorSchemeContext";
 import { Image } from "expo-image";
-import { Link } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { Link, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   Dimensions,
   Linking,
   Pressable,
@@ -18,6 +21,24 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// Sticker images mapping
+const stickerImages = [
+  require("../../../assets/images/stickers-1.png"),
+  require("../../../assets/images/stickers-2.png"),
+  require("../../../assets/images/stickers-3.png"),
+  require("../../../assets/images/stickers-4.png"),
+  require("../../../assets/images/stickers-5.png"),
+  require("../../../assets/images/stickers-6.png"),
+  require("../../../assets/images/stickers-7.png"),
+  require("../../../assets/images/stickers-1.png"),
+  require("../../../assets/images/stickers-2.png"),
+  require("../../../assets/images/stickers-3.png"),
+  require("../../../assets/images/stickers-4.png"),
+  require("../../../assets/images/stickers-5.png"),
+  require("../../../assets/images/stickers-6.png"),
+  require("../../../assets/images/stickers-7.png"),
+];
 
 export default function Live() {
   const [liveNow, setLiveNow] = useState<{
@@ -31,10 +52,17 @@ export default function Live() {
     status: string;
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showStickers, setShowStickers] = useState(false);
+  const STICKER_COUNT = 14;
+  const stickerAnimations = useRef<Animated.Value[]>(
+    Array.from({ length: STICKER_COUNT }, () => new Animated.Value(0))
+  ).current;
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const screenHeight = Dimensions.get("window").height;
+  const screenWidth = Dimensions.get("window").width;
 
   const {
     currentTrack,
@@ -149,6 +177,55 @@ export default function Live() {
     setRefreshing(false);
   }, [fetchLiveShow]);
 
+  const handleLogoPress = () => {
+    setShowStickers(true);
+    
+    // Reset all animations
+    stickerAnimations.forEach(anim => anim.setValue(0));
+    
+    // Regenerate random positions each time
+    stickerPositions.current = Array.from({ length: STICKER_COUNT }, () => ({
+      top: Math.random() * (screenHeight - 150),
+      left: Math.random() * (screenWidth - 150),
+      rotation: (Math.random() * 100) - 50, // -50 to 50 degrees
+      scale: 0.8 + Math.random() * 0.8, // Random scale between 0.8 and 1.6
+    }));
+    
+    // Animate stickers with random delays and spring effect
+    const animations = stickerAnimations.map((anim, index) => {
+      const randomDelay = Math.random() * 400; // Faster pop
+      return Animated.sequence([
+        Animated.delay(randomDelay),
+        Animated.spring(anim, {
+          toValue: 1,
+          tension: 80,
+          friction: 5,
+          useNativeDriver: true,
+        }),
+        Animated.delay(700), // Much quicker fade out
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+      ]);
+    });
+    
+    Animated.parallel(animations).start(() => {
+      setShowStickers(false);
+    });
+  };
+
+  // Generate random positions for stickers
+  const stickerPositions = useRef(
+    Array.from({ length: STICKER_COUNT }, () => ({
+      top: Math.random() * (screenHeight - 150),
+      left: Math.random() * (screenWidth - 150),
+      rotation: (Math.random() * 100) - 50,
+      scale: 0.8 + Math.random() * 0.8, // Random scale between 0.8 and 1.6
+    }))
+  );
+
   const isBothChannelsLive =
     liveNow && liveNowCh2 && liveNowCh2.status === "online";
 
@@ -159,10 +236,15 @@ export default function Live() {
     screenHeight - insets.top - insets.bottom - FIXED_ELEMENTS_HEIGHT;
   const singleChannelPaddingTop = AVAILABLE_HEIGHT * 0.15; // Use 15% of available height for top padding
 
+  const { colorScheme } = useColorSchemeContext();
+  const colors = Colors[colorScheme] || Colors.light;
+
   return (
-    <ThemedView style={[styles.liveContainer, { paddingTop: insets.top + 8 }]}>
+    <ThemedView style={[styles.liveContainer, { paddingTop: insets.top + 8 }]}> 
       <View style={styles.header}>
-        <RefugeLogo size={50} variant="text" />
+        <Pressable onPress={handleLogoPress}>
+          <RefugeLogo size={50} variant="text" />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -193,15 +275,16 @@ export default function Live() {
                   placeholder="blurhash"
                   source={liveNow?.artwork}
                 />
-                <View style={[styles.playButtonContainer, { backgroundColor: textColor }]}>
+                <View
+                  style={[
+                    styles.playButtonContainer,
+                    { backgroundColor: textColor },
+                  ]}
+                >
                   {isLoading &&
                     currentTrack?.id === "live-stream" &&
                     !isCurrentlyPlayingLive ? (
-                    <Icon
-                      name="loading"
-                      size={24}
-                      color={backgroundColor}
-                    />
+                    <Icon name="loading" size={24} color={backgroundColor} />
                   ) : (
                     <Icon
                       name={isCurrentlyPlayingLive ? "stop" : "play"}
@@ -220,14 +303,21 @@ export default function Live() {
                     Live now
                   </ThemedText>
                 </View>
-                <View style={{ backgroundColor: textColor, padding: 4 }}>
+                <Pressable
+                  onPress={() =>
+                    router.push(
+                      `/live/show/${liveNow.slug}` as any,
+                    )
+                  }
+                  style={{ backgroundColor: textColor, padding: 4 }}
+                >
                   <ThemedText
                     type="subtitle"
                     style={{ color: backgroundColor }}
                   >
                     {liveNow.title}
                   </ThemedText>
-                </View>
+                </Pressable>
               </View>
             </View>
           )}
@@ -246,15 +336,16 @@ export default function Live() {
                   placeholder="blurhash"
                   source={liveNow?.artwork} // Use Channel 1 artwork as fallback
                 />
-                <View style={[styles.playButtonContainer, { backgroundColor: textColor }]}>
+                <View
+                  style={[
+                    styles.playButtonContainer,
+                    { backgroundColor: textColor },
+                  ]}
+                >
                   {isLoading &&
                     currentTrack?.id === "live-stream-ch2" &&
                     !isCurrentlyPlayingLiveCh2 ? (
-                    <Icon
-                      name="loading"
-                      size={24}
-                      color={backgroundColor}
-                    />
+                    <Icon name="loading" size={24} color={backgroundColor} />
                   ) : (
                     <Icon
                       name={isCurrentlyPlayingLiveCh2 ? "stop" : "play"}
@@ -312,6 +403,40 @@ export default function Live() {
           </Link>
         </Pressable>
       </View>
+
+      {/* Sticker flood overlay */}
+      {showStickers && (
+        <View style={[styles.stickerOverlay, { zIndex: 9999, elevation: 99 }]} pointerEvents="none">
+          {stickerAnimations.map((anim, index) => (
+            <Animated.View
+              key={index}
+              style={[
+                styles.sticker,
+                {
+                  top: stickerPositions.current[index].top,
+                  left: stickerPositions.current[index].left,
+                  opacity: anim,
+                  transform: [
+                    {
+                      scale: anim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.5, stickerPositions.current[index].scale],
+                      }),
+                    },
+                    { rotate: `${stickerPositions.current[index].rotation}deg` },
+                  ],
+                },
+              ]}
+            >
+              <Image
+                source={stickerImages[index % stickerImages.length]}
+                style={styles.stickerImage}
+                contentFit="contain"
+              />
+            </Animated.View>
+          ))}
+        </View>
+      )}
     </ThemedView>
   );
 }
@@ -397,5 +522,23 @@ const styles = StyleSheet.create({
   },
   loadingIcon: {
     opacity: 0.7,
+  },
+  stickerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    elevation: 99,
+  },
+  sticker: {
+    position: "absolute",
+    width: 150,
+    height: 150,
+  },
+  stickerImage: {
+    width: "100%",
+    height: "100%",
   },
 });

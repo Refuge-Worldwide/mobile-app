@@ -1,12 +1,11 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { useAudioStore } from '@/store/audioStore';
-import { Image } from 'expo-image';
-import { useRouter, useSegments } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
-import TrackPlayer from 'react-native-track-player';
-import { Icon } from './Icon';
-import { ThemedText } from './ThemedText';
-import { Toast } from './ToastNotification';
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAudioStore } from "@/store/audioStore";
+import { Image } from "expo-image";
+import { useRouter, useSegments } from "expo-router";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Icon } from "./Icon";
+import { ThemedText } from "./ThemedText";
+import { Toast } from "./ToastNotification";
 
 interface ShowCardProps {
   imageUrl?: string;
@@ -31,24 +30,34 @@ export function ShowCard({
   showId,
   slug,
 }: ShowCardProps) {
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
   const router = useRouter();
   const segments = useSegments();
 
   const displayGenres = genres.slice(0, 3);
 
   // Determine which tab we're in
-  const currentTab = segments[1] as string; // Gets 'radio', 'search', etc. from /(tabs)/[tab]/...
+  // segments structure: ['', '(tabs)', 'radio'|'live'|'search', ...]
+  // Get the tab name: could be 'radio', 'live', 'search', etc.
+  const currentTab = (() => {
+    if (segments.length > 2 && segments[1] === '(tabs)') {
+      return segments[2];
+    }
+    return 'radio'; // Default fallback
+  })();
 
-  const defaultBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
+  const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
 
   const optimizeImage = (src: string | undefined): string => {
-    if (!src) return '';
+    if (!src) return "";
 
-    const imageUrl = src.startsWith('//') ? `https:${src}` : src;
+    const imageUrl = src.startsWith("//") ? `https:${src}` : src;
 
-    if (!imageUrl.includes('ctfassets.net') && !imageUrl.includes('contentful.com')) {
+    if (
+      !imageUrl.includes("ctfassets.net") &&
+      !imageUrl.includes("contentful.com")
+    ) {
       return imageUrl;
     }
 
@@ -57,13 +66,16 @@ export function ShowCard({
 
   const setTrack = useAudioStore((state) => state.setTrack);
   const stopTrack = useAudioStore((state) => state.stopTrack);
+  const addToQueue = useAudioStore((state) => state.addToQueue);
   const currentTrack = useAudioStore((state) => state.currentTrack);
   const isPlaying = useAudioStore((state) => state.isPlaying);
   const isLoading = useAudioStore((state) => state.isLoading);
 
   // Check if this specific show is currently playing or loading
-  const isThisShowPlaying = showId && currentTrack?.showId === showId && isPlaying;
-  const isThisShowLoading = showId && currentTrack?.showId === showId && isLoading;
+  const isThisShowPlaying =
+    showId && currentTrack?.showId === showId && isPlaying;
+  const isThisShowLoading =
+    showId && currentTrack?.showId === showId && isLoading;
 
   const handlePlayPress = (e: any) => {
     e.stopPropagation();
@@ -74,7 +86,7 @@ export function ShowCard({
         title: title,
         artist: date,
         artwork: imageUrl,
-        mode: 'archive',
+        mode: "archive",
         isLive: false,
         showId: showId,
         slug: slug,
@@ -91,27 +103,32 @@ export function ShowCard({
     e.stopPropagation();
     if (audioUrl) {
       try {
-        await TrackPlayer.add({
+        // Add to store queue only
+        addToQueue({
           id: title,
           url: audioUrl,
           title: title,
           artist: date,
           artwork: imageUrl,
+          mode: "archive",
+          isLive: false,
+          showId: showId,
+          slug: slug,
         });
 
         // Show success notification
         Toast.show({
-          type: 'success',
-          text1: 'Show added to queue',
+          type: "success",
+          text1: "Show added to queue",
         });
       } catch (error) {
-        console.error('Error adding to queue:', error);
+        console.error("Error adding to queue:", error);
 
         // Show error notification
         Toast.show({
-          type: 'error',
-          text1: 'Failed to add to queue',
-          text2: 'Please try again',
+          type: "error",
+          text1: "Failed to add to queue",
+          text2: "Please try again",
         });
       }
     }
@@ -141,11 +158,7 @@ export function ShowCard({
                 disabled={isThisShowLoading}
               >
                 {isThisShowLoading ? (
-                  <Icon
-                    name="loading"
-                    size={24}
-                    color={backgroundColor}
-                  />
+                  <Icon name="loading" size={24} color={backgroundColor} />
                 ) : (
                   <Icon
                     name={isThisShowPlaying ? "pause" : "play"}
@@ -155,14 +168,13 @@ export function ShowCard({
                 )}
               </Pressable>
               <Pressable
-                style={[styles.iconButton, { backgroundColor: textColor, marginLeft: -8 }]}
+                style={[
+                  styles.iconButton,
+                  { backgroundColor: textColor, marginLeft: -8 },
+                ]}
                 onPress={handleQueuePress}
               >
-                <Icon
-                  name="plus"
-                  size={40}
-                  color={backgroundColor}
-                />
+                <Icon name="plus" size={40} color={backgroundColor} />
               </Pressable>
             </>
           )}
@@ -171,14 +183,18 @@ export function ShowCard({
 
       <View style={[styles.infoRow, { borderBottomColor: textColor }]}>
         <View style={[styles.dateBox, { backgroundColor: textColor }]}>
-          <ThemedText style={{ color: backgroundColor, paddingTop: 2, marginBottom: -1.5 }}>
+          <ThemedText
+            style={{
+              color: backgroundColor,
+              paddingTop: 2,
+              marginBottom: -1.5,
+            }}
+          >
             {date}
           </ThemedText>
         </View>
         <View style={[styles.titleContainer, { paddingTop: 6 }]}>
-          <ThemedText>
-            {title}
-          </ThemedText>
+          <ThemedText>{title}</ThemedText>
         </View>
       </View>
 
@@ -191,46 +207,46 @@ export function ShowCard({
               onPress={(e) => {
                 e.stopPropagation();
                 // Route to genre page within the current tab
-                const genrePath = `/(tabs)/${currentTab || 'radio'}/genre/${encodeURIComponent(genre)}`;
+                const genrePath = `/(tabs)/${currentTab || "radio"}/genre/${encodeURIComponent(genre)}`;
                 router.push(genrePath as any);
               }}
             >
-              <ThemedText type='tag'>{genre}</ThemedText>
+              <ThemedText type="tag">{genre}</ThemedText>
             </Pressable>
           ))}
         </View>
       )}
-    </Pressable >
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   imageContainer: {
-    width: '100%',
+    width: "100%",
     aspectRatio: 16 / 9,
-    position: 'relative',
-    overflow: 'hidden',
+    position: "relative",
+    overflow: "hidden",
   },
   image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   buttonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   iconButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    flexDirection: "row",
+    alignItems: "stretch",
     gap: 0,
     marginTop: 0,
     borderBottomWidth: 1,
@@ -238,19 +254,19 @@ const styles = StyleSheet.create({
   dateBox: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    justifyContent: 'center',
-    alignSelf: 'stretch',
+    justifyContent: "center",
+    alignSelf: "stretch",
   },
   titleContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 4,
   },
   genresContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 6,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   genreTag: {
     paddingHorizontal: 10,

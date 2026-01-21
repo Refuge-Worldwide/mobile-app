@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TrackPlayer, {
   AppKilledPlaybackBehavior,
   Capability,
@@ -25,10 +26,16 @@ export function AudioPlayer() {
     setIsLoading,
     clearTrack,
     stopTrack,
+    playNextFromQueue,
   } = useAudioStore();
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const [isVisible, setIsVisible] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  // Calculate bottom position: tab bar height (paddingTop 6 + 2 rows ~24px each + margin/padding ~12px + safe area)
+  // Move up 50px if on live tab to sit above the Chat/Schedule buttons
+  const tabBarHeight = 80 + Math.max(insets.bottom, 11);
 
   const queueSheetRef = useRef<QueuePreviewRef>(null);
   const slideAnim = useRef(new Animated.Value(100)).current; // Start below screen
@@ -311,27 +318,40 @@ export function AudioPlayer() {
   }, [isPlaying, currentTrack]);
 
   // Update store when playback state changes
-  useTrackPlayerEvents([Event.PlaybackState], async (event) => {
-    if (event.type === Event.PlaybackState) {
-      const state = await TrackPlayer.getState();
-      const isActuallyPlaying = state === State.Playing;
-      const isBuffering = state === State.Buffering || state === State.Loading;
+  useTrackPlayerEvents(
+    [Event.PlaybackState, Event.PlaybackQueueEnded],
+    async (event) => {
+      if (event.type === Event.PlaybackState) {
+        const state = await TrackPlayer.getState();
+        const isActuallyPlaying = state === State.Playing;
+        const isBuffering =
+          state === State.Buffering || state === State.Loading;
 
-      // Only update store if state has actually changed
-      if (isActuallyPlaying !== isPlaying) {
-        setIsPlaying(isActuallyPlaying);
+        // Only update store if state has actually changed
+        if (isActuallyPlaying !== isPlaying) {
+          setIsPlaying(isActuallyPlaying);
+        }
+
+        // Update loading state - only clear loading when actually playing
+        // Keep loading true during Ready/Connecting states to avoid brief play button flash
+        if (isBuffering && !isLoading) {
+          setIsLoading(true);
+        } else if (isActuallyPlaying && isLoading) {
+          // Only clear loading when we're actually playing
+          setIsLoading(false);
+        }
       }
 
-      // Update loading state - only clear loading when actually playing
-      // Keep loading true during Ready/Connecting states to avoid brief play button flash
-      if (isBuffering && !isLoading) {
-        setIsLoading(true);
-      } else if (isActuallyPlaying && isLoading) {
-        // Only clear loading when we're actually playing
-        setIsLoading(false);
+      // When current track ends, play next from queue
+      if (event.type === Event.PlaybackQueueEnded) {
+        const nextTrack = playNextFromQueue();
+        if (nextTrack) {
+          // The track will be loaded by the existing effect that watches currentTrack
+          console.log("Playing next from queue:", nextTrack.title);
+        }
       }
-    }
-  });
+    },
+  );
 
   const handlePlayPause = async () => {
     const state = await TrackPlayer.getState();
@@ -370,6 +390,7 @@ export function AudioPlayer() {
           {
             backgroundColor,
             borderTopColor: textColor,
+            bottom: tabBarHeight,
             transform: [{ translateY: slideAnim }],
           },
         ]}
@@ -426,11 +447,14 @@ export function AudioPlayer() {
                 </Pressable>
 
                 {/* Show title for live streams */}
-                <View style={styles.liveTitleContainer}>
+                <Pressable
+                  onPress={() => queueSheetRef.current?.present()}
+                  style={styles.liveTitleContainer}
+                >
                   <ThemedText numberOfLines={1}>
                     {currentTrack?.title}
                   </ThemedText>
-                </View>
+                </Pressable>
               </View>
             )}
           </View>
@@ -443,7 +467,6 @@ export function AudioPlayer() {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: 120, // Above the menu
     left: 0,
     right: 0,
     paddingVertical: 4,

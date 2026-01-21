@@ -16,6 +16,7 @@ export interface Track {
 
 interface AudioStore {
   currentTrack: Track | null;
+  queue: Track[];
   isPlaying: boolean;
   isLoading: boolean;
   setTrack: (track: Track) => void;
@@ -23,6 +24,11 @@ interface AudioStore {
   setIsLoading: (isLoading: boolean) => void;
   clearTrack: () => void;
   stopTrack: () => void;
+  addToQueue: (track: Track) => void;
+  removeFromQueue: (index: number) => void;
+  reorderQueue: (queue: Track[]) => void;
+  clearQueue: () => void;
+  playNextFromQueue: () => Track | null;
   setLiveTrack: (liveData: {
     title: string;
     artwork?: string;
@@ -62,6 +68,7 @@ const optimizeImageForPlayer = (
 
 export const useAudioStore = create<AudioStore>((set, get) => ({
   currentTrack: null,
+  queue: [],
   isPlaying: false,
   isLoading: false,
   setTrack: (track) =>
@@ -78,6 +85,38 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   clearTrack: () =>
     set({ currentTrack: null, isPlaying: false, isLoading: false }),
   stopTrack: () => set({ isPlaying: false }),
+  addToQueue: (track) => {
+    const state = get();
+    const optimizedTrack = {
+      ...track,
+      artwork: optimizeImageForPlayer(track.artwork),
+    };
+    set({ queue: [...state.queue, optimizedTrack] });
+  },
+  removeFromQueue: (index) => {
+    const state = get();
+    const newQueue = [...state.queue];
+    newQueue.splice(index, 1);
+    set({ queue: newQueue });
+  },
+  reorderQueue: (queue) => set({ queue }),
+  clearQueue: () => set({ queue: [] }),
+  playNextFromQueue: () => {
+    const state = get();
+    if (state.queue.length === 0) {
+      return null;
+    }
+    // Get the first track from queue
+    const [nextTrack, ...remainingQueue] = state.queue;
+    // Set it as current track and remove from queue
+    set({
+      currentTrack: nextTrack,
+      queue: remainingQueue,
+      isPlaying: true,
+      isLoading: true,
+    });
+    return nextTrack;
+  },
   isShowPlaying: (showId: string) => {
     const state = get();
     return state.currentTrack?.showId === showId && state.isPlaying;

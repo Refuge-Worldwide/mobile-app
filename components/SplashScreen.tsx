@@ -3,7 +3,7 @@ import { useColorSchemeContext } from "@/contexts/ColorSchemeContext";
 import { Image, ImageSource } from "expo-image";
 import * as ExpoSplashScreen from "expo-splash-screen";
 import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
 
 // Keep the native splash screen visible while we fetch resources
 ExpoSplashScreen.preventAutoHideAsync();
@@ -28,6 +28,19 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
   const colors = Colors[colorScheme];
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(0)).current;
+  const translateXAnim = useRef(new Animated.Value(0)).current;
+  const textFadeAnim = useRef(new Animated.Value(1)).current;
+  
+  // Calculate position for logo to move to top left
+  const screenWidth = Dimensions.get("window").width;
+  const screenHeight = Dimensions.get("window").height;
+  const finalLogoSize = 50;
+  const logoSize = 200;
+  const finalScale = finalLogoSize / logoSize;
+  // Move from center to top left (with padding)
+  const moveX = -(screenWidth / 2) + 12 + (finalLogoSize / 2);
+  const moveY = -(screenHeight / 2) + 60 + (finalLogoSize / 2);
 
   // Get the correct logo for the current color scheme
   const logoSource = logoImages[colorScheme] || logoImages.light;
@@ -49,29 +62,55 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
           useNativeDriver: true,
         }).start();
 
-        // Show our custom splash for 4 seconds minimum
-        await new Promise((resolve) => setTimeout(resolve, 4000));
+        // Show our custom splash for 3 seconds minimum
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
-        // Fade out animation
+        // Tell the application to render BEFORE the transition
+        // This loads the navigation stack underneath
+        onReady();
+
+        // Small delay to let the navigation stack mount
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Now animate the transition over the loaded content
         await new Promise((resolve) => {
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }).start(() => {
+          Animated.parallel([
+            Animated.timing(translateYAnim, {
+              toValue: moveY,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(translateXAnim, {
+              toValue: moveX,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+              toValue: finalScale,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(textFadeAnim, {
+              toValue: 0,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
             resolve(null);
           });
         });
       } catch (e) {
         console.warn(e);
-      } finally {
-        // Tell the application to render
-        onReady();
       }
     }
 
     prepare();
-  }, [fadeAnim, scaleAnim, onReady, isColorSchemeLoading]);
+  }, [fadeAnim, scaleAnim, translateYAnim, translateXAnim, textFadeAnim, onReady, isColorSchemeLoading, moveX, moveY, finalScale]);
 
   // Don't render anything visible until we have the correct color scheme
   // The native splash screen will stay visible during this time
@@ -90,16 +129,26 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
       ]}
     >
       <View style={styles.logoContainer}>
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <Animated.View
+          style={{
+            transform: [
+              { scale: scaleAnim },
+              { translateX: translateXAnim },
+              { translateY: translateYAnim },
+            ],
+          }}
+        >
           <Image source={logoSource} style={styles.logo} contentFit="contain" />
         </Animated.View>
       </View>
 
-      <View style={styles.textContainer}>
+      <Animated.View
+        style={[styles.textContainer, { opacity: textFadeAnim }]}
+      >
         <Text style={[styles.text, { color: colors.text }]}>
           supported by members and Carhartt WIP
         </Text>
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }

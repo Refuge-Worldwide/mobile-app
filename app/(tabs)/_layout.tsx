@@ -1,20 +1,23 @@
-import { AudioPlayer } from '@/components/AudioPlayer';
-import { ThemedText } from '@/components/ThemedText';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Tabs } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { AudioPlayer } from "@/components/AudioPlayer";
+import { ThemedText } from "@/components/ThemedText";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { Tabs } from "expo-router";
+import { Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const colors = Colors[colorScheme ?? "light"];
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 11);
 
   const handleTabPress = (route: any, index: number) => {
     const isFocused = state.index === index;
 
     if (!isFocused) {
       const event = navigation.emit({
-        type: 'tabPress',
+        type: "tabPress",
         target: route.key,
         canPreventDefault: true,
       });
@@ -39,29 +42,37 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           {
             backgroundColor: isFocused ? colors.background : colors.text,
             borderColor: colors.text,
-          }
+          },
         ]}
       >
-        <ThemedText type="large" style={{ color: isFocused ? colors.text : colors.background }}>
+        <ThemedText
+          type="large"
+          style={{ color: isFocused ? colors.text : colors.background }}
+        >
           {label}
         </ThemedText>
       </Pressable>
     );
   };
 
-  const mainTabs = ['live', 'radio', 'playlist'];
-  const secondaryTabs = ['search', 'account'];
+  const mainTabs = ["live", "radio", "playlist"];
+  const secondaryTabs = ["search", "account"];
 
   const mainTabRoutes = state.routes.filter((route: any) =>
-    mainTabs.includes(route.name)
+    mainTabs.includes(route.name),
   );
 
   const secondaryTabRoutes = state.routes.filter((route: any) =>
-    secondaryTabs.includes(route.name)
+    secondaryTabs.includes(route.name),
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingBottom: bottomPadding },
+      ]}
+    >
       {/* Main tabs row - centered with borders */}
       <View style={styles.tabsRow}>
         {mainTabRoutes.map((route: any) => {
@@ -89,37 +100,38 @@ export default function TabLayout() {
         tabBar={(props) => <CustomTabBar {...props} />}
         screenOptions={{
           headerShown: false,
-        }}>
+        }}
+      >
         <Tabs.Screen
           name="live"
           options={{
-            title: 'Live',
+            title: "Live",
           }}
         />
         <Tabs.Screen
           name="radio"
           options={{
-            title: 'Archive',
+            title: "Archive",
           }}
         />
         <Tabs.Screen
           name="playlist"
           options={{
-            title: 'Playlists',
+            title: "Playlists",
           }}
         />
         <Tabs.Screen
           name="search"
           options={{
-            title: 'Search',
-            href: '/search',
+            title: "Search",
+            href: "/search",
           }}
         />
         <Tabs.Screen
           name="account"
           options={{
-            title: 'Account',
-            href: '/account',
+            title: "Account",
+            href: "/account",
           }}
         />
 
@@ -127,7 +139,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            href: null
+            href: null,
           }}
         />
       </Tabs>
@@ -137,16 +149,14 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 34, // Safe area padding
     paddingTop: 6,
-    minHeight: 120, // Ensure enough height for both rows
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     zIndex: 200,
   },
   tabsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 6,
     marginBottom: 6,
   },

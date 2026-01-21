@@ -1,8 +1,9 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Artist {
@@ -85,6 +86,7 @@ export default function Schedule() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
 
@@ -217,8 +219,9 @@ export default function Schedule() {
                     const artist = titleParts[1]?.trim() || '';
 
                     return (
-                      <View
+                      <Pressable
                         key={item.slug}
+                        onPress={() => router.push(`/live/show/${item.slug}` as any)}
                         style={[
                           styles.scheduleItem,
                           { borderBottomColor: textColor }
@@ -242,7 +245,7 @@ export default function Schedule() {
                         <View style={styles.liveIndicatorContainer}>
                           {live && <PulsingDot color={textColor} />}
                         </View>
-                      </View>
+                      </Pressable>
                     );
                   })}
                 </View>

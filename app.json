@@ -17,12 +17,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.refuge-worldwide-app",
+      "displayName": "Refuge Worldwide",
       "infoPlist": {
         "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
       "package": "com.refugeworldwide.app",
+      "label": "Refuge Worldwide",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"

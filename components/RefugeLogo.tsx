@@ -29,7 +29,8 @@ export function RefugeLogo({ size = 50, variant = "text" }: RefugeLogoProps) {
   return (
     <Image
       source={logoSource}
-      style={{ width: size, height: size, resizeMode: "contain" }}
+      style={{ width: size, height: size }}
+      contentFit="contain"
     />
   );
 }

@@ -1,10 +1,10 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useAudioStore } from "@/store/audioStore";
+import { Track, useAudioStore } from "@/store/audioStore";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomSheetBackdrop,
+  BottomSheetFlatList,
   BottomSheetModal,
-  BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -20,7 +20,7 @@ import DraggableFlatList, {
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { Swipeable } from "react-native-gesture-handler";
-import TrackPlayer, { Track } from "react-native-track-player";
+import TrackPlayer from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
 import { Icon } from "./Icon";
 import { ThemedText } from "./ThemedText";
@@ -33,12 +33,18 @@ export interface QueuePreviewRef {
 export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
-  const [queue, setQueue] = useState<Track[]>([]);
   const [showDescription, setShowDescription] = useState<string | null>(null);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const router = useRouter();
 
-  const { currentTrack, isPlaying, isLoading } = useAudioStore();
+  const {
+    currentTrack,
+    isPlaying,
+    isLoading,
+    queue,
+    removeFromQueue,
+    reorderQueue,
+  } = useAudioStore();
   const isLiveMode = currentTrack?.isLive;
   const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
 
@@ -62,11 +68,10 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     dismiss: () => bottomSheetRef.current?.dismiss(),
   }));
 
-  // Fetch queue and show details when sheet opens
+  // Fetch show details when sheet opens
   const handleSheetChange = useCallback(
     (index: number) => {
       if (index >= 0) {
-        loadQueue();
         fetchShowDetails();
       }
     },
@@ -107,65 +112,12 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     [],
   );
 
-  const loadQueue = async () => {
-    try {
-      const currentQueue = await TrackPlayer.getQueue();
-      const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
-
-      // Only show tracks after the current one
-      if (currentTrackIndex !== null && currentTrackIndex !== undefined) {
-        const upcomingTracks = currentQueue.slice(currentTrackIndex + 1);
-        setQueue(upcomingTracks);
-      } else {
-        setQueue(currentQueue);
-      }
-    } catch (error) {
-      console.error("Error loading queue:", error);
-      setQueue([]);
-    }
+  const handleRemove = (trackIndex: number) => {
+    removeFromQueue(trackIndex);
   };
 
-  const handleRemove = async (trackIndex: number) => {
-    try {
-      const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
-      // Calculate actual index in the full queue
-      const actualIndex =
-        currentTrackIndex !== null && currentTrackIndex !== undefined
-          ? currentTrackIndex + 1 + trackIndex
-          : trackIndex;
-
-      await TrackPlayer.remove(actualIndex);
-      await loadQueue(); // Refresh the queue display
-    } catch (error) {
-      console.error("Error removing track:", error);
-    }
-  };
-
-  const handleReorder = async ({ data }: { data: Track[] }) => {
-    try {
-      const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
-
-      // Update local state immediately for smooth UI
-      setQueue(data);
-
-      // Reorder in TrackPlayer
-      // Remove all upcoming tracks and re-add in new order
-      if (currentTrackIndex !== null && currentTrackIndex !== undefined) {
-        // Get the full queue
-        const fullQueue = await TrackPlayer.getQueue();
-        const currentAndPastTracks = fullQueue.slice(0, currentTrackIndex + 1);
-
-        // Reset queue with current/past tracks + reordered upcoming tracks
-        await TrackPlayer.reset();
-        await TrackPlayer.add([...currentAndPastTracks, ...data]);
-
-        // Set active track back to what was playing
-        await TrackPlayer.skip(currentTrackIndex);
-      }
-    } catch (error) {
-      console.error("Error reordering queue:", error);
-      await loadQueue(); // Reload on error
-    }
+  const handleReorder = ({ data }: { data: Track[] }) => {
+    reorderQueue(data);
   };
 
   const handlePlayPause = async () => {
@@ -178,7 +130,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   };
 
   const handleTitlePress = () => {
-    if (currentTrack?.slug) {
+    if (currentTrack?.slug && !isLiveMode) {
       bottomSheetRef.current?.dismiss();
 
       // Always navigate to radio tab when clicking from queue preview
@@ -186,12 +138,152 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     }
   };
 
+  const renderHeader = () => (
+    <View>
+      {/* Current Show Info */}
+      {currentTrack && (
+        <View>
+          <View style={styles.imageContainer}>
+            {currentTrack.artwork ? (
+              <Image
+                source={{ uri: currentTrack.artwork }}
+                placeholder={{ blurhash: defaultBlurhash }}
+                transition={300}
+                style={styles.image}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={[styles.image, { backgroundColor: textColor }]} />
+            )}
+          </View>
+
+          {!isLiveMode && (
+            <View
+              style={[
+                styles.scrubberContainer,
+                { borderColor: textColor, backgroundColor },
+              ]}
+            >
+              <DraggableScrubber
+                onPlayPause={handlePlayPause}
+                isPlaying={isPlaying}
+                isLoading={isLoading}
+              />
+            </View>
+          )}
+
+          <View style={styles.showContentWrapper}>
+            <View
+              style={[styles.titleRow, { borderBottomColor: textColor }]}
+            >
+              <Pressable
+                style={styles.titlePressable}
+                onPress={handleTitlePress}
+                disabled={!currentTrack?.slug}
+              >
+                <ThemedText>{currentTrack.title}</ThemedText>
+              </Pressable>
+            </View>
+
+            {showDescription && (
+              <View style={styles.descriptionContainer}>
+                <ThemedText numberOfLines={3}>
+                  {showDescription}
+                </ThemedText>
+              </View>
+            )}
+
+            <View style={styles.actionButtons}>
+              <Pressable style={styles.actionButton}>
+                <Icon name="heart-outline" size={24} />
+              </Pressable>
+              <Pressable
+                style={styles.viewShowButton}
+                onPress={handleTitlePress}
+                disabled={!currentTrack?.slug}
+              >
+                <ThemedText style={styles.viewShowText}>
+                  {isLiveMode ? "View show" : "View show"}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Queue Header */}
+      <View
+        style={[
+          styles.queueHeader,
+          { borderBottomColor: textColor, borderBottomWidth: 1 },
+        ]}
+      >
+        <ThemedText type="subtitle" style={[styles.queueHeaderTitle]}>
+          Up Next ({queue.length})
+        </ThemedText>
+      </View>
+    </View>
+  );
+
+  const renderItem = ({ item, index }: { item: Track; index: number }) => (
+    <ScaleDecorator>
+      <Swipeable
+        renderRightActions={() => (
+          <View
+            style={[
+              styles.deleteAction,
+              { backgroundColor: "#ff3b30" },
+            ]}
+          >
+            <Ionicons name="trash" size={24} color="white" />
+          </View>
+        )}
+        onSwipeableOpen={() => handleRemove(index)}
+        overshootRight={false}
+      >
+        <Pressable
+          onLongPress={() => {
+            // Long press would trigger drag in a DraggableFlatList context
+          }}
+          style={[
+            styles.queueItem,
+            { borderBottomColor: textColor, backgroundColor },
+          ]}
+        >
+          <View style={styles.queueImageContainer}>
+            {item.artwork ? (
+              <Image
+                source={{ uri: optimizeImage(item.artwork) }}
+                style={styles.queueImage}
+                contentFit="cover"
+              />
+            ) : (
+              <View
+                style={[
+                  styles.queueImage,
+                  { backgroundColor: textColor },
+                ]}
+              />
+            )}
+          </View>
+          <View style={styles.queueTitleContainer}>
+            <ThemedText numberOfLines={2} style={styles.queueTitle}>
+              {item.title}
+            </ThemedText>
+          </View>
+          <View style={styles.dragHandle}>
+            <Ionicons name="menu" size={24} color={textColor} />
+          </View>
+        </Pressable>
+      </Swipeable>
+    </ScaleDecorator>
+  );
+
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
       snapPoints={["65%", "95%"]}
       enablePanDownToClose
-      enableContentPanningGesture={false}
       backdropComponent={renderBackdrop}
       backgroundStyle={{
         backgroundColor,
@@ -201,174 +293,23 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
       handleIndicatorStyle={{ backgroundColor: textColor }}
       onChange={handleSheetChange}
     >
-      <View style={styles.container}>
-        <BottomSheetScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Current Show Info - Image at top with scrubber overlay */}
-          {currentTrack && (
-            <View>
-              {/* Show Image Container (16:9) */}
-              <View style={styles.imageContainer}>
-                {currentTrack.artwork ? (
-                  <Image
-                    source={{ uri: currentTrack.artwork }}
-                    placeholder={{ blurhash: defaultBlurhash }}
-                    transition={300}
-                    style={styles.image}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View
-                    style={[styles.image, { backgroundColor: textColor }]}
-                  />
-                )}
-              </View>
-
-              {/* Timeline Scrubber below image (only for archive mode) */}
-              {!isLiveMode && (
-                <View
-                  style={[
-                    styles.scrubberContainer,
-                    { borderColor: textColor, backgroundColor },
-                  ]}
-                >
-                  <DraggableScrubber
-                    onPlayPause={handlePlayPause}
-                    isPlaying={isPlaying}
-                    isLoading={isLoading}
-                  />
-                </View>
-              )}
-
-              {/* Content below image - full width */}
-              <View style={styles.showContentWrapper}>
-                {/* Title Row - Full Width */}
-                <View
-                  style={[styles.titleRow, { borderBottomColor: textColor }]}
-                >
-                  <Pressable
-                    style={styles.titlePressable}
-                    onPress={handleTitlePress}
-                    disabled={!currentTrack?.slug}
-                  >
-                    <ThemedText>{currentTrack.title}</ThemedText>
-                  </Pressable>
-                </View>
-
-                {showDescription && (
-                  <View style={styles.descriptionContainer}>
-                    <ThemedText numberOfLines={3}>{showDescription}</ThemedText>
-                  </View>
-                )}
-
-                {/* Action Buttons */}
-                <View style={styles.actionButtons}>
-                  <Pressable style={styles.actionButton}>
-                    <Icon name="heart-outline" size={24} />
-                  </Pressable>
-                  <Pressable
-                    style={styles.viewShowButton}
-                    onPress={handleTitlePress}
-                    disabled={!currentTrack?.slug}
-                  >
-                    <ThemedText style={styles.viewShowText}>
-                      View show
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* Queue Section */}
-          <View style={styles.queueSection}>
-            <View
-              style={[
-                styles.queueHeader,
-                { borderBottomColor: textColor, borderBottomWidth: 1 },
-              ]}
-            >
-              <ThemedText type="subtitle" style={[styles.queueHeaderTitle]}>
-                Up Next ({queue.length})
+      <BottomSheetFlatList
+        data={queue}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
+        renderItem={queue.length > 0 ? renderItem : undefined}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          queue.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText}>
+                No shows in queue
               </ThemedText>
             </View>
-
-            {queue.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <ThemedText style={styles.emptyText}>
-                  No shows in queue
-                </ThemedText>
-              </View>
-            ) : (
-              <DraggableFlatList
-                data={queue}
-                onDragEnd={handleReorder}
-                keyExtractor={(item, index) => `${item.id}-${index}`}
-                renderItem={({ item, drag, isActive, getIndex }) => {
-                  const index = getIndex() ?? 0;
-                  return (
-                    <ScaleDecorator>
-                      <Swipeable
-                        renderRightActions={() => (
-                          <View
-                            style={[
-                              styles.deleteAction,
-                              { backgroundColor: "#ff3b30" },
-                            ]}
-                          >
-                            <Ionicons name="trash" size={24} color="white" />
-                          </View>
-                        )}
-                        onSwipeableOpen={() => handleRemove(index)}
-                        overshootRight={false}
-                      >
-                        <Pressable
-                          onLongPress={drag}
-                          disabled={isActive}
-                          style={[
-                            styles.queueItem,
-                            { borderBottomColor: textColor, backgroundColor },
-                            isActive && styles.queueItemDragging,
-                          ]}
-                        >
-                          <View style={styles.queueImageContainer}>
-                            {item.artwork ? (
-                              <Image
-                                source={{ uri: optimizeImage(item.artwork) }}
-                                style={styles.queueImage}
-                                contentFit="cover"
-                              />
-                            ) : (
-                              <View
-                                style={[
-                                  styles.queueImage,
-                                  { backgroundColor: textColor },
-                                ]}
-                              />
-                            )}
-                          </View>
-                          <View style={styles.queueTitleContainer}>
-                            <ThemedText
-                              numberOfLines={2}
-                              style={styles.queueTitle}
-                            >
-                              {item.title}
-                            </ThemedText>
-                          </View>
-                          <View style={styles.dragHandle}>
-                            <Ionicons name="menu" size={24} color={textColor} />
-                          </View>
-                        </Pressable>
-                      </Swipeable>
-                    </ScaleDecorator>
-                  );
-                }}
-                containerStyle={{ flex: 0 }}
-                scrollEnabled={false}
-              />
-            )}
-          </View>
-        </BottomSheetScrollView>
-      </View>
+          ) : undefined
+        }
+        contentContainerStyle={styles.flatListContent}
+        scrollEnabled={true}
+      />
     </BottomSheetModal>
   );
 });
@@ -383,6 +324,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
     paddingTop: 8,
+  },
+  flatListContent: {
+    paddingBottom: 32,
+    paddingHorizontal: 12,
+  },
+  emptyDrawer: {
+    flex: 1,
   },
   // Image at top - no padding
   imageContainer: {
@@ -456,6 +404,7 @@ const styles = StyleSheet.create({
   },
   // Queue Section
   queueSection: {
+    flex: 1,
     paddingTop: 0,
   },
   queueHeader: {
