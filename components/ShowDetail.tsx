@@ -1,14 +1,14 @@
-import { Icon } from '@/components/Icon';
-import { ShowCard } from '@/components/ShowCard';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { useAuth } from '@/contexts/AuthContext';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { isFavorited, toggleFavorite } from '@/lib/favorites';
-import { Artist } from '@/types/artists';
-import { Show } from '@/types/shows';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Icon } from "@/components/Icon";
+import { ShowCard } from "@/components/ShowCard";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { useAuth } from "@/contexts/AuthContext";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { isFavourited, toggleFavourite } from "@/lib/favourites";
+import { Artist } from "@/types/artists";
+import { Show } from "@/types/shows";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,13 +18,13 @@ import {
   Share,
   StyleSheet,
   View,
-} from 'react-native';
+} from "react-native";
 
-const API_BASE_URL = 'https://refugeworldwide.com/api/shows';
-const ARTIST_API_BASE_URL = 'https://refugeworldwide.com/api/artists';
+const API_BASE_URL = "https://refugeworldwide.com/api/shows";
+const ARTIST_API_BASE_URL = "https://refugeworldwide.com/api/artists";
 
 interface ShowDetailProps {
-  navigationPrefix: '/(tabs)/radio' | '/(tabs)/search';
+  navigationPrefix: "/(tabs)/radio" | "/(tabs)/search";
 }
 
 export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
@@ -38,10 +38,12 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
-  const [artistDetails, setArtistDetails] = useState<Map<string, Artist & { shows?: Show[] }>>(new Map());
+  const [artistDetails, setArtistDetails] = useState<
+    Map<string, Artist & { shows?: Show[] }>
+  >(new Map());
   const [artistsLoading, setArtistsLoading] = useState(false);
 
-  const textColor = useThemeColor({}, 'text');
+  const textColor = useThemeColor({}, "text");
 
   useEffect(() => {
     if (slug) {
@@ -67,7 +69,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     try {
       const response = await fetch(`${API_BASE_URL}/${showSlug}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch show');
+        throw new Error("Failed to fetch show");
       }
       const data = await response.json();
 
@@ -80,21 +82,23 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
         mixcloudLink: data.show.mixcloudLink,
         audioFile: data.show.audioFile?.url || data.show.audioFile,
         coverImage: data.show.coverImage?.url || data.show.coverImage,
-        genres: data.show.genresCollection?.items?.map((g: any) => g.name) || [],
+        genres:
+          data.show.genresCollection?.items?.map((g: any) => g.name) || [],
         artwork: data.show.coverImage?.url,
         description: data.show.description,
         relatedShows: data.relatedShows || [],
-        artists: data.show.artistsCollection?.items?.map((a: any) => ({
-          id: a.sys?.id || a.id || a.slug,
-          name: a.name,
-          slug: a.slug,
-        })) || [],
+        artists:
+          data.show.artistsCollection?.items?.map((a: any) => ({
+            id: a.sys?.id || a.id || a.slug,
+            name: a.name,
+            slug: a.slug,
+          })) || [],
       };
 
       setShow(transformedShow);
     } catch (err) {
-      console.error('Error fetching show:', err);
-      setError('Failed to load show');
+      console.error("Error fetching show:", err);
+      setError("Failed to load show");
     } finally {
       setLoading(false);
     }
@@ -103,14 +107,14 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const day = date.getDate();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const month = date.toLocaleDateString("en-US", { month: "short" });
     const year = date.getFullYear();
     return `${day} ${month} ${year}`;
   };
 
   const getImageUrl = (url?: string): string => {
-    if (!url) return '';
-    return url.startsWith('//') ? `https:${url}` : url;
+    if (!url) return "";
+    return url.startsWith("//") ? `https:${url}` : url;
   };
 
   const handleRelatedShowPress = (relatedSlug: string) => {
@@ -120,37 +124,37 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const handleShare = async () => {
     try {
       const shareUrl = `https://refugeworldwide.com/shows/${slug}`;
-      const shareMessage = `${show?.title} - ${formatDate(show?.date || '')}`;
+      const shareMessage = `${show?.title} - ${formatDate(show?.date || "")}`;
 
       await Share.share({
         message: shareMessage,
         url: shareUrl,
       });
     } catch (error) {
-      console.error('Error sharing:', error);
+      console.error("Error sharing:", error);
     }
   };
 
   const checkFavoriteStatus = async () => {
     if (!show?.id) return;
-    const favorited = await isFavorited(show.id);
-    setIsFavorite(favorited);
+    const favourited = await isFavourited(show.id);
+    setIsFavorite(favourited);
   };
 
   const handleToggleFavorite = async () => {
     if (!user) {
-      Alert.alert('Sign in required', 'Please sign in to favorite shows');
+      Alert.alert("Sign in required", "Please sign in to favorite shows");
       return;
     }
 
     if (!show?.id) return;
 
     setFavoriteLoading(true);
-    const { error } = await toggleFavorite(show.id);
+    const { error } = await toggleFavourite(show.id);
     setFavoriteLoading(false);
 
     if (error) {
-      Alert.alert('Error', 'Failed to update favorite');
+      Alert.alert("Error", "Failed to update favorite");
     } else {
       setIsFavorite(!isFavorite);
     }
@@ -166,23 +170,27 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
       await Promise.all(
         show.artists.map(async (artist) => {
           try {
-            const response = await fetch(`${ARTIST_API_BASE_URL}/${artist.slug}`);
+            const response = await fetch(
+              `${ARTIST_API_BASE_URL}/${artist.slug}`,
+            );
             if (response.ok) {
               const data = await response.json();
 
               // Transform artist shows
-              const transformedShows: Show[] = (data.shows || []).map((s: any) => ({
-                id: s.id || '',
-                title: s.title || '',
-                date: s.date || '',
-                slug: s.slug || '',
-                mixcloudLink: s.mixcloudLink,
-                audioFile: s.audioFile,
-                coverImage: s.coverImage,
-                genres: Array.isArray(s.genres) ? s.genres : [],
-                artwork: s.coverImage,
-                description: s.description,
-              }));
+              const transformedShows: Show[] = (data.shows || []).map(
+                (s: any) => ({
+                  id: s.id || "",
+                  title: s.title || "",
+                  date: s.date || "",
+                  slug: s.slug || "",
+                  mixcloudLink: s.mixcloudLink,
+                  audioFile: s.audioFile,
+                  coverImage: s.coverImage,
+                  genres: Array.isArray(s.genres) ? s.genres : [],
+                  artwork: s.coverImage,
+                  description: s.description,
+                }),
+              );
 
               const transformedArtist: Artist & { shows?: Show[] } = {
                 id: data.sys?.id || data.id || data.slug,
@@ -198,7 +206,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
           } catch (err) {
             console.error(`Error fetching artist ${artist.slug}:`, err);
           }
-        })
+        }),
       );
       setArtistDetails(details);
     } finally {
@@ -220,7 +228,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.errorContainer}>
-          <ThemedText>{error || 'Show not found'}</ThemedText>
+          <ThemedText>{error || "Show not found"}</ThemedText>
         </View>
       </ThemedView>
     );
@@ -256,20 +264,24 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                       setIsDescriptionLong(true);
                     }
                   }}
-                  style={{ position: 'absolute', opacity: 0 }}
+                  style={{ position: "absolute", opacity: 0 }}
                 >
                   {show.description}
                 </ThemedText>
               )}
-              <ThemedText
-                numberOfLines={isDescriptionExpanded ? undefined : 5}
-              >
+              <ThemedText numberOfLines={isDescriptionExpanded ? undefined : 5}>
                 {show.description}
               </ThemedText>
               {isDescriptionLong && (
-                <Pressable onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
-                  <ThemedText style={[styles.viewMoreText, { color: textColor }]}>
-                    {isDescriptionExpanded ? 'show less' : 'show more'}
+                <Pressable
+                  onPress={() =>
+                    setIsDescriptionExpanded(!isDescriptionExpanded)
+                  }
+                >
+                  <ThemedText
+                    style={[styles.viewMoreText, { color: textColor }]}
+                  >
+                    {isDescriptionExpanded ? "show less" : "show more"}
                   </ThemedText>
                 </Pressable>
               )}
@@ -278,12 +290,15 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <Pressable onPress={handleToggleFavorite} style={styles.actionButton}>
+            <Pressable
+              onPress={handleToggleFavorite}
+              style={styles.actionButton}
+            >
               {favoriteLoading ? (
                 <ActivityIndicator size="small" />
               ) : (
                 <Icon
-                  name={isFavorite ? 'heart' : 'heart-outline'}
+                  name={isFavorite ? "heart" : "heart-outline"}
                   size={24}
                   color={isFavorite ? textColor : undefined}
                 />
@@ -297,16 +312,26 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
 
         {/* Artists */}
         {show.artists && show.artists.length > 0 && (
-          <View style={[styles.artistsSection, { borderTopColor: textColor, borderTopWidth: 1 }]}>
+          <View
+            style={[
+              styles.artistsSection,
+              { borderTopColor: textColor, borderTopWidth: 1 },
+            ]}
+          >
             <View>
               {show.artists.map((artist, index) => {
                 const artistDetail = artistDetails.get(artist.slug);
-                const artistImage = artistDetail?.photo || artistDetail?.coverImage;
+                const artistImage =
+                  artistDetail?.photo || artistDetail?.coverImage;
 
                 return (
                   <View key={`${artist.slug}-${index}`}>
                     <Pressable
-                      onPress={() => router.push(`${navigationPrefix}/artist/${artist.slug}` as any)}
+                      onPress={() =>
+                        router.push(
+                          `${navigationPrefix}/artist/${artist.slug}` as any,
+                        )
+                      }
                       style={[
                         styles.artistItem,
                         { borderBottomColor: textColor },
@@ -321,7 +346,13 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                               key={getImageUrl(artistImage)}
                             />
                           ) : (
-                            <View style={[styles.artistImage, styles.artistImageSkeleton, { backgroundColor: textColor, opacity: 0.1 }]} />
+                            <View
+                              style={[
+                                styles.artistImage,
+                                styles.artistImageSkeleton,
+                                { backgroundColor: textColor, opacity: 0.1 },
+                              ]}
+                            />
                           )}
                         </View>
                         <View style={styles.artistInfo}>
@@ -341,14 +372,16 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
         {/* Related Shows */}
         {show.relatedShows && show.relatedShows.length > 0 && (
           <View style={styles.relatedShowsSection}>
-            <ThemedText type='subtitle' style={{ marginBottom: 10 }}>
+            <ThemedText type="subtitle" style={{ marginBottom: 10 }}>
               Related Shows
             </ThemedText>
             <View>
               {show.relatedShows.map((relatedShow) => (
                 <View key={relatedShow.id}>
                   <ShowCard
-                    imageUrl={getImageUrl(relatedShow.coverImage || relatedShow.artwork)}
+                    imageUrl={getImageUrl(
+                      relatedShow.coverImage || relatedShow.artwork,
+                    )}
                     title={relatedShow.title}
                     date={formatDate(relatedShow.date)}
                     genres={relatedShow.genres}
@@ -374,17 +407,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 12,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: 100,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   showCardWrapper: {
@@ -395,13 +428,13 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   viewMoreText: {
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   relatedShowsSection: {
     marginTop: 8,
   },
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
     marginTop: 4,
   },
@@ -423,28 +456,28 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   artistContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   artistImageContainer: {
     width: 80,
     aspectRatio: 16 / 9,
   },
   artistImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   artistImageSkeleton: {
     borderRadius: 4,
   },
   artistInfo: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   artistName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   artistBio: {
     fontSize: 13,

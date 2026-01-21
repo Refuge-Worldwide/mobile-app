@@ -1,11 +1,19 @@
-import { ShowCard } from '@/components/ShowCard';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
+import { ShowCard } from "@/components/ShowCard";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
 
 interface Show {
   id: string;
@@ -24,13 +32,13 @@ interface SearchResponse {
 }
 
 export default function SearchScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<Show[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
   const router = useRouter();
 
   const handleSearch = async (query: string) => {
@@ -45,17 +53,19 @@ export default function SearchScreen() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`https://refugeworldwide.com/api/search?query=${encodeURIComponent(query)}`);
+      const response = await fetch(
+        `https://refugeworldwide.com/api/search?query=${encodeURIComponent(query)}`,
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch search results');
+        throw new Error("Failed to fetch search results");
       }
 
       const data: SearchResponse = await response.json();
       setResults(data.shows || []);
     } catch (err) {
-      console.error('Error searching:', err);
-      setError('Failed to load search results');
+      console.error("Error searching:", err);
+      setError("Failed to load search results");
       setResults([]);
     } finally {
       setLoading(false);
@@ -64,9 +74,9 @@ export default function SearchScreen() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
     }).format(date);
   };
 
@@ -87,10 +97,10 @@ export default function SearchScreen() {
               color: textColor,
               borderColor: textColor,
               backgroundColor: backgroundColor,
-            }
+            },
           ]}
           placeholder="Search shows..."
-          placeholderTextColor={textColor + '80'}
+          placeholderTextColor={textColor + "80"}
           value={searchQuery}
           onChangeText={handleSearch}
           autoCapitalize="none"
@@ -99,7 +109,7 @@ export default function SearchScreen() {
         {searchQuery.length > 0 && (
           <Pressable
             style={styles.clearButton}
-            onPress={() => handleSearch('')}
+            onPress={() => handleSearch("")}
           >
             <Ionicons name="close" size={40} color={textColor} />
           </Pressable>
@@ -118,11 +128,14 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {!loading && !error && searchQuery.trim().length > 0 && results.length === 0 && (
-        <View style={styles.centerContainer}>
-          <ThemedText>No shows found</ThemedText>
-        </View>
-      )}
+      {!loading &&
+        !error &&
+        searchQuery.trim().length > 0 &&
+        results.length === 0 && (
+          <View style={styles.centerContainer}>
+            <ThemedText>No shows found</ThemedText>
+          </View>
+        )}
 
       {!loading && results.length > 0 && (
         <FlatList
@@ -130,7 +143,11 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <ShowCard
-              imageUrl={item.coverImage?.startsWith('//') ? `https:${item.coverImage}` : item.coverImage}
+              imageUrl={
+                item.coverImage?.startsWith("//")
+                  ? `https:${item.coverImage}`
+                  : item.coverImage
+              }
               audioUrl={item.mixcloudLink}
               title={item.title}
               date={formatDate(item.date)}
@@ -167,35 +184,35 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 24
+    paddingBottom: 100,
   },
   searchContainer: {
-    position: 'relative',
+    position: "relative",
   },
   searchInput: {
     height: 56,
     borderBottomWidth: 1,
     fontSize: 43,
-    fontFamily: 'ABCArizonaFlare',
+    fontFamily: "ABCArizonaFlare",
     paddingRight: 40,
     paddingVertical: 4,
   },
   clearButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     top: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     width: 40,
     height: 40,
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   listContent: {
-    paddingBottom: 16,
+    paddingBottom: 100,
   },
 });

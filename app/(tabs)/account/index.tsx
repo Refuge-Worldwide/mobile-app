@@ -1,15 +1,15 @@
-import { RefugeLogo } from '@/components/RefugeLogo';
-import { ThemedButton } from '@/components/ThemedButton';
-import { ThemedInput } from '@/components/ThemedInput';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { useAuth } from '@/contexts/AuthContext';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { getFavorites } from '@/lib/favorites';
-import * as Clipboard from 'expo-clipboard';
-import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useState } from 'react';
+import { RefugeLogo } from "@/components/RefugeLogo";
+import { ThemedButton } from "@/components/ThemedButton";
+import { ThemedInput } from "@/components/ThemedInput";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { useAuth } from "@/contexts/AuthContext";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { getFavourites } from "@/lib/favourites";
+import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,13 +17,13 @@ import {
   ScrollView,
   StyleSheet,
   View,
-} from 'react-native';
+} from "react-native";
 
 export default function AccountScreen() {
   const { user, loading, signIn, signUp, signOut, resetPassword } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
@@ -36,18 +36,18 @@ export default function AccountScreen() {
   }, [user]);
 
   const loadFavoritesCount = async () => {
-    const favorites = await getFavorites();
-    setFavoritesCount(favorites.length);
+    const favourites = await getFavourites();
+    setFavoritesCount(favourites.length);
   };
 
   const handleAuth = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      Alert.alert("Error", "Please enter both email and password");
       return;
     }
 
     if (isSignUp && password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert("Error", "Passwords do not match");
       return;
     }
 
@@ -59,17 +59,17 @@ export default function AccountScreen() {
     setSubmitting(false);
 
     if (error) {
-      Alert.alert('Error', error.message);
+      Alert.alert("Error", error.message);
     } else {
       if (isSignUp) {
         Alert.alert(
-          'Success',
-          'Account created! Please check your email to verify your account.'
+          "Success",
+          "Account created! Please check your email to verify your account.",
         );
       }
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
     }
   };
 
@@ -80,7 +80,7 @@ export default function AccountScreen() {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert("Error", "Please enter your email address");
       return;
     }
 
@@ -89,31 +89,34 @@ export default function AccountScreen() {
     setSubmitting(false);
 
     if (error) {
-      Alert.alert('Error', error.message);
+      Alert.alert("Error", error.message);
     } else {
       Alert.alert(
-        'Success',
-        'Password reset email sent! Please check your inbox.'
+        "Success",
+        "Password reset email sent! Please check your inbox.",
       );
     }
   };
 
   const handleFavoritesPress = () => {
-    router.push('/(tabs)/playlist/playlist/favorites');
+    router.push("/(tabs)/playlist/playlist/favorites");
   };
 
   const handlePodcastPress = () => {
-    router.push('/(tabs)/account/podcast');
+    router.push("/(tabs)/account/podcast");
   };
 
   const handleCopyDiscountCode = async () => {
-    const discountCode = 'REFUGE2024';
+    const discountCode = "REFUGE2024";
     await Clipboard.setStringAsync(discountCode);
-    Alert.alert('Success', `Discount code ${discountCode} copied to clipboard!`);
+    Alert.alert(
+      "Success",
+      `Discount code ${discountCode} copied to clipboard!`,
+    );
   };
 
   const handleManageSubscription = async () => {
-    await WebBrowser.openBrowserAsync('https://refugeworldwide.com');
+    await WebBrowser.openBrowserAsync("https://refugeworldwide.com");
   };
 
   if (loading) {
@@ -124,14 +127,13 @@ export default function AccountScreen() {
     );
   }
 
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
 
   if (user) {
     return (
       <ThemedView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-
           <View style={[styles.card, { backgroundColor: textColor }]}>
             <View style={styles.nameContainer}>
               <ThemedText
@@ -144,15 +146,23 @@ export default function AccountScreen() {
                 {user.email}
               </ThemedText>
             </View>
-            <View style={{ marginTop: 28, marginBottom: 36, alignItems: 'center' }}>
+            <View
+              style={{ marginTop: 28, marginBottom: 36, alignItems: "center" }}
+            >
               <RefugeLogo size={70} variant="background" />
             </View>
             <View style={styles.cardRow}>
-              <ThemedText style={{ color: backgroundColor }}>Joined:</ThemedText>
-              <ThemedText style={{ color: backgroundColor }}>January 24, 2024</ThemedText>
+              <ThemedText style={{ color: backgroundColor }}>
+                Joined:
+              </ThemedText>
+              <ThemedText style={{ color: backgroundColor }}>
+                January 24, 2024
+              </ThemedText>
             </View>
             <View style={styles.cardRow}>
-              <ThemedText style={{ color: backgroundColor }}>Subscription:</ThemedText>
+              <ThemedText style={{ color: backgroundColor }}>
+                Subscription:
+              </ThemedText>
               <ThemedText style={{ color: backgroundColor }}>Active</ThemedText>
             </View>
           </View>
@@ -241,7 +251,7 @@ export default function AccountScreen() {
           )}
 
           <ThemedButton
-            title={isSignUp ? 'Sign Up' : 'Sign In'}
+            title={isSignUp ? "Sign Up" : "Sign In"}
             onPress={handleAuth}
             loading={submitting}
           />
@@ -250,9 +260,9 @@ export default function AccountScreen() {
             style={styles.toggleButton}
             onPress={() => setIsSignUp(!isSignUp)}
           >
-            <ThemedText style={{ textDecorationLine: 'underline' }}>
+            <ThemedText style={{ textDecorationLine: "underline" }}>
               {isSignUp
-                ? 'Already have an account? Sign In'
+                ? "Already have an account? Sign In"
                 : "Don't have an account? Sign Up"}
             </ThemedText>
           </Pressable>
@@ -268,29 +278,31 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 100,
   },
   title: {
     marginBottom: 30,
-    textAlign: 'center',
+    textAlign: "center",
   },
   form: {
-    gap: 55,
+    gap: 24,
   },
   toggleButton: {
     padding: 8,
-    alignItems: 'center',
+    alignItems: "center",
+    marginTop: -8,
   },
   toggleText: {
     fontSize: 14,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   forgotPassword: {
     marginTop: 8,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   forgotPasswordText: {
     fontSize: 12,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   card: {
     borderRadius: 12,
@@ -298,13 +310,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   nameContainer: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   cardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   buttonsContainer: {
     gap: 8,

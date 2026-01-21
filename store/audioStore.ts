@@ -1,6 +1,6 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type PlaybackMode = 'archive' | 'live';
+export type PlaybackMode = "archive" | "live";
 
 export interface Track {
   id: string;
@@ -18,46 +18,65 @@ interface AudioStore {
   currentTrack: Track | null;
   isPlaying: boolean;
   isLoading: boolean;
-  playbackMode: PlaybackMode;
   setTrack: (track: Track) => void;
   setIsPlaying: (isPlaying: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
   clearTrack: () => void;
   stopTrack: () => void;
-  setLiveTrack: (liveData: { title: string; artwork?: string; showId?: string }) => void;
-  setLiveTrackChannel2: (liveData: { title: string; artwork?: string; showId?: string }) => void;
+  setLiveTrack: (liveData: {
+    title: string;
+    artwork?: string;
+    showId?: string;
+  }) => void;
+  setLiveTrackChannel2: (liveData: {
+    title: string;
+    artwork?: string;
+    showId?: string;
+  }) => void;
+  updateLiveTrackMetadata: (liveData: {
+    title: string;
+    artwork?: string;
+    showId?: string;
+  }) => void;
   isShowPlaying: (showId: string) => boolean;
 }
 
-// Optimize image URL for faster loading (same as ShowCard)
-const optimizeImageForPlayer = (src: string | undefined): string | undefined => {
+// Optimize image URL for lock screen - square crop for better display
+const optimizeImageForPlayer = (
+  src: string | undefined,
+): string | undefined => {
   if (!src) return undefined;
 
-  const imageUrl = src.startsWith('//') ? `https:${src}` : src;
+  const imageUrl = src.startsWith("//") ? `https:${src}` : src;
 
-  if (!imageUrl.includes('ctfassets.net') && !imageUrl.includes('contentful.com')) {
+  if (
+    !imageUrl.includes("ctfassets.net") &&
+    !imageUrl.includes("contentful.com")
+  ) {
     return imageUrl;
   }
 
-  // Same optimization as ShowCard (590x332 with face detection)
-  return `${imageUrl}?w=590&h=332&q=80&fm=jpg&fl=progressive&f=faces&fit=fill`;
+  // Square crop for lock screen (500x500 with face detection)
+  return `${imageUrl}?w=500&h=500&q=80&fm=jpg&fl=progressive&f=faces&fit=fill`;
 };
 
 export const useAudioStore = create<AudioStore>((set, get) => ({
   currentTrack: null,
   isPlaying: false,
   isLoading: false,
-  playbackMode: 'archive',
-  setTrack: (track) => set({
-    currentTrack: {
-      ...track,
-      artwork: optimizeImageForPlayer(track.artwork),
-    },
-    playbackMode: track.mode
-  }),
+  setTrack: (track) =>
+    set({
+      currentTrack: {
+        ...track,
+        artwork: optimizeImageForPlayer(track.artwork),
+      },
+      isPlaying: true,
+      isLoading: true,
+    }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setIsLoading: (isLoading) => set({ isLoading }),
-  clearTrack: () => set({ currentTrack: null, isPlaying: false, isLoading: false }),
+  clearTrack: () =>
+    set({ currentTrack: null, isPlaying: false, isLoading: false }),
   stopTrack: () => set({ isPlaying: false }),
   isShowPlaying: (showId: string) => {
     const state = get();
@@ -65,50 +84,74 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   },
   setLiveTrack: (liveData) => {
     const state = get();
-    // Check if we're already on the live stream
-    if (state.currentTrack?.isLive && state.currentTrack?.id === 'live-stream') {
-      // Just resume/play the existing track - don't create a new one
-      set({ isPlaying: true });
-      return;
-    }
+    const trackData = {
+      id: "live-stream",
+      url: "https://streaming.radio.co/s3699c5e49/listen",
+      title: liveData.title,
+      artist: "Live on Refuge Worldwide",
+      artwork: optimizeImageForPlayer(liveData.artwork),
+      mode: "live" as PlaybackMode,
+      isLive: true,
+      showId: liveData.showId,
+    };
 
-    // Otherwise set up a new live track
-    set({
-      currentTrack: {
-        id: 'live-stream',
-        url: 'https://streaming.radio.co/s3699c5e49/listen',
-        title: liveData.title,
-        artist: 'Live on Refuge Worldwide',
-        artwork: optimizeImageForPlayer(liveData.artwork),
-        mode: 'live',
-        isLive: true,
-        showId: liveData.showId,
-      },
-      playbackMode: 'live',
-    });
+    // Check if we're already on the live stream
+    if (
+      state.currentTrack?.isLive &&
+      state.currentTrack?.id === "live-stream"
+    ) {
+      // Update the track metadata and ensure playback starts
+      set({ currentTrack: trackData, isPlaying: true });
+    } else {
+      // New live track - set track and start loading/playing
+      set({
+        currentTrack: trackData,
+        isPlaying: true,
+        isLoading: true,
+      });
+    }
   },
   setLiveTrackChannel2: (liveData) => {
     const state = get();
-    // Check if we're already on the channel 2 live stream
-    if (state.currentTrack?.isLive && state.currentTrack?.id === 'live-stream-ch2') {
-      // Just resume/play the existing track - don't create a new one
-      set({ isPlaying: true });
-      return;
-    }
+    const trackData = {
+      id: "live-stream-ch2",
+      url: "https://s4.radio.co/s8ce53d687/listen",
+      title: liveData.title,
+      artist: "Live on Refuge Worldwide - Channel 2",
+      artwork: optimizeImageForPlayer(liveData.artwork),
+      mode: "live" as PlaybackMode,
+      isLive: true,
+      showId: liveData.showId,
+    };
 
-    // Otherwise set up a new live track for channel 2
-    set({
-      currentTrack: {
-        id: 'live-stream-ch2',
-        url: 'https://s4.radio.co/s8ce53d687/listen',
-        title: liveData.title,
-        artist: 'Live on Refuge Worldwide - Channel 2',
-        artwork: optimizeImageForPlayer(liveData.artwork),
-        mode: 'live',
-        isLive: true,
-        showId: liveData.showId,
-      },
-      playbackMode: 'live',
-    });
+    // Check if we're already on the channel 2 live stream
+    if (
+      state.currentTrack?.isLive &&
+      state.currentTrack?.id === "live-stream-ch2"
+    ) {
+      // Update the track metadata and ensure playback starts
+      set({ currentTrack: trackData, isPlaying: true });
+    } else {
+      // New live track - set track and start loading/playing
+      set({
+        currentTrack: trackData,
+        isPlaying: true,
+        isLoading: true,
+      });
+    }
+  },
+  updateLiveTrackMetadata: (liveData) => {
+    const state = get();
+    if (!state.currentTrack?.isLive) return;
+
+    // Only update metadata, don't touch playback state
+    const updatedTrack = {
+      ...state.currentTrack,
+      title: liveData.title,
+      artwork: optimizeImageForPlayer(liveData.artwork),
+      showId: liveData.showId,
+    };
+
+    set({ currentTrack: updatedTrack });
   },
 }));

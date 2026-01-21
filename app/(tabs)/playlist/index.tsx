@@ -1,9 +1,9 @@
-import { ThemedButton } from '@/components/ThemedButton';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'expo-router';
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ThemedButton } from "@/components/ThemedButton";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "expo-router";
+import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 interface Playlist {
   id: string;
@@ -13,9 +13,9 @@ interface Playlist {
 
 const PLAYLISTS: Playlist[] = [
   {
-    id: 'favorites',
-    name: 'Favorites',
-    image: require('@/assets/images/favourites.jpg'),
+    id: "favorites",
+    name: "Favorites",
+    image: require("@/assets/images/favourites.jpg"),
   },
   // Add more playlists here in the future
 ];
@@ -29,7 +29,7 @@ export default function PlaylistScreen() {
   };
 
   const handleSignInPress = () => {
-    router.push('/(tabs)/account');
+    router.push("/(tabs)/account");
   };
 
   if (!user) {
@@ -81,29 +81,29 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   emptyTitle: {
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 16,
     marginBottom: 24,
   },
   scrollContent: {
     paddingHorizontal: 12,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: 100,
   },
   playlistsList: {
     gap: 16,
   },
   playlistImage: {
-    width: '100%',
+    width: "100%",
     height: 200,
   },
   playlistName: {

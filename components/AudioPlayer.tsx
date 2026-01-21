@@ -1,25 +1,40 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { useAudioStore } from '@/store/audioStore';
-import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import TrackPlayer, { AppKilledPlaybackBehavior, Capability, Event, State, useTrackPlayerEvents } from 'react-native-track-player';
-import { DraggableScrubber } from './DraggableScrubber';
-import { Icon } from './Icon';
-import { QueuePreview, QueuePreviewRef } from './QueuePreview';
-import { ThemedText } from './ThemedText';
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAudioStore } from "@/store/audioStore";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, Pressable, StyleSheet, View } from "react-native";
+import TrackPlayer, {
+  AppKilledPlaybackBehavior,
+  Capability,
+  Event,
+  State,
+  useTrackPlayerEvents,
+} from "react-native-track-player";
+import { DraggableScrubber } from "./DraggableScrubber";
+import { Icon } from "./Icon";
+import { QueuePreview, QueuePreviewRef } from "./QueuePreview";
+import { ThemedText } from "./ThemedText";
 
 export function AudioPlayer() {
-  const { currentTrack, isPlaying, isLoading, setIsPlaying, setIsLoading, clearTrack, stopTrack, playbackMode } = useAudioStore();
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
+  const {
+    currentTrack,
+    isPlaying,
+    isLoading,
+    setIsPlaying,
+    setIsLoading,
+    clearTrack,
+    stopTrack,
+  } = useAudioStore();
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
   const [isVisible, setIsVisible] = useState(false);
 
   const queueSheetRef = useRef<QueuePreviewRef>(null);
   const slideAnim = useRef(new Animated.Value(100)).current; // Start below screen
-  const isLiveMode = playbackMode === 'live' || currentTrack?.isLive;
-  const defaultBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
+  const isLiveMode = currentTrack?.isLive;
+  const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
+  const lastLoadedTrackId = useRef<string | null>(null);
 
   // Animation functions
   const slideUp = useCallback(() => {
@@ -31,16 +46,19 @@ export function AudioPlayer() {
     }).start();
   }, [slideAnim]);
 
-  const slideDown = useCallback((callback?: () => void) => {
-    Animated.timing(slideAnim, {
-      toValue: 100,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setIsVisible(false);
-      callback?.();
-    });
-  }, [slideAnim]);
+  const slideDown = useCallback(
+    (callback?: () => void) => {
+      Animated.timing(slideAnim, {
+        toValue: 100,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setIsVisible(false);
+        callback?.();
+      });
+    },
+    [slideAnim],
+  );
 
   // Show/hide player when currentTrack changes
   useEffect(() => {
@@ -53,129 +71,264 @@ export function AudioPlayer() {
 
   // Setup Track Player
   useEffect(() => {
-    setupPlayer();
-  }, []);
+    let isSetup = false;
 
-  const setupPlayer = async () => {
-    try {
-      await TrackPlayer.setupPlayer();
-      await TrackPlayer.updateOptions({
-        android: {
-          appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
-        },
-        capabilities: [
-          Capability.Play,
-          Capability.Pause,
-          Capability.Stop,
-          Capability.SeekTo,
-        ],
-        compactCapabilities: [
-          Capability.Play,
-          Capability.Pause,
-          Capability.Stop,
-        ],
-        notificationCapabilities: [
-          Capability.Play,
-          Capability.Pause,
-          Capability.Stop,
-        ],
-      });
-
-      // Setup remote control event handlers for lock screen
-      TrackPlayer.addEventListener(Event.RemotePlay, async () => {
-        await TrackPlayer.play();
-      });
-
-      TrackPlayer.addEventListener(Event.RemotePause, async () => {
-        await TrackPlayer.pause();
-      });
-
-      TrackPlayer.addEventListener(Event.RemoteStop, async () => {
-        await TrackPlayer.stop();
-        clearTrack();
-      });
-
-      TrackPlayer.addEventListener(Event.RemoteSeek, async (event) => {
-        await TrackPlayer.seekTo(event.position);
-      });
-    } catch (error) {
-      console.log('Error setting up player:', error);
-    }
-  };
-
-  const loadTrack = useCallback(async () => {
-    try {
-      setIsLoading(true);
-
-      // Check if the track is already in the queue
-      const queue = await TrackPlayer.getQueue();
-      const currentTrackInQueue = queue.find(track => track.id === currentTrack!.id);
-
-      // Only reset and add if it's a different track
-      if (!currentTrackInQueue) {
-        await TrackPlayer.reset();
-        await TrackPlayer.add({
-          id: currentTrack!.id,
-          url: currentTrack!.url,
-          title: currentTrack!.title,
-          artist: currentTrack!.artist || 'Unknown Artist',
-          artwork: currentTrack!.artwork,
-        });
+    const setupPlayer = async () => {
+      try {
+        // Check if player is already setup
+        const state = await TrackPlayer.getActiveTrackIndex();
+        isSetup = state !== undefined;
+      } catch {
+        isSetup = false;
       }
 
-      await TrackPlayer.play();
-      setIsPlaying(true);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error loading track:', error);
-      setIsLoading(false);
-    }
-  }, [currentTrack, setIsPlaying, setIsLoading]);
+      if (isSetup) {
+        console.log("Player already setup, skipping initialization");
+        return;
+      }
 
-  // Load and play track when currentTrack changes
-  useEffect(() => {
-    if (currentTrack) {
-      loadTrack();
-    }
-  }, [currentTrack, loadTrack]);
+      try {
+        await TrackPlayer.setupPlayer();
+        await TrackPlayer.updateOptions({
+          android: {
+            appKilledPlaybackBehavior:
+              AppKilledPlaybackBehavior.ContinuePlayback,
+          },
+          capabilities: [
+            Capability.Play,
+            Capability.Pause,
+            Capability.Stop,
+            Capability.SeekTo,
+          ],
+          compactCapabilities: [
+            Capability.Play,
+            Capability.Pause,
+            Capability.Stop,
+          ],
+          notificationCapabilities: [
+            Capability.Play,
+            Capability.Pause,
+            Capability.Stop,
+          ],
+        });
 
-  // Sync isPlaying state from store to TrackPlayer
-  useEffect(() => {
-    const syncPlaybackState = async () => {
-      const state = await TrackPlayer.getState();
-      const isCurrentlyPlaying = state === State.Playing;
-      const isBuffering = state === State.Buffering;
+        // Setup remote control event handlers for lock screen
+        TrackPlayer.addEventListener(Event.RemotePlay, async () => {
+          await TrackPlayer.play();
+        });
 
-      if (isPlaying && !isCurrentlyPlaying && !isBuffering) {
-        // Store says play, but player is paused - start playing
-        setIsLoading(true);
-        await TrackPlayer.play();
-        // Don't clear loading here - let the PlaybackState event handle it
-      } else if (!isPlaying && isCurrentlyPlaying) {
-        // Store says pause, but player is playing - pause it
-        await TrackPlayer.pause();
+        TrackPlayer.addEventListener(Event.RemotePause, async () => {
+          await TrackPlayer.pause();
+        });
+
+        TrackPlayer.addEventListener(Event.RemoteStop, async () => {
+          await TrackPlayer.stop();
+          clearTrack();
+        });
+
+        TrackPlayer.addEventListener(Event.RemoteSeek, async (event) => {
+          await TrackPlayer.seekTo(event.position);
+        });
+      } catch (error) {
+        console.log("Error setting up player:", error);
       }
     };
 
-    if (currentTrack) {
-      syncPlaybackState();
+    setupPlayer();
+  }, [clearTrack]);
+
+  // Load and play track when currentTrack ID or URL changes (not on metadata updates)
+  useEffect(() => {
+    if (!currentTrack) {
+      lastLoadedTrackId.current = null;
+      return;
     }
-  }, [isPlaying, currentTrack, setIsLoading]);
+
+    // Only reload if the track ID has actually changed
+    if (lastLoadedTrackId.current === currentTrack.id) {
+      return;
+    }
+
+    const loadTrack = async () => {
+      try {
+        // Reset first to stop any current playback
+        await TrackPlayer.reset();
+
+        // Update player options and add track in parallel for faster loading
+        const updateOptionsPromise = currentTrack.isLive
+          ? TrackPlayer.updateOptions({
+            capabilities: [Capability.Play, Capability.Stop],
+            compactCapabilities: [Capability.Play, Capability.Stop],
+            notificationCapabilities: [Capability.Play, Capability.Stop],
+          })
+          : TrackPlayer.updateOptions({
+            capabilities: [
+              Capability.Play,
+              Capability.Pause,
+              Capability.Stop,
+              Capability.SeekTo,
+            ],
+            compactCapabilities: [
+              Capability.Play,
+              Capability.Pause,
+              Capability.Stop,
+            ],
+            notificationCapabilities: [
+              Capability.Play,
+              Capability.Pause,
+              Capability.Stop,
+            ],
+          });
+
+        const addTrackPromise = TrackPlayer.add({
+          id: currentTrack.id,
+          url: currentTrack.url,
+          title: currentTrack.title,
+          artist: currentTrack.artist || "Unknown Artist",
+          artwork: currentTrack.artwork,
+          isLiveStream: currentTrack.isLive,
+        });
+
+        // Wait for both to complete
+        await Promise.all([updateOptionsPromise, addTrackPromise]);
+
+        // Play the track - isPlaying is already true from setTrack
+        await TrackPlayer.play();
+
+        // Update the ref to track this loaded track
+        lastLoadedTrackId.current = currentTrack.id;
+        // Loading state will be cleared by PlaybackState event
+      } catch (error) {
+        console.error("Error loading track:", error);
+        setIsLoading(false);
+        setIsPlaying(false);
+      }
+    };
+
+    loadTrack();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack?.id, currentTrack?.url]);
+
+  // Update now playing metadata for live streams when track info changes
+  useEffect(() => {
+    const updateMetadata = async () => {
+      if (!currentTrack?.isLive) return;
+
+      try {
+        // Check if there's a track in the player before updating metadata
+        const queue = await TrackPlayer.getQueue();
+        if (queue.length === 0) return;
+
+        await TrackPlayer.updateNowPlayingMetadata({
+          title: currentTrack.title,
+          artist: currentTrack.artist || "Live on Refuge Worldwide",
+          artwork: currentTrack.artwork,
+        });
+      } catch (error) {
+        // Silently ignore errors - metadata will be set when track loads
+      }
+    };
+
+    updateMetadata();
+  }, [
+    currentTrack?.title,
+    currentTrack?.artwork,
+    currentTrack?.artist,
+    currentTrack?.isLive,
+  ]);
+
+  // Fetch and update live show metadata periodically when live stream is loaded
+  useEffect(() => {
+    if (!currentTrack?.isLive) return;
+
+    const fetchAndUpdateLiveShow = async () => {
+      try {
+        const res = await fetch("https://refugeworldwide.com/api/schedule");
+        const data = await res.json();
+
+        const { updateLiveTrackMetadata } = useAudioStore.getState();
+
+        if (currentTrack.id === "live-stream" && data.liveNow) {
+          // Update Channel 1 metadata only (no playback change)
+          updateLiveTrackMetadata({
+            title: data.liveNow.title,
+            artwork: data.liveNow.artwork,
+            showId: data.liveNow.slug || "live-stream",
+          });
+        } else if (currentTrack.id === "live-stream-ch2" && data.ch2) {
+          // Update Channel 2 metadata only (no playback change)
+          updateLiveTrackMetadata({
+            title: data.ch2.liveNow,
+            artwork: data.liveNow?.artwork,
+            showId: "live-stream-ch2",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching live show data:", error);
+      }
+    };
+
+    // Fetch immediately
+    fetchAndUpdateLiveShow();
+
+    // Set up interval to fetch every 30 seconds
+    const interval = setInterval(fetchAndUpdateLiveShow, 30000);
+
+    return () => clearInterval(interval);
+  }, [currentTrack?.isLive, currentTrack?.id]);
+
+  // Sync isPlaying state from store to TrackPlayer
+  useEffect(() => {
+    if (!currentTrack) return;
+
+    const syncPlaybackState = async () => {
+      try {
+        const state = await TrackPlayer.getState();
+        const isCurrentlyPlaying = state === State.Playing;
+        const isBuffering =
+          state === State.Buffering || state === State.Loading;
+        const isPaused = state === State.Paused;
+        const isReady = state === State.Ready;
+
+        if (
+          isPlaying &&
+          !isCurrentlyPlaying &&
+          !isBuffering &&
+          (isPaused || isReady)
+        ) {
+          // Store says play, but player is paused/ready - start playing
+          await TrackPlayer.play();
+        } else if (!isPlaying && isCurrentlyPlaying) {
+          // Store says pause, but player is playing - pause it
+          await TrackPlayer.pause();
+        }
+      } catch (error) {
+        console.error("Error syncing playback state:", error);
+      }
+    };
+
+    syncPlaybackState();
+  }, [isPlaying, currentTrack]);
 
   // Update store when playback state changes
   useTrackPlayerEvents([Event.PlaybackState], async (event) => {
     if (event.type === Event.PlaybackState) {
       const state = await TrackPlayer.getState();
       const isActuallyPlaying = state === State.Playing;
-      const isBuffering = state === State.Buffering;
+      const isBuffering = state === State.Buffering || state === State.Loading;
 
-      setIsPlaying(isActuallyPlaying);
+      // Only update store if state has actually changed
+      if (isActuallyPlaying !== isPlaying) {
+        setIsPlaying(isActuallyPlaying);
+      }
 
-      // Clear loading state when playing or stopped, set it when buffering
-      if (isActuallyPlaying || state === State.Paused || state === State.Stopped) {
-        setIsLoading(false);
-      } else if (isBuffering) {
+      // Update loading state - only clear loading when actually playing
+      // Keep loading true during Ready/Connecting states to avoid brief play button flash
+      if (isBuffering && !isLoading) {
         setIsLoading(true);
+      } else if (isActuallyPlaying && isLoading) {
+        // Only clear loading when we're actually playing
+        setIsLoading(false);
       }
     }
   });
@@ -205,7 +358,6 @@ export function AudioPlayer() {
     });
   };
 
-
   // Don't render anything if no track and not visible
   if (!currentTrack && !isVisible) return null;
 
@@ -218,8 +370,8 @@ export function AudioPlayer() {
           {
             backgroundColor,
             borderTopColor: textColor,
-            transform: [{ translateY: slideAnim }]
-          }
+            transform: [{ translateY: slideAnim }],
+          },
         ]}
       >
         <View style={styles.content}>
@@ -248,7 +400,10 @@ export function AudioPlayer() {
                 />
 
                 {/* Queue button */}
-                <Pressable onPress={() => queueSheetRef.current?.present()} style={styles.queueButtonExternal}>
+                <Pressable
+                  onPress={() => queueSheetRef.current?.present()}
+                  style={styles.queueButtonExternal}
+                >
                   <Ionicons name="list" size={18} color={textColor} />
                 </Pressable>
               </View>
@@ -263,7 +418,7 @@ export function AudioPlayer() {
                     <Icon name="loading" size={24} color={textColor} />
                   ) : (
                     <Icon
-                      name={isPlaying ? 'stop' : 'play'}
+                      name={isPlaying ? "stop" : "play"}
                       size={24}
                       color={textColor}
                     />
@@ -272,9 +427,7 @@ export function AudioPlayer() {
 
                 {/* Show title for live streams */}
                 <View style={styles.liveTitleContainer}>
-                  <ThemedText
-                    numberOfLines={1}
-                  >
+                  <ThemedText numberOfLines={1}>
                     {currentTrack?.title}
                   </ThemedText>
                 </View>
@@ -289,7 +442,7 @@ export function AudioPlayer() {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 120, // Above the menu
     left: 0,
     right: 0,
@@ -299,51 +452,51 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   content: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    justifyContent: 'flex-start',
+    flexDirection: "row",
+    alignItems: "stretch",
+    justifyContent: "flex-start",
     gap: 0,
     height: 40,
   },
   imageContainer: {
     width: 71, // 16:9 aspect ratio with height of 40
     height: 40,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginRight: 0,
   },
   artwork: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   middleContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     gap: 0,
   },
   leftContainer: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     gap: 0,
   },
   leftContainerFullWidth: {
     marginRight: 0,
   },
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   titleContainer: {
     height: 27,
-    justifyContent: 'center',
+    justifyContent: "center",
     marginBottom: 1,
   },
   title: {
     paddingHorizontal: 4,
   },
   controlsWrapper: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    flexDirection: "row",
+    alignItems: "stretch",
     gap: 0,
     height: 40,
   },
@@ -351,11 +504,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
     marginLeft: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   sliderOverlay: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
@@ -364,60 +517,60 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   scrubberRow: {
-    position: 'relative',
+    position: "relative",
     height: 40,
-    overflow: 'hidden',
+    overflow: "hidden",
     flex: 1,
   },
   scrubberFill: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
-    height: '100%',
+    height: "100%",
     zIndex: 1,
   },
   scrubberContentLayer: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     zIndex: 2,
   },
   scrubberInvertedLayer: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
-    height: '100%',
-    overflow: 'hidden',
+    height: "100%",
+    overflow: "hidden",
     zIndex: 3,
   },
   scrubberInvertedContent: {
-    position: 'relative',
-    height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
+    position: "relative",
+    height: "100%",
+    flexDirection: "row",
+    alignItems: "center",
   },
   scrubberPlayButton: {
     paddingHorizontal: 4,
     paddingVertical: 2,
   },
   scrubberPlayButtonInverted: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   scrubberQueueButton: {
     paddingHorizontal: 4,
     paddingVertical: 2,
     zIndex: 3,
-    position: 'relative',
+    position: "relative",
   },
   scrubberCloseButton: {
     paddingHorizontal: 4,
@@ -425,48 +578,48 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   queueBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     right: -2,
     minWidth: 14,
     height: 14,
     borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 3,
   },
   queueBadgeText: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   scrubberTimeContainer: {
-    position: 'absolute',
+    position: "absolute",
     right: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   scrubberTimeContainerInverted: {
-    position: 'absolute',
+    position: "absolute",
     right: 8,
     top: 0,
     bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   scrubberButtonsContainer: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   scrubberButtonsContainerInverted: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     top: 0,
     bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   scrubberButton: {
@@ -474,7 +627,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   scrubberTime: {
-    textAlign: 'right',
+    textAlign: "right",
   },
   liveBadge: {
     paddingHorizontal: 8,
@@ -482,7 +635,7 @@ const styles = StyleSheet.create({
   },
   liveText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   artist: {
     fontSize: 12,
@@ -490,9 +643,9 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     height: 40,
     marginLeft: 4,
   },
@@ -503,62 +656,62 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 12,
     minWidth: 45,
-    textAlign: 'right',
+    textAlign: "right",
   },
   progressBarContainer: {
     flex: 1,
     marginHorizontal: 8,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   progressBarBackground: {
     height: 24,
     borderWidth: 1,
-    position: 'relative',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    position: "relative",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   progressBarFill: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
-    height: '100%',
+    height: "100%",
   },
   timeTextContainer: {
-    position: 'absolute',
+    position: "absolute",
     right: 8,
     top: 0,
     bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    overflow: "hidden",
   },
   timeTextOverlay: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     zIndex: 1,
   },
   timeTextInverted: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
   },
   playButton: {
     padding: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   queueButton: {
     padding: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
   },
   liveIndicatorContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
   },
   liveDot: {
@@ -566,11 +719,10 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  liveIndicatorText: {
-  },
+  liveIndicatorText: {},
   externalButtonsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     marginLeft: 4,
   },
@@ -580,7 +732,7 @@ const styles = StyleSheet.create({
   },
   liveTitleContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingLeft: 4,
     paddingRight: 4,
   },

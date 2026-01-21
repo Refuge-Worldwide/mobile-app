@@ -1,13 +1,19 @@
-import { ShowCard } from '@/components/ShowCard';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { useAuth } from '@/contexts/AuthContext';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { getFavoritesWithShows } from '@/lib/favorites';
-import { Show } from '@/types/shows';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ShowCard } from "@/components/ShowCard";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { useAuth } from "@/contexts/AuthContext";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { getFavouritesWithShows } from "@/lib/favourites";
+import { Show } from "@/types/shows";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from "react-native";
 
 export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,8 +23,8 @@ export default function PlaylistDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const backgroundColor = useThemeColor({}, 'background');
-  const textColor = useThemeColor({}, 'text');
+  const backgroundColor = useThemeColor({}, "background");
+  const textColor = useThemeColor({}, "text");
 
   useEffect(() => {
     if (user && id) {
@@ -31,15 +37,16 @@ export default function PlaylistDetailScreen() {
     setError(null);
 
     try {
-      if (id === 'favorites') {
-        // Load favorites playlist using the new backend API
-        const enrichedShows = await getFavoritesWithShows();
+      if (id === "favorites") {
+        // Load favourites playlist using the new backend API
+        const enrichedShows = await getFavouritesWithShows();
         setShows(enrichedShows);
       }
       // Add more playlist types here in the future
     } catch (err) {
-      console.error('Error loading playlist:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load playlist';
+      console.error("Error loading playlist:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load playlist";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -47,17 +54,17 @@ export default function PlaylistDetailScreen() {
   };
 
   const formatDate = (dateString?: string): string => {
-    if (!dateString) return '';
+    if (!dateString) return "";
     const date = new Date(dateString);
     const day = date.getDate();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const month = date.toLocaleDateString("en-US", { month: "short" });
     const year = date.getFullYear();
     return `${day} ${month} ${year}`;
   };
 
   const getImageUrl = (url?: string): string => {
-    if (!url) return '';
-    return url.startsWith('//') ? `https:${url}` : url;
+    if (!url) return "";
+    return url.startsWith("//") ? `https:${url}` : url;
   };
 
   const handleShowPress = (slug: string) => {
@@ -65,8 +72,8 @@ export default function PlaylistDetailScreen() {
   };
 
   const getPlaylistTitle = () => {
-    if (id === 'favorites') return 'Favorites';
-    return 'Playlist';
+    if (id === "favorites") return "Favorites";
+    return "Playlist";
   };
 
   const handleRefresh = useCallback(async () => {
@@ -106,9 +113,9 @@ export default function PlaylistDetailScreen() {
             No shows yet
           </ThemedText>
           <ThemedText style={styles.emptyText}>
-            {id === 'favorites'
-              ? 'Browse shows and tap the heart icon to save them here'
-              : 'This playlist is empty'}
+            {id === "favorites"
+              ? "Browse shows and tap the heart icon to save them here"
+              : "This playlist is empty"}
           </ThemedText>
         </View>
       </ThemedView>
@@ -132,11 +139,14 @@ export default function PlaylistDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={[styles.headerContainer, { backgroundColor, borderBottomColor: textColor }]}>
+      <View
+        style={[
+          styles.headerContainer,
+          { backgroundColor, borderBottomColor: textColor },
+        ]}
+      >
         <View style={styles.headerContent}>
-          <ThemedText type="title">
-            {getPlaylistTitle()}
-          </ThemedText>
+          <ThemedText type="title">{getPlaylistTitle()}</ThemedText>
         </View>
       </View>
       <FlatList
@@ -171,28 +181,28 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   emptyTitle: {
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 16,
     marginBottom: 24,
   },
   scrollContent: {
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 24,
+    paddingBottom: 100,
   },
   title: {
     marginBottom: 8,

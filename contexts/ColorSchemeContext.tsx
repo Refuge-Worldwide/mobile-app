@@ -1,6 +1,12 @@
-import { Colors } from '@/constants/Colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Colors } from "@/constants/Colors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 type ColorScheme = keyof typeof Colors;
 
@@ -10,16 +16,18 @@ interface ColorSchemeContextType {
   isLoading: boolean;
 }
 
-const ColorSchemeContext = createContext<ColorSchemeContextType | undefined>(undefined);
+const ColorSchemeContext = createContext<ColorSchemeContextType | undefined>(
+  undefined,
+);
 
 interface ColorSchemeProviderProps {
   children: ReactNode;
 }
 
-const COLOR_SCHEME_KEY = '@color_scheme';
+const COLOR_SCHEME_KEY = "@color_scheme";
 
 export function ColorSchemeProvider({ children }: ColorSchemeProviderProps) {
-  const [colorScheme, setColorSchemeState] = useState<ColorScheme>('light');
+  const [colorScheme, setColorSchemeState] = useState<ColorScheme>("light");
   const [isLoading, setIsLoading] = useState(true);
 
   // Load saved color scheme on mount
@@ -34,7 +42,7 @@ export function ColorSchemeProvider({ children }: ColorSchemeProviderProps) {
         setColorSchemeState(savedScheme as ColorScheme);
       }
     } catch (error) {
-      console.error('Error loading color scheme:', error);
+      console.error("Error loading color scheme:", error);
     } finally {
       setIsLoading(false);
     }
@@ -45,13 +53,15 @@ export function ColorSchemeProvider({ children }: ColorSchemeProviderProps) {
       await AsyncStorage.setItem(COLOR_SCHEME_KEY, scheme);
       setColorSchemeState(scheme);
     } catch (error) {
-      console.error('Error saving color scheme:', error);
+      console.error("Error saving color scheme:", error);
       setColorSchemeState(scheme); // Still update state even if save fails
     }
   };
 
   return (
-    <ColorSchemeContext.Provider value={{ colorScheme, setColorScheme, isLoading }}>
+    <ColorSchemeContext.Provider
+      value={{ colorScheme, setColorScheme, isLoading }}
+    >
       {children}
     </ColorSchemeContext.Provider>
   );
@@ -60,15 +70,27 @@ export function ColorSchemeProvider({ children }: ColorSchemeProviderProps) {
 export function useColorScheme() {
   const context = useContext(ColorSchemeContext);
   if (context === undefined) {
-    throw new Error('useColorScheme must be used within a ColorSchemeProvider');
+    throw new Error("useColorScheme must be used within a ColorSchemeProvider");
   }
   return context.colorScheme;
+}
+
+export function useColorSchemeContext() {
+  const context = useContext(ColorSchemeContext);
+  if (context === undefined) {
+    throw new Error(
+      "useColorSchemeContext must be used within a ColorSchemeProvider",
+    );
+  }
+  return context;
 }
 
 export function useSetColorScheme() {
   const context = useContext(ColorSchemeContext);
   if (context === undefined) {
-    throw new Error('useSetColorScheme must be used within a ColorSchemeProvider');
+    throw new Error(
+      "useSetColorScheme must be used within a ColorSchemeProvider",
+    );
   }
   return context.setColorScheme;
 }

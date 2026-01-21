@@ -1,9 +1,9 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { useCallback, useEffect, useState } from 'react';
-import { PanResponder, Pressable, StyleSheet, View } from 'react-native';
-import TrackPlayer, { useProgress } from 'react-native-track-player';
-import { Icon } from './Icon';
-import { ThemedText } from './ThemedText';
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { useCallback, useEffect, useState } from "react";
+import { PanResponder, Pressable, StyleSheet, View } from "react-native";
+import TrackPlayer, { useProgress } from "react-native-track-player";
+import { Icon } from "./Icon";
+import { ThemedText } from "./ThemedText";
 
 interface DraggableScrubberProps {
   onPlayPause: () => void;
@@ -11,34 +11,21 @@ interface DraggableScrubberProps {
   isLoading: boolean;
 }
 
-export function DraggableScrubber({ onPlayPause, isPlaying, isLoading }: DraggableScrubberProps) {
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
+export function DraggableScrubber({
+  onPlayPause,
+  isPlaying,
+  isLoading,
+}: DraggableScrubberProps) {
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
   const { position, duration } = useProgress();
   const [progressBarWidth, setProgressBarWidth] = useState(300);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekPosition, setSeekPosition] = useState(0);
   const [lastSeekPosition, setLastSeekPosition] = useState<number | null>(null);
-  const [showLoading, setShowLoading] = useState(false);
 
-  // Delay showing loading indicator to avoid flashing for quick operations
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-
-    if (isLoading) {
-      // Only show loading after 300ms
-      timeout = setTimeout(() => {
-        setShowLoading(true);
-      }, 300);
-    } else {
-      // Hide immediately when loading completes
-      setShowLoading(false);
-    }
-
-    return () => {
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [isLoading]);
+  // Show loading immediately - no delay to avoid play button flash when changing tracks
+  const showLoading = isLoading;
 
   // PanResponder for draggable scrubber
   const panResponder = PanResponder.create({
@@ -60,7 +47,11 @@ export function DraggableScrubber({ onPlayPause, isPlaying, isLoading }: Draggab
       setIsSeeking(false);
 
       // Only seek if we have a valid duration and the position has actually changed
-      if (!duration || duration === 0 || Math.abs(finalPosition - position) < 0.5) {
+      if (
+        !duration ||
+        duration === 0 ||
+        Math.abs(finalPosition - position) < 0.5
+      ) {
         setLastSeekPosition(null);
         return;
       }
@@ -72,7 +63,7 @@ export function DraggableScrubber({ onPlayPause, isPlaying, isLoading }: Draggab
       try {
         await TrackPlayer.seekTo(finalPosition);
       } catch (error) {
-        console.error('Error seeking:', error);
+        console.error("Error seeking:", error);
         setLastSeekPosition(null);
       }
     },
@@ -81,7 +72,7 @@ export function DraggableScrubber({ onPlayPause, isPlaying, isLoading }: Draggab
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const getTimeElapsed = useCallback(() => {
@@ -97,13 +88,20 @@ export function DraggableScrubber({ onPlayPause, isPlaying, isLoading }: Draggab
 
   // Clear lastSeekPosition once the actual position catches up
   useEffect(() => {
-    if (lastSeekPosition !== null && Math.abs(position - lastSeekPosition) < 1) {
+    if (
+      lastSeekPosition !== null &&
+      Math.abs(position - lastSeekPosition) < 1
+    ) {
       setLastSeekPosition(null);
     }
   }, [position, lastSeekPosition]);
 
-  const currentPosition = isSeeking ? seekPosition : (lastSeekPosition !== null ? lastSeekPosition : position);
-  const progressPercentage = ((currentPosition) / (duration || 1)) * 100;
+  const currentPosition = isSeeking
+    ? seekPosition
+    : lastSeekPosition !== null
+      ? lastSeekPosition
+      : position;
+  const progressPercentage = (currentPosition / (duration || 1)) * 100;
 
   return (
     <View
@@ -133,7 +131,7 @@ export function DraggableScrubber({ onPlayPause, isPlaying, isLoading }: Draggab
             </View>
           ) : (
             <Icon
-              name={isPlaying ? 'pause' : 'play'}
+              name={isPlaying ? "pause" : "play"}
               size={30}
               color={textColor}
             />
@@ -165,7 +163,7 @@ export function DraggableScrubber({ onPlayPause, isPlaying, isLoading }: Draggab
               </View>
             ) : (
               <Icon
-                name={isPlaying ? 'pause' : 'play'}
+                name={isPlaying ? "pause" : "play"}
                 size={30}
                 color={backgroundColor}
               />
@@ -181,10 +179,7 @@ export function DraggableScrubber({ onPlayPause, isPlaying, isLoading }: Draggab
       </View>
 
       {/* The actual draggable area - full width, transparent, on top */}
-      <View
-        style={styles.fullWidthSlider}
-        {...panResponder.panHandlers}
-      />
+      <View style={styles.fullWidthSlider} {...panResponder.panHandlers} />
 
       {/* Play/Pause button - interactive, on top of drag layer */}
       <Pressable
@@ -200,38 +195,38 @@ export function DraggableScrubber({ onPlayPause, isPlaying, isLoading }: Draggab
 
 const styles = StyleSheet.create({
   scrubberContainer: {
-    position: 'relative',
+    position: "relative",
     height: 40,
     flex: 1,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   scrubberFillBg: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
-    height: '100%',
+    height: "100%",
     zIndex: 1,
   },
   fullWidthSlider: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
     height: 40,
-    width: '100%',
+    width: "100%",
     zIndex: 100,
     elevation: 100,
   },
   uiOverlay: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     zIndex: 1,
     elevation: 1,
   },
@@ -240,44 +235,44 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   timeOverlay: {
-    position: 'absolute',
+    position: "absolute",
     right: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   invertedClip: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
-    height: '100%',
-    overflow: 'hidden',
+    height: "100%",
+    overflow: "hidden",
     zIndex: 2,
     elevation: 2,
   },
   invertedContent: {
-    position: 'relative',
-    height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
+    position: "relative",
+    height: "100%",
+    flexDirection: "row",
+    alignItems: "center",
   },
   timeOverlayInverted: {
-    position: 'absolute',
+    position: "absolute",
     right: 8,
     top: 0,
     bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   playButtonInteractive: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
     width: 50,
     zIndex: 101,
     elevation: 101,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

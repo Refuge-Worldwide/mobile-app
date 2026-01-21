@@ -1,39 +1,62 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { Image } from 'expo-image';
-import * as ExpoSplashScreen from 'expo-splash-screen';
-import { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Colors } from "@/constants/Colors";
+import { useColorSchemeContext } from "@/contexts/ColorSchemeContext";
+import { Image, ImageSource } from "expo-image";
+import * as ExpoSplashScreen from "expo-splash-screen";
+import { useEffect, useRef } from "react";
+import { Animated, StyleSheet, Text, View } from "react-native";
 
 // Keep the native splash screen visible while we fetch resources
 ExpoSplashScreen.preventAutoHideAsync();
+
+// Map color schemes to their logo images
+const logoImages: Record<keyof typeof Colors, ImageSource> = {
+  light: require("../assets/images/logo-light-text.png"),
+  dark: require("../assets/images/logo-dark-text.png"),
+  pink: require("../assets/images/logo-pink-text.png"),
+  olive: require("../assets/images/logo-olive-text.png"),
+  ochre: require("../assets/images/logo-ochre-text.png"),
+  grey: require("../assets/images/logo-grey-text.png"),
+};
 
 interface SplashScreenProps {
   onReady: () => void;
 }
 
 export function SplashScreen({ onReady }: SplashScreenProps) {
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { colorScheme, isLoading: isColorSchemeLoading } =
+    useColorSchemeContext();
+  const colors = Colors[colorScheme];
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  // Get the correct logo for the current color scheme
+  const logoSource = logoImages[colorScheme] || logoImages.light;
 
   useEffect(() => {
+    // Wait for color scheme to be loaded from storage before proceeding
+    if (isColorSchemeLoading) return;
+
     async function prepare() {
       try {
-        // Fade in animation
-        Animated.timing(fadeAnim, {
+        // Hide native splash now that we have the correct theme
+        await ExpoSplashScreen.hideAsync();
+
+        // Pop in the logo with a spring animation
+        Animated.spring(scaleAnim, {
           toValue: 1,
-          duration: 800,
+          tension: 50,
+          friction: 7,
           useNativeDriver: true,
         }).start();
 
-        // Wait for 5 seconds to show splash
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        // Show our custom splash for 4 seconds minimum
+        await new Promise((resolve) => setTimeout(resolve, 4000));
 
         // Fade out animation
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           Animated.timing(fadeAnim, {
             toValue: 0,
-            duration: 500,
+            duration: 400,
             useNativeDriver: true,
           }).start(() => {
             resolve(null);
@@ -44,33 +67,36 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
       } finally {
         // Tell the application to render
         onReady();
-        await ExpoSplashScreen.hideAsync();
       }
     }
 
     prepare();
-  }, [fadeAnim, onReady]);
+  }, [fadeAnim, scaleAnim, onReady, isColorSchemeLoading]);
+
+  // Don't render anything visible until we have the correct color scheme
+  // The native splash screen will stay visible during this time
+  if (isColorSchemeLoading) {
+    return null;
+  }
 
   return (
     <Animated.View
       style={[
         styles.container,
         {
-          backgroundColor,
+          backgroundColor: colors.background,
           opacity: fadeAnim,
         },
       ]}
     >
       <View style={styles.logoContainer}>
-        <Image
-          source={require('../assets/images/logo-pink.png')}
-          style={styles.logo}
-          contentFit="contain"
-        />
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+          <Image source={logoSource} style={styles.logo} contentFit="contain" />
+        </Animated.View>
       </View>
 
       <View style={styles.textContainer}>
-        <Text style={[styles.text, { color: textColor }]}>
+        <Text style={[styles.text, { color: colors.text }]}>
           supported by members and Carhartt WIP
         </Text>
       </View>
@@ -80,19 +106,19 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 1000,
   },
   logoContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   logo: {
     width: 200,
@@ -104,7 +130,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.7,
   },
 });

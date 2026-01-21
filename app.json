@@ -7,14 +7,12 @@
     "icon": "./assets/images/icon.png",
     "scheme": "refugeworldwideapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "preview": {
       "distribution": "internal"
     },
     "splash": {
-      "image": "./assets/images/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1A4AFC"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true,
@@ -47,14 +45,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#1A4AFC",
-          "dark": {
-            "image": "./assets/images/icon.png",
-            "backgroundColor": "#1A4AFC"
-          }
+          "backgroundColor": "#000000"
         }
       ],
       "expo-audio",

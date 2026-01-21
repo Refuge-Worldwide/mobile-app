@@ -1,17 +1,29 @@
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { useAudioStore } from '@/store/audioStore';
-import { Ionicons } from '@expo/vector-icons';
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
-import { Swipeable } from 'react-native-gesture-handler';
-import TrackPlayer, { Track } from 'react-native-track-player';
-import { DraggableScrubber } from './DraggableScrubber';
-import { Icon } from './Icon';
-import { ThemedText } from './ThemedText';
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAudioStore } from "@/store/audioStore";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetScrollView,
+} from "@gorhom/bottom-sheet";
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import DraggableFlatList, {
+  ScaleDecorator,
+} from "react-native-draggable-flatlist";
+import { Swipeable } from "react-native-gesture-handler";
+import TrackPlayer, { Track } from "react-native-track-player";
+import { DraggableScrubber } from "./DraggableScrubber";
+import { Icon } from "./Icon";
+import { ThemedText } from "./ThemedText";
 
 export interface QueuePreviewRef {
   present: () => void;
@@ -19,23 +31,26 @@ export interface QueuePreviewRef {
 }
 
 export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
   const [queue, setQueue] = useState<Track[]>([]);
   const [showDescription, setShowDescription] = useState<string | null>(null);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const router = useRouter();
 
-  const { currentTrack, isPlaying, isLoading, playbackMode} = useAudioStore();
-  const isLiveMode = playbackMode === 'live' || currentTrack?.isLive;
-  const defaultBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
+  const { currentTrack, isPlaying, isLoading } = useAudioStore();
+  const isLiveMode = currentTrack?.isLive;
+  const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
 
   const optimizeImage = (src: string | undefined): string => {
-    if (!src) return '';
+    if (!src) return "";
 
-    const imageUrl = src.startsWith('//') ? `https:${src}` : src;
+    const imageUrl = src.startsWith("//") ? `https:${src}` : src;
 
-    if (!imageUrl.includes('ctfassets.net') && !imageUrl.includes('contentful.com')) {
+    if (
+      !imageUrl.includes("ctfassets.net") &&
+      !imageUrl.includes("contentful.com")
+    ) {
       return imageUrl;
     }
 
@@ -48,12 +63,15 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   }));
 
   // Fetch queue and show details when sheet opens
-  const handleSheetChange = useCallback((index: number) => {
-    if (index >= 0) {
-      loadQueue();
-      fetchShowDetails();
-    }
-  }, [currentTrack]);
+  const handleSheetChange = useCallback(
+    (index: number) => {
+      if (index >= 0) {
+        loadQueue();
+        fetchShowDetails();
+      }
+    },
+    [currentTrack],
+  );
 
   const fetchShowDetails = async () => {
     if (!currentTrack?.slug || currentTrack.isLive) {
@@ -63,13 +81,15 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
 
     try {
       // Fetch show details by slug
-      const response = await fetch(`https://refugeworldwide.com/api/shows/${currentTrack.slug}`);
+      const response = await fetch(
+        `https://refugeworldwide.com/api/shows/${currentTrack.slug}`,
+      );
       if (response.ok) {
         const data = await response.json();
         setShowDescription(data.show?.description || null);
       }
     } catch (error) {
-      console.error('Error fetching show details:', error);
+      console.error("Error fetching show details:", error);
       setShowDescription(null);
     }
   };
@@ -84,7 +104,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
         pressBehavior="close"
       />
     ),
-    []
+    [],
   );
 
   const loadQueue = async () => {
@@ -100,7 +120,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
         setQueue(currentQueue);
       }
     } catch (error) {
-      console.error('Error loading queue:', error);
+      console.error("Error loading queue:", error);
       setQueue([]);
     }
   };
@@ -109,14 +129,15 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     try {
       const currentTrackIndex = await TrackPlayer.getActiveTrackIndex();
       // Calculate actual index in the full queue
-      const actualIndex = currentTrackIndex !== null && currentTrackIndex !== undefined
-        ? currentTrackIndex + 1 + trackIndex
-        : trackIndex;
+      const actualIndex =
+        currentTrackIndex !== null && currentTrackIndex !== undefined
+          ? currentTrackIndex + 1 + trackIndex
+          : trackIndex;
 
       await TrackPlayer.remove(actualIndex);
       await loadQueue(); // Refresh the queue display
     } catch (error) {
-      console.error('Error removing track:', error);
+      console.error("Error removing track:", error);
     }
   };
 
@@ -142,14 +163,14 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
         await TrackPlayer.skip(currentTrackIndex);
       }
     } catch (error) {
-      console.error('Error reordering queue:', error);
+      console.error("Error reordering queue:", error);
       await loadQueue(); // Reload on error
     }
   };
 
   const handlePlayPause = async () => {
     const state = await TrackPlayer.getState();
-    if (state === 'playing') {
+    if (state === "playing") {
       await TrackPlayer.pause();
     } else {
       await TrackPlayer.play();
@@ -168,11 +189,15 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
-      snapPoints={['65%', '95%']}
+      snapPoints={["65%", "95%"]}
       enablePanDownToClose
       enableContentPanningGesture={false}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
+      backgroundStyle={{
+        backgroundColor,
+        borderTopLeftRadius: 0,
+        borderTopRightRadius: 0,
+      }}
       handleIndicatorStyle={{ backgroundColor: textColor }}
       onChange={handleSheetChange}
     >
@@ -192,13 +217,20 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
                     contentFit="cover"
                   />
                 ) : (
-                  <View style={[styles.image, { backgroundColor: textColor }]} />
+                  <View
+                    style={[styles.image, { backgroundColor: textColor }]}
+                  />
                 )}
               </View>
 
               {/* Timeline Scrubber below image (only for archive mode) */}
               {!isLiveMode && (
-                <View style={[styles.scrubberContainer, { borderColor: textColor, backgroundColor }]}>
+                <View
+                  style={[
+                    styles.scrubberContainer,
+                    { borderColor: textColor, backgroundColor },
+                  ]}
+                >
                   <DraggableScrubber
                     onPlayPause={handlePlayPause}
                     isPlaying={isPlaying}
@@ -210,40 +242,37 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
               {/* Content below image - full width */}
               <View style={styles.showContentWrapper}>
                 {/* Title Row - Full Width */}
-                <View style={[styles.titleRow, { borderBottomColor: textColor }]}>
+                <View
+                  style={[styles.titleRow, { borderBottomColor: textColor }]}
+                >
                   <Pressable
                     style={styles.titlePressable}
                     onPress={handleTitlePress}
                     disabled={!currentTrack?.slug}
                   >
-                    <ThemedText>
-                      {currentTrack.title}
-                    </ThemedText>
+                    <ThemedText>{currentTrack.title}</ThemedText>
                   </Pressable>
                 </View>
 
                 {showDescription && (
                   <View style={styles.descriptionContainer}>
-                    <ThemedText numberOfLines={3}>
-                      {showDescription}
-                    </ThemedText>
+                    <ThemedText numberOfLines={3}>{showDescription}</ThemedText>
                   </View>
                 )}
 
                 {/* Action Buttons */}
                 <View style={styles.actionButtons}>
                   <Pressable style={styles.actionButton}>
-                    <Icon
-                      name="heart-outline"
-                      size={24}
-                    />
+                    <Icon name="heart-outline" size={24} />
                   </Pressable>
                   <Pressable
                     style={styles.viewShowButton}
                     onPress={handleTitlePress}
                     disabled={!currentTrack?.slug}
                   >
-                    <ThemedText style={styles.viewShowText}>View show</ThemedText>
+                    <ThemedText style={styles.viewShowText}>
+                      View show
+                    </ThemedText>
                   </Pressable>
                 </View>
               </View>
@@ -252,7 +281,12 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
 
           {/* Queue Section */}
           <View style={styles.queueSection}>
-            <View style={[styles.queueHeader, { borderBottomColor: textColor, borderBottomWidth: 1 }]}>
+            <View
+              style={[
+                styles.queueHeader,
+                { borderBottomColor: textColor, borderBottomWidth: 1 },
+              ]}
+            >
               <ThemedText type="subtitle" style={[styles.queueHeaderTitle]}>
                 Up Next ({queue.length})
               </ThemedText>
@@ -260,7 +294,9 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
 
             {queue.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <ThemedText style={styles.emptyText}>No shows in queue</ThemedText>
+                <ThemedText style={styles.emptyText}>
+                  No shows in queue
+                </ThemedText>
               </View>
             ) : (
               <DraggableFlatList
@@ -273,7 +309,12 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
                     <ScaleDecorator>
                       <Swipeable
                         renderRightActions={() => (
-                          <View style={[styles.deleteAction, { backgroundColor: '#ff3b30' }]}>
+                          <View
+                            style={[
+                              styles.deleteAction,
+                              { backgroundColor: "#ff3b30" },
+                            ]}
+                          >
                             <Ionicons name="trash" size={24} color="white" />
                           </View>
                         )}
@@ -286,7 +327,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
                           style={[
                             styles.queueItem,
                             { borderBottomColor: textColor, backgroundColor },
-                            isActive && styles.queueItemDragging
+                            isActive && styles.queueItemDragging,
                           ]}
                         >
                           <View style={styles.queueImageContainer}>
@@ -297,11 +338,19 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
                                 contentFit="cover"
                               />
                             ) : (
-                              <View style={[styles.queueImage, { backgroundColor: textColor }]} />
+                              <View
+                                style={[
+                                  styles.queueImage,
+                                  { backgroundColor: textColor },
+                                ]}
+                              />
                             )}
                           </View>
                           <View style={styles.queueTitleContainer}>
-                            <ThemedText numberOfLines={2} style={styles.queueTitle}>
+                            <ThemedText
+                              numberOfLines={2}
+                              style={styles.queueTitle}
+                            >
                               {item.title}
                             </ThemedText>
                           </View>
@@ -324,7 +373,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   );
 });
 
-QueuePreview.displayName = 'QueuePreview';
+QueuePreview.displayName = "QueuePreview";
 
 const styles = StyleSheet.create({
   container: {
@@ -337,15 +386,15 @@ const styles = StyleSheet.create({
   },
   // Image at top - no padding
   imageContainer: {
-    width: '100%',
+    width: "100%",
     aspectRatio: 16 / 9,
-    position: 'relative',
-    overflow: 'hidden',
+    position: "relative",
+    overflow: "hidden",
   },
   image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   // Content wrapper
   showContentWrapper: {
@@ -353,20 +402,20 @@ const styles = StyleSheet.create({
   },
   // Title row - full width
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    flexDirection: "row",
+    alignItems: "stretch",
     gap: 0,
     borderBottomWidth: 1,
   },
   titleContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingVertical: 4,
     paddingTop: 6,
   },
   titlePressable: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingVertical: 4,
     paddingTop: 6,
   },
@@ -377,7 +426,7 @@ const styles = StyleSheet.create({
   // Scrubber - positioned below image
   scrubberContainer: {
     borderBottomWidth: 1,
-    overflow: 'hidden',
+    overflow: "hidden",
     // backgroundColor set inline with theme color
   },
   // Description
@@ -386,11 +435,11 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   viewMoreText: {
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   // Action Buttons
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
     marginTop: 4,
     paddingBottom: 8,
@@ -403,34 +452,34 @@ const styles = StyleSheet.create({
   },
   viewShowText: {
     paddingTop: 3,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   // Queue Section
   queueSection: {
     paddingTop: 0,
   },
   queueHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingBottom: 8,
   },
   queueHeaderTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 40,
   },
   emptyText: {
     opacity: 0.6,
   },
   queueItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     borderBottomWidth: 1,
   },
@@ -441,27 +490,27 @@ const styles = StyleSheet.create({
   queueImageContainer: {
     width: 100,
     aspectRatio: 16 / 9,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   queueImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   queueTitleContainer: {
     flex: 1,
   },
   queueTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   dragHandle: {
     padding: 4,
   },
   deleteAction: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     width: 80,
-    height: '100%',
+    height: "100%",
   },
   artwork: {
     width: 48,
@@ -473,7 +522,7 @@ const styles = StyleSheet.create({
   },
   trackTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   trackArtist: {
     fontSize: 12,
