@@ -129,33 +129,10 @@ export default function Live() {
 
   const openChat = async () => {
     try {
-      // Discord app deep link - you can customize this with your specific Discord server/channel
-      const discordUrl = "discord://";
-      const discordWebUrl = "https://discord.com/";
-
-      // Check if Discord app can be opened
-      const canOpenDiscord = await Linking.canOpenURL(discordUrl);
-
-      if (canOpenDiscord) {
-        // Open Discord app
-        await Linking.openURL(discordUrl);
-      } else {
-        // If Discord app is not installed, offer to open Discord in browser
-        Alert.alert(
-          "Discord Not Found",
-          "Discord app is not installed. Would you like to open Discord in your browser?",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Open Browser",
-              onPress: () => Linking.openURL(discordWebUrl),
-            },
-          ],
-        );
-      }
+      await Linking.openURL("https://refugeworldwide.com/chat");
     } catch (error) {
-      console.error("Error opening Discord:", error);
-      Alert.alert("Error", "Unable to open Discord. Please try again.");
+      console.error("Error opening chat:", error);
+      Alert.alert("Error", "Unable to open chat. Please try again.");
     }
   };
 
@@ -210,7 +187,6 @@ export default function Live() {
         }
       >
         <View style={[styles.channelsContainer, { gap: 30 }]}>
-          ...
           {/* Channel 1 */}
           {liveNow && (
             <View style={styles.channelSection}>

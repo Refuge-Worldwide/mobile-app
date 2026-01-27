@@ -33,7 +33,17 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
   const backgroundColor = useThemeColor({}, 'background');
 
   // Determine which tab we're in for navigation
-  const currentTab = segments[1] as string;
+  const currentTab = (() => {
+    const segmentStrings = segments as string[];
+    const tabsIndex = segmentStrings.indexOf('(tabs)');
+    if (tabsIndex !== -1 && segmentStrings.length > tabsIndex + 1) {
+      const tabName = segmentStrings[tabsIndex + 1];
+      if (['radio', 'live', 'search', 'playlist', 'account'].includes(tabName)) {
+        return tabName;
+      }
+    }
+    return 'radio';
+  })();
 
   const fetchShows = useCallback(async (currentSkip: number) => {
     if (loading || !genre) return;
@@ -98,6 +108,11 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
   };
 
   const renderShowItem = ({ item }: { item: Show }) => {
+    // Live tab has shows under /show/ subfolder, other tabs have shows directly
+    const showPath = currentTab === 'live'
+      ? `/(tabs)/${currentTab}/show/${item.slug}`
+      : `/(tabs)/${currentTab}/${item.slug}`;
+
     return (
       <ShowCard
         imageUrl={item.coverImage || item.artwork}
@@ -105,7 +120,7 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
         title={item.title}
         date={formatDate(item.date)}
         genres={item.genres}
-        onPress={() => router.push(`/(tabs)/${currentTab}/${item.slug}` as any)}
+        onPress={() => router.push(showPath as any)}
         showId={item.id}
         slug={item.slug}
       />

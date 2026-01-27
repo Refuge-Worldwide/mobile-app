@@ -1,4 +1,5 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { fetchShowBySlug } from "@/lib/showsApi";
 import { useAudioStore } from "@/store/audioStore";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -26,7 +27,50 @@ export function AudioPlayer() {
     setIsLoading,
     clearTrack,
     playNextFromQueue,
+    queue,
+    addToQueue,
   } = useAudioStore();
+  // Endless playback: auto-queue all related shows if queue is empty when a show starts
+  useEffect(() => {
+    const autoQueueRelated = async () => {
+      if (!currentTrack || !currentTrack.slug || !currentTrack.showId) return;
+      if (queue.length > 0) return;
+      if (currentTrack.isLive) return;
+      const show = await fetchShowBySlug(currentTrack.slug);
+      if (show && show.relatedShows && show.relatedShows.length > 0) {
+        // Only add shows with audioFile, not already in queue, and not the current show
+        const alreadyQueuedIds = new Set(queue.map((t) => t.showId));
+        const relatedToAdd = show.relatedShows.filter(
+          (s) =>
+            s.slug !== currentTrack.slug &&
+            !!s.audioFile &&
+            !alreadyQueuedIds.has(s.id),
+        );
+        if (relatedToAdd.length > 0) {
+          // Fetch each related show details to get audioFile
+          for (const relatedShow of relatedToAdd) {
+            const fullShow = await fetchShowBySlug(relatedShow.slug);
+            if (fullShow && fullShow.audioFile) {
+              addToQueue({
+                id: fullShow.id,
+                url: fullShow.audioFile,
+                title: fullShow.title,
+                artist: fullShow.artists?.map((a) => a.name).join(", ") || "",
+                artwork: fullShow.artwork || fullShow.coverImage,
+                mode: "archive",
+                isLive: false,
+                showId: fullShow.id,
+                slug: fullShow.slug,
+              });
+            }
+          }
+        }
+      }
+    };
+    autoQueueRelated();
+    // Only run when currentTrack changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack?.id]);
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const [isVisible, setIsVisible] = useState(false);

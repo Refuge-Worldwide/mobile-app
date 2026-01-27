@@ -2,7 +2,7 @@
   "expo": {
     "name": "Refuge Worldwide",
     "slug": "refuge-worldwide",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "refugeworldwideapp",
@@ -16,18 +16,18 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.refuge-worldwide-app",
-      "displayName": "Refuge Worldwide",
+      "bundleIdentifier": "com.anonymous.refuge-worldwide",
+      "displayName": "Test App Name",
       "infoPlist": {
         "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
       "package": "com.refugeworldwide.app",
-      "label": "Refuge Worldwide",
+      "label": "Test App Name",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [

@@ -3,8 +3,8 @@ import { Track, useAudioStore } from "@/store/audioStore";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomSheetBackdrop,
-  BottomSheetFlatList,
   BottomSheetModal,
+  BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -16,7 +16,8 @@ import {
   useState,
 } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import {
+import DraggableFlatList, {
+  RenderItemParams,
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { Swipeable } from "react-native-gesture-handler";
@@ -44,6 +45,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     queue,
     removeFromQueue,
     reorderQueue,
+    clearQueue,
     setIsPlaying,
   } = useAudioStore();
   const isLiveMode = currentTrack?.isLive;
@@ -239,55 +241,72 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
         <ThemedText type="subtitle" style={[styles.queueHeaderTitle]}>
           Up Next ({queue.length})
         </ThemedText>
+        {queue.length > 0 && (
+          <Pressable onPress={clearQueue} style={styles.clearButton}>
+            <ThemedText style={styles.clearButtonText}>Clear</ThemedText>
+          </Pressable>
+        )}
       </View>
     </View>
   );
 
-  const renderItem = ({ item, index }: { item: Track; index: number }) => (
-    <ScaleDecorator>
-      <Swipeable
-        renderRightActions={() => (
-          <View style={[styles.deleteAction, { backgroundColor: "#ff3b30" }]}>
-            <Ionicons name="trash" size={24} color="white" />
-          </View>
-        )}
-        onSwipeableOpen={() => handleRemove(index)}
-        overshootRight={false}
-      >
-        <Pressable
-          onLongPress={() => {
-            // Long press would trigger drag in a DraggableFlatList context
-          }}
-          style={[
-            styles.queueItem,
-            { borderBottomColor: textColor, backgroundColor },
-          ]}
+  const renderItem = ({
+    item,
+    drag,
+    isActive,
+    getIndex,
+  }: RenderItemParams<Track>) => {
+    const index = getIndex() ?? 0;
+    const imageUri = item.artwork ? optimizeImage(item.artwork) : null;
+
+    return (
+      <ScaleDecorator>
+        <Swipeable
+          renderRightActions={() => (
+            <View style={[styles.deleteAction, { backgroundColor: "#ff3b30" }]}>
+              <Ionicons name="trash" size={24} color="white" />
+            </View>
+          )}
+          onSwipeableOpen={() => handleRemove(index)}
+          overshootRight={false}
         >
-          <View style={styles.queueImageContainer}>
-            {item.artwork ? (
-              <Image
-                source={{ uri: optimizeImage(item.artwork) }}
-                style={styles.queueImage}
-                contentFit="cover"
-              />
-            ) : (
-              <View
-                style={[styles.queueImage, { backgroundColor: textColor }]}
-              />
-            )}
-          </View>
-          <View style={styles.queueTitleContainer}>
-            <ThemedText numberOfLines={2} style={styles.queueTitle}>
-              {item.title}
-            </ThemedText>
-          </View>
-          <View style={styles.dragHandle}>
-            <Ionicons name="menu" size={24} color={textColor} />
-          </View>
-        </Pressable>
-      </Swipeable>
-    </ScaleDecorator>
-  );
+          <Pressable
+            onLongPress={drag}
+            disabled={isActive}
+            style={[
+              styles.queueItem,
+              { borderBottomColor: textColor, backgroundColor },
+              isActive && styles.queueItemDragging,
+            ]}
+          >
+            <View style={styles.queueImageContainer}>
+              {imageUri ? (
+                <Image
+                  source={{ uri: imageUri }}
+                  style={styles.queueImage}
+                  contentFit="cover"
+                  placeholder={{ blurhash: defaultBlurhash }}
+                  transition={200}
+                />
+              ) : (
+                <View
+                  style={[styles.queueImage, { backgroundColor: textColor }]}
+                />
+              )}
+            </View>
+            <View style={styles.queueTitleContainer}>
+              <ThemedText numberOfLines={2} style={styles.queueTitle}>
+                {item.title}
+              </ThemedText>
+            </View>
+            <View style={styles.dragHandle}>
+              <Ionicons name="menu" size={24} color={textColor} />
+            </View>
+          </Pressable>
+        </Swipeable>
+      </ScaleDecorator>
+    );
+  };
 
   return (
     <BottomSheetModal
@@ -303,23 +322,22 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
       handleIndicatorStyle={{ backgroundColor: textColor }}
       onChange={handleSheetChange}
     >
-      <BottomSheetFlatList
-        data={queue}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
-        renderItem={queue.length > 0 ? renderItem : undefined}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={
-          queue.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <ThemedText style={styles.emptyText}>
-                No shows in queue
-              </ThemedText>
-            </View>
-          ) : undefined
-        }
-        contentContainerStyle={styles.flatListContent}
-        scrollEnabled={true}
-      />
+      <BottomSheetScrollView contentContainerStyle={styles.flatListContent}>
+        {renderHeader()}
+        {queue.length > 0 ? (
+          <DraggableFlatList
+            data={queue}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
+            renderItem={renderItem}
+            onDragEnd={handleReorder}
+            scrollEnabled={false}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <ThemedText style={styles.emptyText}>No shows in queue</ThemedText>
+          </View>
+        )}
+      </BottomSheetScrollView>
     </BottomSheetModal>
   );
 });
@@ -426,6 +444,14 @@ const styles = StyleSheet.create({
   queueHeaderTitle: {
     fontSize: 18,
     fontWeight: "600",
+  },
+  clearButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  clearButtonText: {
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
   emptyContainer: {
     flex: 1,
