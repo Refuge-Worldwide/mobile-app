@@ -10,10 +10,7 @@ import { Image } from "expo-image";
 import { Link, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
-  // Animated removed
   Dimensions,
-  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -124,15 +121,6 @@ export default function Live() {
           showId: "live-stream-ch2",
         });
       }
-    }
-  };
-
-  const openChat = async () => {
-    try {
-      await Linking.openURL("https://refugeworldwide.com/chat");
-    } catch (error) {
-      console.error("Error opening chat:", error);
-      Alert.alert("Error", "Unable to open chat. Please try again.");
     }
   };
 
@@ -300,15 +288,16 @@ export default function Live() {
 
       <View style={styles.buttons}>
         <Pressable
-          onPress={openChat}
           style={[
             styles.menuButton,
             { backgroundColor: textColor, borderColor: textColor },
           ]}
         >
-          <ThemedText type="large" style={{ color: backgroundColor }}>
-            Chat
-          </ThemedText>
+          <Link href="/live/chat" style={styles.buttonLink}>
+            <ThemedText type="large" style={{ color: backgroundColor }}>
+              Chat
+            </ThemedText>
+          </Link>
         </Pressable>
         <Pressable
           style={[
