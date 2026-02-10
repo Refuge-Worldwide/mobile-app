@@ -101,6 +101,7 @@ export default function Live() {
           title: liveNow.title,
           artwork: liveNow.artwork,
           showId: liveNow.slug || "live-stream",
+          slug: liveNow.slug,
         });
       }
     }
@@ -120,6 +121,7 @@ export default function Live() {
           title: liveNowCh2.title,
           artwork: liveNow?.artwork, // Use Channel 1 artwork as fallback since Ch2 doesn't have artwork
           showId: "live-stream-ch2",
+          slug: undefined, // Channel 2 doesn't have show details
         });
       }
     }

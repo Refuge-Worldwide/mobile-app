@@ -72,17 +72,18 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   );
 
   const fetchShowDetails = async () => {
-    if (!currentTrack?.slug || currentTrack.isLive) {
+    if (!currentTrack?.slug) {
       setShowDescription(null);
       return;
     }
 
     try {
-      // Fetch show details by slug
+      // Fetch show details by slug (works for both live and archive)
       const response = await fetch(
         `https://refugeworldwide.com/api/shows/${currentTrack.slug}`,
       );
       if (response.ok) {
+        console.log(response);
         const data = await response.json();
         setShowDescription(data.show?.description || null);
       }
@@ -128,11 +129,15 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   };
 
   const handleTitlePress = () => {
-    if (currentTrack?.slug && !isLiveMode) {
+    if (currentTrack?.slug) {
       bottomSheetRef.current?.dismiss();
 
-      // Always navigate to radio tab when clicking from queue preview
-      router.push(`/(tabs)/radio/${currentTrack.slug}` as any);
+      // Navigate to the appropriate tab based on mode
+      if (isLiveMode) {
+        router.push(`/live/show/${currentTrack.slug}` as any);
+      } else {
+        router.push(`/(tabs)/radio/${currentTrack.slug}` as any);
+      }
     }
   };
 

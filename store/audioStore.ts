@@ -33,16 +33,19 @@ interface AudioStore {
     title: string;
     artwork?: string;
     showId?: string;
+    slug?: string;
   }) => void;
   setLiveTrackChannel2: (liveData: {
     title: string;
     artwork?: string;
     showId?: string;
+    slug?: string;
   }) => void;
   updateLiveTrackMetadata: (liveData: {
     title: string;
     artwork?: string;
     showId?: string;
+    slug?: string;
   }) => void;
   isShowPlaying: (showId: string) => boolean;
 }
@@ -110,6 +113,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       mode: "live" as PlaybackMode,
       isLive: true,
       showId: liveData.showId,
+      slug: liveData.slug,
     };
 
     // Check if we're already on the live stream
@@ -139,6 +143,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       mode: "live" as PlaybackMode,
       isLive: true,
       showId: liveData.showId,
+      slug: liveData.slug,
     };
 
     // Check if we're already on the channel 2 live stream
@@ -167,6 +172,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       title: liveData.title,
       artwork: liveData.artwork,
       showId: liveData.showId,
+      slug: liveData.slug,
     };
 
     set({ currentTrack: updatedTrack });

@@ -305,6 +305,7 @@ export function AudioPlayer() {
             title: data.liveNow.title,
             artwork: data.liveNow.artwork,
             showId: data.liveNow.slug || "live-stream",
+            slug: data.liveNow.slug,
           });
         } else if (currentTrack.id === "live-stream-ch2" && data.ch2) {
           // Update Channel 2 metadata only (no playback change)
@@ -312,6 +313,7 @@ export function AudioPlayer() {
             title: data.ch2.liveNow,
             artwork: data.liveNow?.artwork,
             showId: "live-stream-ch2",
+            slug: undefined, // Channel 2 doesn't have show details
           });
         }
       } catch (error) {

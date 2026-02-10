@@ -31,7 +31,7 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
   const translateYAnim = useRef(new Animated.Value(0)).current;
   const translateXAnim = useRef(new Animated.Value(0)).current;
   const textFadeAnim = useRef(new Animated.Value(1)).current;
-  
+
   // Calculate position for logo to move to top left
   const screenWidth = Dimensions.get("window").width;
   const screenHeight = Dimensions.get("window").height;
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   text: {
-    fontSize: 12,
+    fontSize: 16,
     textAlign: "center",
     opacity: 0.7,
   },
