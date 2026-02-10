@@ -1,4 +1,5 @@
 import { ShowCard } from "@/components/ShowCard";
+import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -157,6 +158,7 @@ export default function SearchScreen() {
               slug={item.slug}
             />
           )}
+          ItemSeparatorComponent={ShowCardSeparator}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={

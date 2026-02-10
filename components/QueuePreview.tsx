@@ -24,6 +24,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import TrackPlayer from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
 import { Icon } from "./Icon";
+import { NextUp } from "./NextUp";
 import { ThemedText } from "./ThemedText";
 
 export interface QueuePreviewRef {
@@ -239,9 +240,9 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
         ]}
       >
         <ThemedText type="subtitle" style={[styles.queueHeaderTitle]}>
-          Up Next ({queue.length})
+          {isLiveMode ? "Next Up" : `Next Up (${queue.length})`}
         </ThemedText>
-        {queue.length > 0 && (
+        {!isLiveMode && queue.length > 0 && (
           <Pressable onPress={clearQueue} style={styles.clearButton}>
             <ThemedText style={styles.clearButtonText}>Clear</ThemedText>
           </Pressable>
@@ -324,7 +325,9 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     >
       <BottomSheetScrollView contentContainerStyle={styles.flatListContent}>
         {renderHeader()}
-        {queue.length > 0 ? (
+        {isLiveMode ? (
+          <NextUp />
+        ) : queue.length > 0 ? (
           <DraggableFlatList
             data={queue}
             keyExtractor={(item, index) => `${item.id}-${index}`}

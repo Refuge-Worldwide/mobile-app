@@ -1,4 +1,5 @@
 import { ShowCard } from '@/components/ShowCard';
+import { ShowCardSeparator } from '@/components/ShowCardSeparator';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -206,7 +207,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
             <ThemedText type="subtitle" style={styles.showsHeader}>
               Shows
             </ThemedText>
-            {shows.map((show) => (
+            {shows.map((show, index) => (
               <View key={show.id}>
                 <ShowCard
                   imageUrl={getImageUrl(show.coverImage || show.artwork)}
@@ -218,6 +219,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
                   showId={show.id}
                   slug={show.slug}
                 />
+                {index < shows.length - 1 && <ShowCardSeparator />}
               </View>
             ))}
           </View>

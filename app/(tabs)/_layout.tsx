@@ -56,7 +56,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   };
 
   const mainTabs = ["live", "radio", "playlist"];
-  const secondaryTabs = ["chat", "search", "account"];
+  const secondaryTabs = ["search", "account", "chat"];
 
   const mainTabRoutes = state.routes.filter((route: any) =>
     mainTabs.includes(route.name),
@@ -120,13 +120,7 @@ export default function TabLayout() {
             title: "Playlists",
           }}
         />
-        <Tabs.Screen
-          name="chat"
-          options={{
-            title: "Chat",
-            href: "/chat",
-          }}
-        />
+
         <Tabs.Screen
           name="search"
           options={{
@@ -139,6 +133,13 @@ export default function TabLayout() {
           options={{
             title: "Account",
             href: "/account",
+          }}
+        />
+        <Tabs.Screen
+          name="chat"
+          options={{
+            title: "Chat",
+            href: "/chat",
           }}
         />
         {/* Hide schedule from main app tabs by setting href: null */}

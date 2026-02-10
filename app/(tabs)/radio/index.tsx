@@ -1,6 +1,7 @@
 import { BottomSheet } from "@/components/BottomSheet";
 import { GenreFilter } from "@/components/GenreFilter";
 import { ShowCard } from "@/components/ShowCard";
+import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -301,6 +302,7 @@ export default function Archive() {
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
+        ItemSeparatorComponent={ShowCardSeparator}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={

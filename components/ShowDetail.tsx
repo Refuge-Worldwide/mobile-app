@@ -1,5 +1,6 @@
 import { Icon } from "@/components/Icon";
 import { ShowCard } from "@/components/ShowCard";
+import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -380,7 +381,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
               Related Shows
             </ThemedText>
             <View>
-              {show.relatedShows.map((relatedShow) => (
+              {show.relatedShows.map((relatedShow, index) => (
                 <View key={relatedShow.id}>
                   <ShowCard
                     imageUrl={getImageUrl(
@@ -394,6 +395,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                     showId={relatedShow.id}
                     slug={relatedShow.slug}
                   />
+                  {index < show.relatedShows.length - 1 && <ShowCardSeparator />}
                 </View>
               ))}
             </View>

@@ -434,7 +434,7 @@ export function AudioPlayer() {
         ]}
       >
         <View style={styles.content}>
-          {/* Left side - Show image (only if artwork exists) */}
+          {/* Left side - Show image */}
           {currentTrack?.artwork && (
             <View style={styles.imageContainer}>
               <Image
@@ -449,7 +449,6 @@ export function AudioPlayer() {
 
           {/* Middle - Track info and controls */}
           <View style={styles.middleContainer}>
-            {/* Controls row - draggable slider styled as full width bar */}
             {!isLiveMode ? (
               <View style={styles.controlsWrapper}>
                 <DraggableScrubber

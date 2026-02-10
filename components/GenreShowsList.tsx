@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { ShowCard } from './ShowCard';
+import { ShowCardSeparator } from './ShowCardSeparator';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
@@ -159,6 +160,7 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
+          ItemSeparatorComponent={ShowCardSeparator}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={

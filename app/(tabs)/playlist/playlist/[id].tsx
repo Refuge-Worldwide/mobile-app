@@ -1,4 +1,5 @@
 import { ShowCard } from "@/components/ShowCard";
+import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -153,6 +154,7 @@ export default function PlaylistDetailScreen() {
         data={shows}
         renderItem={renderShowItem}
         keyExtractor={(item) => item.id}
+        ItemSeparatorComponent={ShowCardSeparator}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={

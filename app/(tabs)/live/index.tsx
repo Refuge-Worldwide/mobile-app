@@ -7,7 +7,7 @@ import { useColorSchemeContext } from "@/contexts/ColorSchemeContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAudioStore } from "@/store/audioStore";
 import { Image } from "expo-image";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   Dimensions,
@@ -214,7 +214,7 @@ export default function Live() {
                 </View>
                 <Pressable
                   onPress={() =>
-                    router.push(`/live/show/${liveNow.slug}` as any)
+                    router.push("/live/schedule" as any)
                   }
                   style={{ backgroundColor: textColor, padding: 4 }}
                 >
@@ -281,33 +281,6 @@ export default function Live() {
           )}
         </View>
       </ScrollView>
-
-      <View style={styles.buttons}>
-        <Pressable
-          style={[
-            styles.menuButton,
-            { backgroundColor: textColor, borderColor: textColor },
-          ]}
-        >
-          <Link href="/live/chat" style={styles.buttonLink}>
-            <ThemedText type="large" style={{ color: backgroundColor }}>
-              Chat
-            </ThemedText>
-          </Link>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.menuButton,
-            { backgroundColor: textColor, borderColor: textColor },
-          ]}
-        >
-          <Link href="/live/schedule" style={styles.buttonLink}>
-            <ThemedText type="large" style={{ color: backgroundColor }}>
-              Schedule
-            </ThemedText>
-          </Link>
-        </Pressable>
-      </View>
 
       {/* Sticker flood overlay removed. */}
     </ThemedView>
