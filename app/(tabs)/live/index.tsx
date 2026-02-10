@@ -192,10 +192,8 @@ export default function Live() {
                     { backgroundColor: textColor },
                   ]}
                 >
-                  {isLoading &&
-                    currentTrack?.id === "live-stream" &&
-                    !isCurrentlyPlayingLive ? (
-                    <Icon name="loading" size={24} color={backgroundColor} />
+                  {isLoading && currentTrack?.id === "live-stream" ? (
+                    <Icon name="loading" size={50} color={backgroundColor} />
                   ) : (
                     <Icon
                       name={isCurrentlyPlayingLive ? "stop" : "play"}
@@ -250,10 +248,8 @@ export default function Live() {
                     { backgroundColor: textColor },
                   ]}
                 >
-                  {isLoading &&
-                    currentTrack?.id === "live-stream-ch2" &&
-                    !isCurrentlyPlayingLiveCh2 ? (
-                    <Icon name="loading" size={24} color={backgroundColor} />
+                  {isLoading && currentTrack?.id === "live-stream-ch2" ? (
+                    <Icon name="loading" size={50} color={backgroundColor} />
                   ) : (
                     <Icon
                       name={isCurrentlyPlayingLiveCh2 ? "stop" : "play"}
