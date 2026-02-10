@@ -1,5 +1,6 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAudioStore } from "@/store/audioStore";
+import { optimizeShowImage } from "@/utils/imageOptimization";
 import { Image } from "expo-image";
 import { useRouter, useSegments } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -64,20 +65,8 @@ export function ShowCard({
 
   const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
 
-  const optimizeImage = (src: string | undefined): string => {
-    if (!src) return "";
-
-    const imageUrl = src.startsWith("//") ? `https:${src}` : src;
-
-    if (
-      !imageUrl.includes("ctfassets.net") &&
-      !imageUrl.includes("contentful.com")
-    ) {
-      return imageUrl;
-    }
-
-    return `${imageUrl}?w=590&h=332&q=80&fm=jpg&fl=progressive&f=faces&fit=fill`;
-  };
+  // Use centralized image optimization from utils
+  const optimizeImage = optimizeShowImage;
 
   const setTrack = useAudioStore((state) => state.setTrack);
   const setIsPlaying = useAudioStore((state) => state.setIsPlaying);

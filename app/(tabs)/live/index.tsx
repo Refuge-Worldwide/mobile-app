@@ -6,6 +6,7 @@ import { Colors } from "@/constants/Colors";
 import { useColorSchemeContext } from "@/contexts/ColorSchemeContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAudioStore } from "@/store/audioStore";
+import { optimizeLiveImage } from "@/utils/imageOptimization";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -184,7 +185,7 @@ export default function Live() {
                   contentFit="cover"
                   transition={1000}
                   placeholder="blurhash"
-                  source={liveNow?.artwork}
+                  source={optimizeLiveImage(liveNow?.artwork)}
                 />
                 <View
                   style={[
@@ -240,7 +241,7 @@ export default function Live() {
                   contentFit="cover"
                   transition={1000}
                   placeholder="blurhash"
-                  source={liveNow?.artwork} // Use Channel 1 artwork as fallback
+                  source={optimizeLiveImage(liveNow?.artwork)} // Use Channel 1 artwork as fallback
                 />
                 <View
                   style={[

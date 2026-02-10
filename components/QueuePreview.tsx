@@ -1,5 +1,6 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Track, useAudioStore } from "@/store/audioStore";
+import { optimizeShowImage } from "@/utils/imageOptimization";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BottomSheetBackdrop,
@@ -52,20 +53,8 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   const isLiveMode = currentTrack?.isLive;
   const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
 
-  const optimizeImage = (src: string | undefined): string => {
-    if (!src) return "";
-
-    const imageUrl = src.startsWith("//") ? `https:${src}` : src;
-
-    if (
-      !imageUrl.includes("ctfassets.net") &&
-      !imageUrl.includes("contentful.com")
-    ) {
-      return imageUrl;
-    }
-
-    return `${imageUrl}?w=590&h=332&q=80&fm=jpg&fl=progressive&f=faces&fit=fill`;
-  };
+  // Use centralized image optimization from utils
+  const optimizeImage = optimizeShowImage;
 
   useImperativeHandle(ref, () => ({
     present: () => bottomSheetRef.current?.present(),
@@ -155,7 +144,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
           <View style={styles.imageContainer}>
             {currentTrack.artwork ? (
               <Image
-                source={{ uri: currentTrack.artwork }}
+                source={{ uri: optimizeShowImage(currentTrack.artwork) }}
                 placeholder={{ blurhash: defaultBlurhash }}
                 transition={300}
                 style={styles.image}

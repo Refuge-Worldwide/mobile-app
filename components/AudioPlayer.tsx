@@ -1,6 +1,7 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { fetchShowBySlug } from "@/lib/showsApi";
 import { useAudioStore } from "@/store/audioStore";
+import { optimizeShowImage } from "@/utils/imageOptimization";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -438,7 +439,7 @@ export function AudioPlayer() {
           {currentTrack?.artwork && (
             <View style={styles.imageContainer}>
               <Image
-                source={{ uri: currentTrack.artwork }}
+                source={{ uri: optimizeShowImage(currentTrack.artwork) }}
                 placeholder={{ blurhash: defaultBlurhash }}
                 transition={200}
                 style={styles.artwork}

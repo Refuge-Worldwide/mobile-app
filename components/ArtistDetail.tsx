@@ -5,6 +5,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Artist } from '@/types/artists';
 import { Show } from '@/types/shows';
+import { ensureHttps, optimizeArtistImage } from '@/utils/imageOptimization';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -122,10 +123,8 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
     return `${day} ${month} ${year}`;
   };
 
-  const getImageUrl = (url?: string): string => {
-    if (!url) return '';
-    return url.startsWith('//') ? `https:${url}` : url;
-  };
+  // Kept for backwards compatibility with ShowCard usage
+  const getImageUrl = ensureHttps;
 
   const handleShowPress = (showSlug: string) => {
     router.push(`${navigationPrefix}/${showSlug}`);
@@ -165,7 +164,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
           {artistImage && (
             <View style={styles.imageContainer}>
               <Image
-                source={{ uri: getImageUrl(artistImage) }}
+                source={{ uri: optimizeArtistImage(artistImage) }}
                 style={styles.artistImage}
                 resizeMode="cover"
               />

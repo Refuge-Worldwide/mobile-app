@@ -47,25 +47,6 @@ interface AudioStore {
   isShowPlaying: (showId: string) => boolean;
 }
 
-// Optimize image URL for lock screen - square crop for better display
-const optimizeImageForPlayer = (
-  src: string | undefined,
-): string | undefined => {
-  if (!src) return undefined;
-
-  const imageUrl = src.startsWith("//") ? `https:${src}` : src;
-
-  if (
-    !imageUrl.includes("ctfassets.net") &&
-    !imageUrl.includes("contentful.com")
-  ) {
-    return imageUrl;
-  }
-
-  // Square crop for lock screen (500x500 with face detection)
-  return `${imageUrl}?w=500&h=500&q=80&fm=jpg&fl=progressive&f=faces&fit=fill`;
-};
-
 export const useAudioStore = create<AudioStore>((set, get) => ({
   currentTrack: null,
   queue: [],
@@ -73,10 +54,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   isLoading: false,
   setTrack: (track) =>
     set({
-      currentTrack: {
-        ...track,
-        artwork: optimizeImageForPlayer(track.artwork),
-      },
+      currentTrack: track,
       isPlaying: true,
       isLoading: true,
     }),
@@ -89,7 +67,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
     const state = get();
     const optimizedTrack = {
       ...track,
-      artwork: optimizeImageForPlayer(track.artwork),
+      artwork: track.artwork,
     };
     set({ queue: [...state.queue, optimizedTrack] });
   },
@@ -128,7 +106,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       url: "https://streaming.radio.co/s3699c5e49/listen",
       title: liveData.title,
       artist: "Live on Refuge Worldwide",
-      artwork: optimizeImageForPlayer(liveData.artwork),
+      artwork: liveData.artwork,
       mode: "live" as PlaybackMode,
       isLive: true,
       showId: liveData.showId,
@@ -157,7 +135,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       url: "https://s4.radio.co/s8ce53d687/listen",
       title: liveData.title,
       artist: "Live on Refuge Worldwide - Channel 2",
-      artwork: optimizeImageForPlayer(liveData.artwork),
+      artwork: liveData.artwork,
       mode: "live" as PlaybackMode,
       isLive: true,
       showId: liveData.showId,
@@ -187,7 +165,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
     const updatedTrack = {
       ...state.currentTrack,
       title: liveData.title,
-      artwork: optimizeImageForPlayer(liveData.artwork),
+      artwork: liveData.artwork,
       showId: liveData.showId,
     };
 

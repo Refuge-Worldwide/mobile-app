@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFavouritesWithShows } from "@/lib/favourites";
 import { Show } from "@/types/shows";
+import { ensureHttps } from "@/utils/imageOptimization";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -63,10 +64,8 @@ export default function PlaylistDetailScreen() {
     return `${day} ${month} ${year}`;
   };
 
-  const getImageUrl = (url?: string): string => {
-    if (!url) return "";
-    return url.startsWith("//") ? `https:${url}` : url;
-  };
+  // Use centralized URL helper for consistency
+  const getImageUrl = ensureHttps;
 
   const handleShowPress = (slug: string) => {
     router.push(`/(tabs)/playlist/${slug}`);

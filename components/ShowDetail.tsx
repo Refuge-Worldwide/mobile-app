@@ -8,6 +8,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { isFavourited, toggleFavourite } from "@/lib/favourites";
 import { Artist } from "@/types/artists";
 import { Show } from "@/types/shows";
+import { ensureHttps, optimizeArtistImage } from "@/utils/imageOptimization";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -113,10 +114,8 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     return `${day} ${month} ${year}`;
   };
 
-  const getImageUrl = (url?: string): string => {
-    if (!url) return "";
-    return url.startsWith("//") ? `https:${url}` : url;
-  };
+  // Kept for backwards compatibility with ShowCard usage
+  const getImageUrl = ensureHttps;
 
   const handleRelatedShowPress = (relatedSlug: string) => {
     // Live tab has shows under /show/ subfolder, other tabs have shows directly
@@ -346,9 +345,9 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                         <View style={styles.artistImageContainer}>
                           {artistImage ? (
                             <Image
-                              source={{ uri: getImageUrl(artistImage) }}
+                              source={{ uri: optimizeArtistImage(artistImage) }}
                               style={styles.artistImage}
-                              key={getImageUrl(artistImage)}
+                              key={optimizeArtistImage(artistImage)}
                             />
                           ) : (
                             <View
