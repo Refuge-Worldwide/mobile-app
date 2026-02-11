@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ChatMessage {
   id: string;
@@ -34,9 +35,16 @@ export default function Chat() {
   const { currentTrack } = useAudioStore();
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
+  const insets = useSafeAreaInsets();
+
+  // Calculate tab bar height (matches AudioPlayer calculation)
+  const tabBarHeight = 80 + Math.max(insets.bottom, 11);
 
   // Add extra padding when audio player is visible
   const audioPlayerPadding = currentTrack ? AUDIO_PLAYER_HEIGHT : 0;
+
+  // Total bottom padding: tab bar + audio player (if visible)
+  const totalBottomPadding = tabBarHeight + audioPlayerPadding;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -318,7 +326,7 @@ export default function Chat() {
             styles.inputContainer,
             {
               borderTopColor: textColor,
-              paddingBottom: 8 + audioPlayerPadding,
+              paddingBottom: 8 + totalBottomPadding,
             },
           ]}
         >

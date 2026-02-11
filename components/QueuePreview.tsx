@@ -227,21 +227,29 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
       )}
 
       {/* Queue Header */}
-      <View
-        style={[
-          styles.queueHeader,
-          { borderBottomColor: textColor, borderBottomWidth: 1 },
-        ]}
-      >
-        <ThemedText type="subtitle" style={[styles.queueHeaderTitle]}>
-          {isLiveMode ? "Next Up" : `Next Up (${queue.length})`}
-        </ThemedText>
-        {!isLiveMode && queue.length > 0 && (
-          <Pressable onPress={clearQueue} style={styles.clearButton}>
-            <ThemedText style={styles.clearButtonText}>Clear</ThemedText>
-          </Pressable>
-        )}
-      </View>
+      {isLiveMode ? (
+        <View style={[styles.dateHeader, { backgroundColor: textColor }]}>
+          <ThemedText style={[styles.dateText, { color: backgroundColor }]}>
+            Next Up
+          </ThemedText>
+        </View>
+      ) : (
+        <View
+          style={[
+            styles.queueHeader,
+            { borderBottomColor: textColor, borderBottomWidth: 1 },
+          ]}
+        >
+          <ThemedText type="subtitle" style={[styles.queueHeaderTitle]}>
+            Next Up ({queue.length})
+          </ThemedText>
+          {queue.length > 0 && (
+            <Pressable onPress={clearQueue} style={styles.clearButton}>
+              <ThemedText style={styles.clearButtonText}>Clear</ThemedText>
+            </Pressable>
+          )}
+        </View>
+      )}
     </View>
   );
 
@@ -431,6 +439,12 @@ const styles = StyleSheet.create({
   queueSection: {
     flex: 1,
     paddingTop: 0,
+  },
+  dateHeader: {
+    alignItems: "center",
+  },
+  dateText: {
+    fontWeight: "bold",
   },
   queueHeader: {
     flexDirection: "row",

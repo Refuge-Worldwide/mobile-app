@@ -94,10 +94,14 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
 export default function TabLayout() {
   return (
-    <>
-      <AudioPlayer />
+    <View style={{ flex: 1 }}>
       <Tabs
-        tabBar={(props) => <CustomTabBar {...props} />}
+        tabBar={(props) => (
+          <>
+            <AudioPlayer />
+            <CustomTabBar {...props} />
+          </>
+        )}
         screenOptions={{
           headerShown: false,
         }}
@@ -150,12 +154,16 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingTop: 6,
     backgroundColor: "#fff",
     zIndex: 200,
