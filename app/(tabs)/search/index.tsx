@@ -2,6 +2,7 @@ import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -41,6 +42,7 @@ export default function SearchScreen() {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const router = useRouter();
+  const bottomPadding = useBottomSafePadding();
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -89,7 +91,7 @@ export default function SearchScreen() {
   }, [searchQuery]);
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { paddingBottom: bottomPadding }]}>
       <View style={styles.searchContainer}>
         <TextInput
           style={[
@@ -159,7 +161,7 @@ export default function SearchScreen() {
             />
           )}
           ItemSeparatorComponent={ShowCardSeparator}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl

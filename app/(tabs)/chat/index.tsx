@@ -306,7 +306,7 @@ export default function Chat() {
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={100}
+        keyboardVerticalOffset={0}
       >
         <FlatList
           ref={flatListRef}

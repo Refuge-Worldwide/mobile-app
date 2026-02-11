@@ -4,6 +4,7 @@ import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Show } from "@/types/shows";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,6 +43,7 @@ export default function Archive() {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
+  const bottomPadding = useBottomSafePadding();
 
   const fetchShows = useCallback(
     async (currentSkip: number, genres: string[] = []) => {
@@ -303,7 +305,7 @@ export default function Archive() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         ItemSeparatorComponent={ShowCardSeparator}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
