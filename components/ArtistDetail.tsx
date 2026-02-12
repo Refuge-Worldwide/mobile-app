@@ -2,10 +2,11 @@ import { ShowCard } from '@/components/ShowCard';
 import { ShowCardSeparator } from '@/components/ShowCardSeparator';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Artist } from '@/types/artists';
 import { Show } from '@/types/shows';
-import { ensureHttps, optimizeArtistImage } from '@/utils/imageOptimization';
+import { ensureHttps, optimizeArtistHeaderImage } from '@/utils/imageOptimization';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -34,6 +35,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
   const [isBioLong, setIsBioLong] = useState(false);
 
   const textColor = useThemeColor({}, 'text');
+  const bottomPadding = useBottomSafePadding();
 
   useEffect(() => {
     if (slug) {
@@ -155,7 +157,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
   return (
     <ThemedView style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.artistHeader}>
@@ -164,7 +166,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
           {artistImage && (
             <View style={styles.imageContainer}>
               <Image
-                source={{ uri: optimizeArtistImage(artistImage) }}
+                source={{ uri: optimizeArtistHeaderImage(artistImage) }}
                 style={styles.artistImage}
                 resizeMode="cover"
               />
@@ -235,7 +237,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 12,
     paddingTop: 12,
-    paddingBottom: 24,
   },
   loadingContainer: {
     flex: 1,

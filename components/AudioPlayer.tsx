@@ -1,7 +1,10 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { fetchShowBySlug } from "@/lib/showsApi";
 import { useAudioStore } from "@/store/audioStore";
-import { optimizeShowImage } from "@/utils/imageOptimization";
+import {
+  optimizePlayerImage,
+  optimizeShowImage,
+} from "@/utils/imageOptimization";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -236,7 +239,7 @@ export function AudioPlayer() {
           url: currentTrack.url,
           title: currentTrack.title,
           artist: currentTrack.artist || "Unknown Artist",
-          artwork: currentTrack.artwork,
+          artwork: optimizePlayerImage(currentTrack.artwork),
           isLiveStream: currentTrack.isLive,
         });
 
@@ -273,7 +276,7 @@ export function AudioPlayer() {
         await TrackPlayer.updateNowPlayingMetadata({
           title: currentTrack.title,
           artist: currentTrack.artist || "Live on Refuge Worldwide",
-          artwork: currentTrack.artwork,
+          artwork: optimizePlayerImage(currentTrack.artwork),
         });
       } catch (error) {
         // Silently ignore errors - metadata will be set when track loads

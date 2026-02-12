@@ -1,3 +1,4 @@
+import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Show } from '@/types/shows';
 import { useRouter, useSegments } from 'expo-router';
@@ -32,6 +33,7 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
   const segments = useSegments();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
+  const bottomPadding = useBottomSafePadding();
 
   // Determine which tab we're in for navigation
   const currentTab = (() => {
@@ -161,7 +163,7 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
           ItemSeparatorComponent={ShowCardSeparator}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -195,7 +197,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 16,
   },
   footer: {
     paddingVertical: 20,

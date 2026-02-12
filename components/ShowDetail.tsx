@@ -4,6 +4,7 @@ import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { isFavourited, toggleFavourite } from "@/lib/favourites";
 import { Artist } from "@/types/artists";
@@ -46,6 +47,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const [artistsLoading, setArtistsLoading] = useState(false);
 
   const textColor = useThemeColor({}, "text");
+  const bottomPadding = useBottomSafePadding();
 
   useEffect(() => {
     if (slug) {
@@ -243,7 +245,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   return (
     <ThemedView style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Show Card */}
@@ -412,7 +414,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 12,
     paddingTop: 12,
-    paddingBottom: 100,
   },
   loadingContainer: {
     flex: 1,

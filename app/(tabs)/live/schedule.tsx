@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -89,6 +90,7 @@ export default function Schedule() {
   const router = useRouter();
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
+  const bottomPadding = useBottomSafePadding();
 
   useEffect(() => {
     fetchSchedule();
@@ -187,7 +189,10 @@ export default function Schedule() {
     <ThemedView style={[styles.container]}>
       <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={isEmpty ? styles.scrollContentEmpty : undefined}
+        contentContainerStyle={[
+          isEmpty ? styles.scrollContentEmpty : styles.scrollContent,
+          { paddingBottom: bottomPadding }
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {isEmpty ? (
@@ -271,13 +276,16 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
+  scrollContent: {
+    paddingTop: 8,
+  },
   scrollContentEmpty: {
     flexGrow: 1,
   },
   timezoneContainer: {
     paddingVertical: 8,
     paddingHorizontal: 4,
-    marginBottom: 12,
+    marginTop: 12,
     alignItems: 'center',
   },
   timezoneText: {

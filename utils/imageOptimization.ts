@@ -32,30 +32,41 @@ const optimizeContentfulImage = (
 /**
  * Optimize images for show cards (16:9 aspect ratio)
  * Used in: ShowCard, QueuePreview, GenreShowsList, etc.
+ * 800px width provides crisp display on 2x pixel density devices
  */
 export const optimizeShowImage = (src: string | undefined): string => {
-  const optimized = optimizeContentfulImage(src, 590, 332);
+  const optimized = optimizeContentfulImage(src, 800, 450);
   return optimized || "";
 };
 
 /**
  * Optimize images for audio player and lock screen (1:1 aspect ratio)
  * Used in: AudioPlayer, audioStore
+ * Square format required for iOS/Android lock screen display
+ * 600px provides good quality for lock screens with reasonable file size
  */
 export const optimizePlayerImage = (
   src: string | undefined,
 ): string | undefined => {
-  return optimizeContentfulImage(src, 500, 500);
+  return optimizeContentfulImage(src, 600, 600);
 };
 
 /**
- * Optimize images for artist photos (16:9 aspect ratio)
- * Used in: ArtistDetail, ShowDetail artist thumbnails
+ * Optimize images for artist thumbnails (16:9 aspect ratio)
+ * Used in: ShowDetail artist thumbnails
+ * Small size for thumbnail displays (80px wide)
  */
 export const optimizeArtistImage = (src: string | undefined): string => {
   const optimized = optimizeContentfulImage(src, 320, 180);
   return optimized || "";
 };
+
+/**
+ * Optimize images for artist header/detail page (16:9 aspect ratio)
+ * Used in: ArtistDetail full-width header image
+ * Same size as show images for full-width display
+ */
+export const optimizeArtistHeaderImage = optimizeShowImage;
 
 /**
  * Optimize images for live channel displays (16:9 aspect ratio)
