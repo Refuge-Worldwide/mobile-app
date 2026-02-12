@@ -4,6 +4,7 @@ import { optimizeShowImage } from "@/utils/imageOptimization";
 import { Image } from "expo-image";
 import { useRouter, useSegments } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
+import { GenreTag } from "./GenreTag";
 import { Icon } from "./Icon";
 import { ThemedText } from "./ThemedText";
 import { Toast } from "./ToastNotification";
@@ -212,18 +213,15 @@ export function ShowCard({
       {displayGenres.length > 0 && (
         <View style={styles.genresContainer}>
           {displayGenres.map((genre, index) => (
-            <Pressable
+            <GenreTag
               key={`${genre}-${index}`}
-              style={[styles.genreTag, { borderColor: textColor }]}
-              onPress={(e) => {
-                e.stopPropagation();
+              name={genre}
+              onPress={() => {
                 // Route to genre page within the current tab
                 const genrePath = `/(tabs)/${currentTab || "radio"}/genre/${encodeURIComponent(genre)}`;
                 router.push(genrePath as any);
               }}
-            >
-              <ThemedText type="tag">{genre}</ThemedText>
-            </Pressable>
+            />
           ))}
         </View>
       )}
@@ -278,11 +276,5 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 6,
     justifyContent: "space-between",
-  },
-  genreTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 99,
-    borderWidth: 1,
   },
 });

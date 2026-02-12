@@ -1,3 +1,4 @@
+import { GenreTag } from "@/components/GenreTag";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
@@ -6,12 +7,13 @@ import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -27,22 +29,61 @@ interface Show {
   genres: string[];
 }
 
+interface Genre {
+  fields: {
+    name: string;
+    slug?: string;
+  };
+  sys: {
+    id: string;
+    type: string;
+  };
+}
+
 interface SearchResponse {
   shows: Show[];
   articles: any[];
   artists: any[];
+  genres?: Genre[];
 }
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<Show[]>([]);
+  const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(false);
+  const [genresLoading, setGenresLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const router = useRouter();
   const bottomPadding = useBottomSafePadding();
+
+  // Fetch genres on mount
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        setGenresLoading(true);
+        const response = await fetch(
+          'https://refugeworldwide.com/api/search?query=',
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch genres");
+        }
+
+        const data: SearchResponse = await response.json();
+        setGenres(data.genres || []);
+      } catch (err) {
+        console.error("Error fetching genres:", err);
+      } finally {
+        setGenresLoading(false);
+      }
+    };
+
+    fetchGenres();
+  }, []);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -66,6 +107,10 @@ export default function SearchScreen() {
 
       const data: SearchResponse = await response.json();
       setResults(data.shows || []);
+      // Update genres if they come with search results
+      if (data.genres) {
+        setGenres(data.genres);
+      }
     } catch (err) {
       console.error("Error searching:", err);
       setError("Failed to load search results");
@@ -90,6 +135,32 @@ export default function SearchScreen() {
     setRefreshing(false);
   }, [searchQuery]);
 
+  const renderListHeader = () => {
+    if (searchQuery.trim().length === 0 || genres.length === 0) return null;
+
+    return (
+      <View style={styles.genresWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.genresContainer}
+        >
+          {genres.map((genre) => (
+            <GenreTag
+              key={genre.sys.id}
+              name={genre.fields.name}
+              onPress={() =>
+                router.push(
+                  `/(tabs)/search/genre/${encodeURIComponent(genre.fields.name)}`
+                )
+              }
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   return (
     <ThemedView style={[styles.container, { paddingBottom: bottomPadding }]}>
       <View style={styles.searchContainer}>
@@ -102,7 +173,7 @@ export default function SearchScreen() {
               backgroundColor: backgroundColor,
             },
           ]}
-          placeholder="Search shows..."
+          placeholder="Search shows and genres..."
           placeholderTextColor={textColor + "80"}
           value={searchQuery}
           onChangeText={handleSearch}
@@ -144,6 +215,7 @@ export default function SearchScreen() {
         <FlatList
           data={results}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={renderListHeader}
           renderItem={({ item }) => (
             <ShowCard
               imageUrl={
@@ -176,7 +248,7 @@ export default function SearchScreen() {
 
       {!loading && !error && searchQuery.trim().length === 0 && (
         <View style={styles.centerContainer}>
-          <ThemedText>Start typing to search shows</ThemedText>
+          <ThemedText>Start typing to search shows and genres</ThemedText>
         </View>
       )}
     </ThemedView>
@@ -218,5 +290,14 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 100,
+  },
+  genresWrapper: {
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  genresContainer: {
+    flexDirection: "row",
+    gap: 8,
+    paddingRight: 16,
   },
 });
