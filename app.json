@@ -12,6 +12,8 @@
       "distribution": "internal"
     },
     "splash": {
+      "image": "./assets/images/logo-dark-background.png",
+      "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
     "ios": {
@@ -48,6 +50,8 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/images/logo-dark-background.png",
+          "resizeMode": "contain",
           "backgroundColor": "#000000"
         }
       ],
