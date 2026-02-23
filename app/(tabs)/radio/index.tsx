@@ -200,7 +200,7 @@ export default function Archive() {
     return (
       <ShowCard
         imageUrl={item.coverImage || item.artwork}
-        audioUrl={item.audioFile}
+        mixcloudLink={item.mixcloudLink}
         title={item.title}
         date={formatDate(item.date)}
         genres={item.genres}

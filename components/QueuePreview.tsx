@@ -1,7 +1,8 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Track, useAudioStore } from "@/store/audioStore";
 import { optimizeShowImage } from "@/utils/imageOptimization";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -128,6 +129,12 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     setIsPlaying(!isPlaying);
   };
 
+  const handleSoundCloudPress = async () => {
+    if (currentTrack?.url?.includes("soundcloud.com")) {
+      await WebBrowser.openBrowserAsync(currentTrack.url);
+    }
+  };
+
   const handleTitlePress = () => {
     if (currentTrack?.slug) {
       bottomSheetRef.current?.dismiss();
@@ -209,17 +216,22 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
             )}
 
             <View style={styles.actionButtons}>
-              <Pressable style={styles.actionButton}>
-                <Icon name="heart-outline" size={24} />
-              </Pressable>
+              <View style={styles.actionButtonsLeft}>
+                <Pressable style={styles.actionButton}>
+                  <Icon name="heart-outline" size={24} />
+                </Pressable>
+                {currentTrack?.url?.includes("soundcloud.com") && (
+                  <Pressable style={styles.actionButton} onPress={handleSoundCloudPress}>
+                    <FontAwesome5 name="soundcloud" size={24} color={textColor} />
+                  </Pressable>
+                )}
+              </View>
               <Pressable
                 style={styles.viewShowButton}
                 onPress={handleTitlePress}
                 disabled={!currentTrack?.slug}
               >
-                <ThemedText style={styles.viewShowText}>
-                  {isLiveMode ? "View show" : "View show"}
-                </ThemedText>
+                <ThemedText style={styles.viewShowText}>View show</ThemedText>
               </Pressable>
             </View>
           </View>
@@ -421,9 +433,15 @@ const styles = StyleSheet.create({
   // Action Buttons
   actionButtons: {
     flexDirection: "row",
-    gap: 16,
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 4,
     paddingBottom: 8,
+  },
+  actionButtonsLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
   },
   actionButton: {
     padding: 0,

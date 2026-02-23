@@ -25,7 +25,8 @@ interface Show {
   slug: string;
   date: string;
   coverImage: string;
-  mixcloudLink: string;
+  mixcloudLink?: string;
+  audioFile?: string;
   genres: string[];
 }
 
@@ -106,7 +107,19 @@ export default function SearchScreen() {
       }
 
       const data: SearchResponse = await response.json();
-      setResults(data.shows || []);
+
+      // Transform shows to ensure audioFile and coverImage have proper URLs
+      const transformedShows = (data.shows || []).map((show: any) => ({
+        ...show,
+        audioFile: show.audioFile?.startsWith("//")
+          ? `https:${show.audioFile}`
+          : show.audioFile,
+        coverImage: show.coverImage?.startsWith("//")
+          ? `https:${show.coverImage}`
+          : show.coverImage,
+      }));
+
+      setResults(transformedShows);
       // Update genres if they come with search results
       if (data.genres) {
         setGenres(data.genres);
@@ -218,12 +231,8 @@ export default function SearchScreen() {
           ListHeaderComponent={renderListHeader}
           renderItem={({ item }) => (
             <ShowCard
-              imageUrl={
-                item.coverImage?.startsWith("//")
-                  ? `https:${item.coverImage}`
-                  : item.coverImage
-              }
-              audioUrl={item.mixcloudLink}
+              imageUrl={item.coverImage}
+              mixcloudLink={item.mixcloudLink}
               title={item.title}
               date={formatDate(item.date)}
               genres={item.genres}

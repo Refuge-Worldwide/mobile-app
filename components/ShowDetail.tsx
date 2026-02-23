@@ -255,7 +255,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
             title={show.title}
             date={formatDate(show.date)}
             genres={show.genres}
-            audioUrl={show.audioFile}
+            mixcloudLink={show.mixcloudLink}
             showId={show.id}
             slug={show.slug}
           />
@@ -391,7 +391,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                     title={relatedShow.title}
                     date={formatDate(relatedShow.date)}
                     genres={relatedShow.genres}
-                    audioUrl={relatedShow.audioFile}
+                    mixcloudLink={relatedShow.mixcloudLink}
                     onPress={() => handleRelatedShowPress(relatedShow.slug)}
                     showId={relatedShow.id}
                     slug={relatedShow.slug}

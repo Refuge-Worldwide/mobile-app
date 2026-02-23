@@ -184,6 +184,7 @@ export async function getFavouritesWithShows(): Promise<Show[]> {
           date: apiShow.date,
           slug: apiShow.slug,
           mixcloudLink: apiShow.mixcloudLink,
+          audioFile: apiShow.audioFile?.url || apiShow.audioFile,
           coverImage: apiShow.coverImage?.url || apiShow.coverImage,
           genres:
             apiShow.genresCollection?.items?.map((g: any) => g.name) || [],

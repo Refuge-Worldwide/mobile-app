@@ -215,7 +215,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
                   title={show.title}
                   date={formatDate(show.date)}
                   genres={show.genres}
-                  audioUrl={show.audioFile}
+                  mixcloudLink={show.mixcloudLink}
                   onPress={() => handleShowPress(show.slug)}
                   showId={show.id}
                   slug={show.slug}

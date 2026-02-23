@@ -129,7 +129,7 @@ export default function PlaylistDetailScreen() {
         title={item.title}
         date={formatDate(item.date)}
         genres={item.genres}
-        audioUrl={item.mixcloudLink}
+        mixcloudLink={item.mixcloudLink}
         onPress={() => handleShowPress(item.slug)}
         showId={item.id}
         slug={item.slug}
