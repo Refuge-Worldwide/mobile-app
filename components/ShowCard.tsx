@@ -15,7 +15,7 @@ interface ShowCardProps {
   title: string;
   date: string;
   genres: string[];
-  audioUrl?: string;
+  mixcloudLink?: string;
   onPress?: () => void;
   showId?: string;
   slug?: string;
@@ -27,7 +27,7 @@ export function ShowCard({
   title,
   date,
   genres,
-  audioUrl,
+  mixcloudLink,
   onPress,
   showId,
   slug,
@@ -76,6 +76,8 @@ export function ShowCard({
   const isPlaying = useAudioStore((state) => state.isPlaying);
   const isLoading = useAudioStore((state) => state.isLoading);
 
+  const effectiveAudioUrl = mixcloudLink?.includes("soundcloud.com") ? mixcloudLink : undefined;
+
   // Check if this specific show is currently playing or loading
   const isThisShowPlaying =
     showId && currentTrack?.showId === showId && isPlaying;
@@ -84,7 +86,7 @@ export function ShowCard({
 
   const handlePlayPress = async (e: any) => {
     e.stopPropagation();
-    if (!audioUrl) return;
+    if (!effectiveAudioUrl) return;
 
     // If this show is already the current track, just resume playback
     if (showId && currentTrack?.showId === showId) {
@@ -95,7 +97,7 @@ export function ShowCard({
     // Otherwise load the new track
     setTrack({
       id: title,
-      url: audioUrl,
+      url: effectiveAudioUrl,
       title: title,
       artist: date,
       artwork: imageUrl,
@@ -113,12 +115,12 @@ export function ShowCard({
 
   const handleQueuePress = async (e: any) => {
     e.stopPropagation();
-    if (audioUrl) {
+    if (effectiveAudioUrl) {
       try {
         // Add to store queue only
         addToQueue({
           id: title,
-          url: audioUrl,
+          url: effectiveAudioUrl,
           title: title,
           artist: date,
           artwork: imageUrl,
@@ -162,12 +164,12 @@ export function ShowCard({
         )}
 
         <View style={styles.buttonContainer}>
-          {audioUrl && (
+          {effectiveAudioUrl && (
             <>
               <Pressable
                 style={[styles.iconButton, { backgroundColor: textColor }]}
                 onPress={isThisShowPlaying ? handlePausePress : handlePlayPress}
-                disabled={isThisShowLoading}
+                disabled={!!isThisShowLoading}
               >
                 {isThisShowLoading ? (
                   <Icon name="loading" size={24} color={backgroundColor} />

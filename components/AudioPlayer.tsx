@@ -22,6 +22,21 @@ import { Icon } from "./Icon";
 import { QueuePreview, QueuePreviewRef } from "./QueuePreview";
 import { ThemedText } from "./ThemedText";
 
+async function resolveStreamUrl(url: string): Promise<string | null> {
+  if (!url.includes("soundcloud.com")) return null;
+  try {
+    const res = await fetch(
+      `http://localhost:3000/api/soundcloud-stream?url=${encodeURIComponent(url)}`
+    );
+    if (!res.ok) throw new Error(`soundcloud-stream ${res.status}`);
+    const data = await res.json();
+    return data.streamUrl || null;
+  } catch (error) {
+    console.error("Error resolving SoundCloud stream URL:", error);
+    return null;
+  }
+}
+
 export function AudioPlayer() {
   const {
     currentTrack,
@@ -42,22 +57,22 @@ export function AudioPlayer() {
       if (currentTrack.isLive) return;
       const show = await fetchShowBySlug(currentTrack.slug);
       if (show && show.relatedShows && show.relatedShows.length > 0) {
-        // Only add shows with audioFile, not already in queue, and not the current show
+        // Only add shows with a SoundCloud mixcloudLink, not already in queue, and not the current show
         const alreadyQueuedIds = new Set(queue.map((t) => t.showId));
         const relatedToAdd = show.relatedShows.filter(
           (s) =>
             s.slug !== currentTrack.slug &&
-            !!s.audioFile &&
+            !!s.mixcloudLink?.includes("soundcloud.com") &&
             !alreadyQueuedIds.has(s.id),
         );
         if (relatedToAdd.length > 0) {
-          // Fetch each related show details to get audioFile
+          // Fetch each related show details to get mixcloudLink
           for (const relatedShow of relatedToAdd) {
             const fullShow = await fetchShowBySlug(relatedShow.slug);
-            if (fullShow && fullShow.audioFile) {
+            if (fullShow && fullShow.mixcloudLink?.includes("soundcloud.com")) {
               addToQueue({
                 id: fullShow.id,
-                url: fullShow.audioFile,
+                url: fullShow.mixcloudLink,
                 title: fullShow.title,
                 artist: fullShow.artists?.map((a) => a.name).join(", ") || "",
                 artwork: fullShow.artwork || fullShow.coverImage,
@@ -208,6 +223,14 @@ export function AudioPlayer() {
         // Reset first to stop any current playback
         await TrackPlayer.reset();
 
+        // Resolve SoundCloud URLs to direct stream URLs before loading
+        const streamUrl = await resolveStreamUrl(currentTrack.url);
+        if (!streamUrl) {
+          setIsLoading(false);
+          setIsPlaying(false);
+          return;
+        }
+
         // Update player options and add track in parallel for faster loading
         const updateOptionsPromise = currentTrack.isLive
           ? TrackPlayer.updateOptions({
@@ -236,7 +259,7 @@ export function AudioPlayer() {
 
         const addTrackPromise = TrackPlayer.add({
           id: currentTrack.id,
-          url: currentTrack.url,
+          url: streamUrl,
           title: currentTrack.title,
           artist: currentTrack.artist || "Unknown Artist",
           artwork: optimizePlayerImage(currentTrack.artwork),
