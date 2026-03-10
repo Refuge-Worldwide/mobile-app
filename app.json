@@ -20,6 +20,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.refuge-worldwide",
       "displayName": "Refuge Worldwide",
+      "associatedDomains": ["applinks:refugeworldwide.com"],
       "infoPlist": {
         "UIBackgroundModes": ["audio", "audio"],
         "ITSAppUsesNonExemptEncryption": false
@@ -38,6 +39,17 @@
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.WAKE_LOCK",
         "android.permission.FOREGROUND_SERVICE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "refugeworldwide.com", "pathPrefix": "/radio" },
+            { "scheme": "https", "host": "refugeworldwide.com", "pathPrefix": "/artists" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {
