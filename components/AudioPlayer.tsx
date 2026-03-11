@@ -23,7 +23,7 @@ import { QueuePreview, QueuePreviewRef } from "./QueuePreview";
 import { ThemedText } from "./ThemedText";
 
 async function resolveStreamUrl(url: string): Promise<string | null> {
-  if (!url.includes("soundcloud.com")) return null;
+  if (!url.includes("soundcloud.com")) return url;
   try {
     const res = await fetch(
       `${process.env.EXPO_PUBLIC_API_URL}/api/soundcloud-resolve?url=${encodeURIComponent(url)}`
