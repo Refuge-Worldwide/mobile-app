@@ -26,9 +26,9 @@ async function resolveStreamUrl(url: string): Promise<string | null> {
   if (!url.includes("soundcloud.com")) return null;
   try {
     const res = await fetch(
-      `http://localhost:3000/api/soundcloud-stream?url=${encodeURIComponent(url)}`
+      `${process.env.EXPO_PUBLIC_API_URL}/api/soundcloud-resolve?url=${encodeURIComponent(url)}`
     );
-    if (!res.ok) throw new Error(`soundcloud-stream ${res.status}`);
+    if (!res.ok) throw new Error(`soundcloud-resolve ${res.status}`);
     const data = await res.json();
     return data.streamUrl || null;
   } catch (error) {

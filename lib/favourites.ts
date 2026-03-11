@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 
 const BACKEND_API_URL =
   Constants.expoConfig?.extra?.backendApiUrl ||
-  process.env.EXPO_PUBLIC_BACKEND_API_URL;
+  process.env.EXPO_PUBLIC_API_URL;
 
 export interface Favourite {
   id: string;
