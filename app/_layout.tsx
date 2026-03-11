@@ -45,21 +45,18 @@ export default function RootLayout() {
     VisueltMedium: require('../assets/fonts/VisueltMedium.otf'),
     ABCArizonaFlare: require('../assets/fonts/ABCArizonaFlare.otf'),
   });
-  const [appIsReady, setAppIsReady] = useState(false);
-
-  if (!loaded || !appIsReady) {
-    return (
-      <ColorSchemeProvider>
-        <SplashScreen onReady={() => setAppIsReady(true)} />
-      </ColorSchemeProvider>
-    );
-  }
+  const [splashDone, setSplashDone] = useState(false);
 
   return (
     <ColorSchemeProvider>
-      <AuthProvider>
-        <RootLayoutContent />
-      </AuthProvider>
+      {loaded && (
+        <AuthProvider>
+          <RootLayoutContent />
+        </AuthProvider>
+      )}
+      {!splashDone && (
+        <SplashScreen onReady={() => setSplashDone(true)} />
+      )}
     </ColorSchemeProvider>
   );
 }
