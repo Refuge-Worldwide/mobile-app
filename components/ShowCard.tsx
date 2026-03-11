@@ -17,6 +17,7 @@ interface ShowCardProps {
   genres: string[];
   mixcloudLink?: string;
   onPress?: () => void;
+  onPlayPress?: () => void;
   showId?: string;
   slug?: string;
 }
@@ -29,6 +30,7 @@ export function ShowCard({
   genres,
   mixcloudLink,
   onPress,
+  onPlayPress,
   showId,
   slug,
 }: ShowCardProps) {
@@ -87,6 +89,11 @@ export function ShowCard({
   const handlePlayPress = async (e: any) => {
     e.stopPropagation();
     if (!effectiveAudioUrl) return;
+
+    if (onPlayPress) {
+      onPlayPress();
+      return;
+    }
 
     // If this show is already the current track, just resume playback
     if (showId && currentTrack?.showId === showId) {

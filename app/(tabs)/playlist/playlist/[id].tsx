@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
@@ -7,6 +8,7 @@ import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFavouritesWithShows } from "@/lib/favourites";
 import { fetchPlaylistBySlug } from "@/lib/playlistsApi";
+import { useAudioStore } from "@/store/audioStore";
 import { Show } from "@/types/shows";
 import { ensureHttps } from "@/utils/imageOptimization";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -14,10 +16,26 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   View,
 } from "react-native";
+
+function mapShowToTrack(show: Show, getImageUrl: (url?: string) => string | undefined, formatDate: (d?: string) => string) {
+  const audioUrl = show.mixcloudLink?.includes("soundcloud.com") ? show.mixcloudLink : undefined;
+  return audioUrl ? {
+    id: show.title,
+    url: audioUrl,
+    title: show.title,
+    artist: formatDate(show.date),
+    artwork: getImageUrl(show.coverImage || show.artwork),
+    mode: "archive" as const,
+    isLive: false,
+    showId: show.id,
+    slug: show.slug,
+  } : null;
+}
 
 export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,6 +49,11 @@ export default function PlaylistDetailScreen() {
   const backgroundColor = useThemeColor({}, "background");
   const textColor = useThemeColor({}, "text");
   const bottomPadding = useBottomSafePadding();
+
+  const setTrack = useAudioStore((state) => state.setTrack);
+  const addToQueue = useAudioStore((state) => state.addToQueue);
+  const clearQueue = useAudioStore((state) => state.clearQueue);
+  const queue = useAudioStore((state) => state.queue);
 
   useEffect(() => {
     if (id) loadPlaylist();
@@ -68,6 +91,33 @@ export default function PlaylistDetailScreen() {
   };
 
   const getImageUrl = ensureHttps;
+
+  const handleShowPlay = (show: Show, index: number) => {
+    const track = mapShowToTrack(show, getImageUrl, formatDate);
+    if (!track) return;
+    setTrack(track);
+    // If queue is empty, auto-queue the next 10 shows
+    if (queue.length === 0) {
+      const next = shows.slice(index + 1, index + 11);
+      next.forEach((s) => {
+        const t = mapShowToTrack(s, getImageUrl, formatDate);
+        if (t) addToQueue(t);
+      });
+    }
+  };
+
+  const handlePlayAll = () => {
+    const playable = shows.filter((s) => s.mixcloudLink?.includes("soundcloud.com"));
+    if (playable.length === 0) return;
+    clearQueue();
+    const track = mapShowToTrack(playable[0], getImageUrl, formatDate);
+    if (!track) return;
+    setTrack(track);
+    playable.slice(1, 10).forEach((s) => {
+      const t = mapShowToTrack(s, getImageUrl, formatDate);
+      if (t) addToQueue(t);
+    });
+  };
 
   const handleShowPress = (slug: string) => {
     router.push(`/(tabs)/playlist/${slug}`);
@@ -119,7 +169,7 @@ export default function PlaylistDetailScreen() {
     );
   }
 
-  const renderShowItem = ({ item }: { item: Show }) => (
+  const renderShowItem = ({ item, index }: { item: Show; index: number }) => (
     <ShowCard
       imageUrl={getImageUrl(item.coverImage || item.artwork)}
       title={item.title}
@@ -127,10 +177,13 @@ export default function PlaylistDetailScreen() {
       genres={item.genres}
       mixcloudLink={item.mixcloudLink}
       onPress={() => handleShowPress(item.slug)}
+      onPlayPress={() => handleShowPlay(item, index)}
       showId={item.id}
       slug={item.slug}
     />
   );
+
+  const hasPlayable = shows.some((s) => s.mixcloudLink?.includes("soundcloud.com"));
 
   return (
     <ThemedView style={styles.container}>
@@ -142,6 +195,17 @@ export default function PlaylistDetailScreen() {
       >
         <View style={styles.headerContent}>
           <ThemedText type="title">{playlistTitle}</ThemedText>
+          {hasPlayable && (
+            <Pressable
+              style={[styles.playAllButton, { backgroundColor: textColor }]}
+              onPress={handlePlayAll}
+            >
+              <Icon name="play" size={16} color={backgroundColor} />
+              <ThemedText style={[styles.playAllText, { color: backgroundColor }]}>
+                Play all
+              </ThemedText>
+            </Pressable>
+          )}
         </View>
       </View>
       <FlatList
@@ -173,7 +237,21 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     paddingHorizontal: 12,
-    paddingBottom: 4,
+    paddingBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  playAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  playAllText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,
