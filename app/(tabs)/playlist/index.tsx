@@ -1,74 +1,83 @@
-import { ThemedButton } from "@/components/ThemedButton";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
+import { ApiPlaylist, fetchPlaylists } from "@/lib/playlistsApi";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 
-interface Playlist {
-  id: string;
-  name: string;
-  image: any; // require() result type
-}
-
-const PLAYLISTS: Playlist[] = [
-  {
-    id: "favorites",
-    name: "Favorites",
-    image: require("@/assets/images/favourites.jpg"),
-  },
-  // Add more playlists here in the future
-];
 
 export default function PlaylistScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const bottomPadding = useBottomSafePadding();
+  const [playlists, setPlaylists] = useState<ApiPlaylist[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handlePlaylistPress = (playlistId: string) => {
-    router.push(`/(tabs)/playlist/playlist/${playlistId}`);
+  useEffect(() => {
+    fetchPlaylists()
+      .then(setPlaylists)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleFavoritesPress = () => {
+    if (user) {
+      router.push("/(tabs)/playlist/playlist/favorites");
+    } else {
+      router.push("/(tabs)/account");
+    }
   };
-
-  const handleSignInPress = () => {
-    router.push("/(tabs)/account");
-  };
-
-  if (!user) {
-    return (
-      <ThemedView style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <ThemedText type="title" style={styles.emptyTitle}>
-            Sign in to view playlists
-          </ThemedText>
-          <ThemedText style={styles.emptyText}>
-            Create an account to save your favorite shows and create playlists
-          </ThemedText>
-          <ThemedButton title="Go to Account" onPress={handleSignInPress} />
-        </View>
-      </ThemedView>
-    );
-  }
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.playlistsList}>
-          {PLAYLISTS.map((playlist) => (
-            <Pressable
-              key={playlist.id}
-              onPress={() => handlePlaylistPress(playlist.id)}
-            >
-              <Image
-                source={playlist.image}
-                style={styles.playlistImage}
-                resizeMode="cover"
-              />
-              <View>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.list}>
+          {/* Favorites — always first */}
+          <Pressable onPress={handleFavoritesPress}>
+            <Image
+              source={require("@/assets/images/favourites.jpg")}
+              style={styles.playlistImage}
+              contentFit="cover"
+            />
+            <ThemedText style={styles.playlistName}>
+              {user ? "Favorites" : "Sign in for Favorites"}
+            </ThemedText>
+          </Pressable>
+
+          {/* API playlists */}
+          {loading ? (
+            <ActivityIndicator style={styles.loader} />
+          ) : (
+            playlists.map((playlist) => (
+              <Pressable
+                key={playlist.id}
+                onPress={() =>
+                  router.push(`/(tabs)/playlist/playlist/${playlist.slug}`)
+                }
+              >
+                <Image
+                  source={{ uri: playlist.image }}
+                  style={styles.playlistImage}
+                  contentFit="cover"
+                />
                 <ThemedText style={styles.playlistName}>
-                  {playlist.name}
+                  {playlist.title}
                 </ThemedText>
-              </View>
-            </Pressable>
-          ))}
+              </Pressable>
+            ))
+          )}
         </View>
       </ScrollView>
     </ThemedView>
@@ -79,27 +88,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  emptyTitle: {
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  emptyText: {
-    textAlign: "center",
-    fontSize: 16,
-    marginBottom: 24,
-  },
   scrollContent: {
     paddingHorizontal: 12,
     paddingTop: 12,
-    paddingBottom: 100,
   },
-  playlistsList: {
+  list: {
     gap: 16,
   },
   playlistImage: {
@@ -109,5 +102,8 @@ const styles = StyleSheet.create({
   playlistName: {
     marginTop: 4,
     marginBottom: 4,
+  },
+  loader: {
+    marginTop: 16,
   },
 });

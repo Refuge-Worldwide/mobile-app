@@ -3,8 +3,10 @@ import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFavouritesWithShows } from "@/lib/favourites";
+import { fetchPlaylistBySlug } from "@/lib/playlistsApi";
 import { Show } from "@/types/shows";
 import { ensureHttps } from "@/utils/imageOptimization";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -21,18 +23,18 @@ export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const [shows, setShows] = useState<Show[]>([]);
+  const [playlistTitle, setPlaylistTitle] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const backgroundColor = useThemeColor({}, "background");
   const textColor = useThemeColor({}, "text");
+  const bottomPadding = useBottomSafePadding();
 
   useEffect(() => {
-    if (user && id) {
-      loadPlaylist();
-    }
-  }, [user, id]);
+    if (id) loadPlaylist();
+  }, [id]);
 
   const loadPlaylist = async () => {
     setLoading(true);
@@ -40,16 +42,17 @@ export default function PlaylistDetailScreen() {
 
     try {
       if (id === "favorites") {
-        // Load favourites playlist using the new backend API
+        setPlaylistTitle("Favorites");
         const enrichedShows = await getFavouritesWithShows();
         setShows(enrichedShows);
+      } else {
+        const playlist = await fetchPlaylistBySlug(id!);
+        setPlaylistTitle(playlist.title);
+        setShows(playlist.shows);
       }
-      // Add more playlist types here in the future
     } catch (err) {
       console.error("Error loading playlist:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load playlist";
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : "Failed to load playlist");
     } finally {
       setLoading(false);
     }
@@ -64,23 +67,17 @@ export default function PlaylistDetailScreen() {
     return `${day} ${month} ${year}`;
   };
 
-  // Use centralized URL helper for consistency
   const getImageUrl = ensureHttps;
 
   const handleShowPress = (slug: string) => {
     router.push(`/(tabs)/playlist/${slug}`);
   };
 
-  const getPlaylistTitle = () => {
-    if (id === "favorites") return "Favorites";
-    return "Playlist";
-  };
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadPlaylist();
     setRefreshing(false);
-  }, [loadPlaylist]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -122,20 +119,18 @@ export default function PlaylistDetailScreen() {
     );
   }
 
-  const renderShowItem = ({ item }: { item: Show }) => {
-    return (
-      <ShowCard
-        imageUrl={getImageUrl(item.coverImage || item.artwork)}
-        title={item.title}
-        date={formatDate(item.date)}
-        genres={item.genres}
-        mixcloudLink={item.mixcloudLink}
-        onPress={() => handleShowPress(item.slug)}
-        showId={item.id}
-        slug={item.slug}
-      />
-    );
-  };
+  const renderShowItem = ({ item }: { item: Show }) => (
+    <ShowCard
+      imageUrl={getImageUrl(item.coverImage || item.artwork)}
+      title={item.title}
+      date={formatDate(item.date)}
+      genres={item.genres}
+      mixcloudLink={item.mixcloudLink}
+      onPress={() => handleShowPress(item.slug)}
+      showId={item.id}
+      slug={item.slug}
+    />
+  );
 
   return (
     <ThemedView style={styles.container}>
@@ -146,7 +141,7 @@ export default function PlaylistDetailScreen() {
         ]}
       >
         <View style={styles.headerContent}>
-          <ThemedText type="title">{getPlaylistTitle()}</ThemedText>
+          <ThemedText type="title">{playlistTitle}</ThemedText>
         </View>
       </View>
       <FlatList
@@ -154,7 +149,7 @@ export default function PlaylistDetailScreen() {
         renderItem={renderShowItem}
         keyExtractor={(item) => item.id}
         ItemSeparatorComponent={ShowCardSeparator}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -203,7 +198,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 100,
   },
   title: {
     marginBottom: 8,
