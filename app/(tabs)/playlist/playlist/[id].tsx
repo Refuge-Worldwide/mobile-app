@@ -1,4 +1,3 @@
-import { Icon } from "@/components/Icon";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ThemedText } from "@/components/ThemedText";
@@ -16,7 +15,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   View,
@@ -52,8 +50,6 @@ export default function PlaylistDetailScreen() {
 
   const setTrack = useAudioStore((state) => state.setTrack);
   const addToQueue = useAudioStore((state) => state.addToQueue);
-  const clearQueue = useAudioStore((state) => state.clearQueue);
-  const queue = useAudioStore((state) => state.queue);
 
   useEffect(() => {
     if (id) loadPlaylist();
@@ -96,24 +92,8 @@ export default function PlaylistDetailScreen() {
     const track = mapShowToTrack(show, getImageUrl, formatDate);
     if (!track) return;
     setTrack(track);
-    // If queue is empty, auto-queue the next 10 shows
-    if (queue.length === 0) {
-      const next = shows.slice(index + 1, index + 11);
-      next.forEach((s) => {
-        const t = mapShowToTrack(s, getImageUrl, formatDate);
-        if (t) addToQueue(t);
-      });
-    }
-  };
-
-  const handlePlayAll = () => {
-    const playable = shows.filter((s) => s.mixcloudLink?.includes("soundcloud.com"));
-    if (playable.length === 0) return;
-    clearQueue();
-    const track = mapShowToTrack(playable[0], getImageUrl, formatDate);
-    if (!track) return;
-    setTrack(track);
-    playable.slice(1, 10).forEach((s) => {
+    const next = shows.slice(index + 1, index + 31);
+    next.forEach((s) => {
       const t = mapShowToTrack(s, getImageUrl, formatDate);
       if (t) addToQueue(t);
     });
@@ -183,8 +163,6 @@ export default function PlaylistDetailScreen() {
     />
   );
 
-  const hasPlayable = shows.some((s) => s.mixcloudLink?.includes("soundcloud.com"));
-
   return (
     <ThemedView style={styles.container}>
       <View
@@ -194,18 +172,7 @@ export default function PlaylistDetailScreen() {
         ]}
       >
         <View style={styles.headerContent}>
-          <ThemedText type="title">{playlistTitle}</ThemedText>
-          {hasPlayable && (
-            <Pressable
-              style={[styles.playAllButton, { backgroundColor: textColor }]}
-              onPress={handlePlayAll}
-            >
-              <Icon name="play" size={16} color={backgroundColor} />
-              <ThemedText style={[styles.playAllText, { color: backgroundColor }]}>
-                Play all
-              </ThemedText>
-            </Pressable>
-          )}
+          <ThemedText type="title" style={styles.headerTitle}>{playlistTitle}</ThemedText>
         </View>
       </View>
       <FlatList
@@ -239,8 +206,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 8,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
+    gap: 8,
+  },
+  headerTitle: {
+    flex: 1,
   },
   playAllButton: {
     flexDirection: "row",
@@ -248,6 +219,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    flexShrink: 0,
   },
   playAllText: {
     fontSize: 14,
