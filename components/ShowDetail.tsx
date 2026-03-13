@@ -129,7 +129,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
 
   const handleShare = async () => {
     try {
-      const shareUrl = `https://refugeworldwide.com/shows/${slug}`;
+      const shareUrl = `https://refugeworldwide.com/radio/${slug}`;
       const shareMessage = `${show?.title} - ${formatDate(show?.date || "")}`;
 
       await Share.share({
