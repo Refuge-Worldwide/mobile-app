@@ -25,6 +25,8 @@ function RootLayoutContent() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="radio/[slug]" options={{ headerShown: false }} />
+              <Stack.Screen name="artists/[slug]" options={{ headerShown: false }} />
               <Stack.Screen name="+not-found" />
             </Stack>
 
