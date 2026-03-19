@@ -15,6 +15,7 @@ import TrackPlayer, {
   Capability,
   Event,
   State,
+  TrackType,
   useTrackPlayerEvents,
 } from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
@@ -264,6 +265,7 @@ export function AudioPlayer() {
           artist: currentTrack.artist || "Unknown Artist",
           artwork: optimizePlayerImage(currentTrack.artwork),
           isLiveStream: currentTrack.isLive,
+          type: streamUrl.includes(".m3u8") ? TrackType.HLS : TrackType.Default,
         });
 
         // Wait for both to complete

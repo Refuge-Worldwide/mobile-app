@@ -1,10 +1,16 @@
-import { supabase } from '@/lib/supabase';
-import { Session, User } from '@supabase/supabase-js';
+import { directus } from '@/lib/directus';
+import { createUser, passwordRequest, readMe } from '@directus/sdk';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
+interface DirectusUser {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: DirectusUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
@@ -14,7 +20,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  session: null,
   loading: true,
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
@@ -31,66 +36,63 @@ export const useAuth = () => {
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<DirectusUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    // Restore session from stored token
+    directus
+      .request(readMe())
+      .then((me) => setUser(me as DirectusUser))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      await directus.login({ email, password });
+      const me = await directus.request(readMe());
+      setUser(me as DirectusUser);
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      await directus.request(createUser({ email, password }));
+      // Auto sign in after registration
+      await directus.login({ email, password });
+      const me = await directus.request(readMe());
+      setUser(me as DirectusUser);
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await directus.logout();
+    } catch {
+      // ignore errors on logout
+    }
+    setUser(null);
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'refugeworldwide://reset-password',
-    });
-    return { error };
+    try {
+      await directus.request(passwordRequest(email));
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
   };
 
-  const value = {
-    user,
-    session,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    resetPassword,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, resetPassword }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
