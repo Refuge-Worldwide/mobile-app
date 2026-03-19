@@ -5,6 +5,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { supabase } from "@/lib/supabase";
 import { useAudioStore } from "@/store/audioStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
@@ -22,10 +23,28 @@ interface ChatMessage {
   user_id: string | null;
   username: string;
   message: string;
+  image: string | null;
   created_at: string;
 }
 
 const ANON_USERNAME_KEY = "chat_anon_username";
+
+function ChatImage({ uri }: { uri: string }) {
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+  return (
+    <View style={{ width: "100%", marginTop: 4 }}>
+      <Image
+        source={{ uri }}
+        style={{ width: "100%", aspectRatio: aspectRatio ?? 1, opacity: aspectRatio ? 1 : 0 }}
+        contentFit="cover"
+        onLoad={(e) => {
+          const { width, height } = e.source;
+          if (width && height) setAspectRatio(width / height);
+        }}
+      />
+    </View>
+  );
+}
 
 // Audio player height: paddingVertical 4 * 2 + content height 40 = 48px
 const AUDIO_PLAYER_HEIGHT = 48;
@@ -167,9 +186,17 @@ export default function Chat() {
     setSending(false);
   };
 
-  const formatTime = (dateString: string) => {
+  const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const now = new Date();
+    const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+    if (isToday) return `today ${time}`;
+    if (isYesterday) return `yesterday ${time}`;
+    return `${date.toLocaleDateString([], { day: "2-digit", month: "2-digit" })} ${time}`;
   };
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
@@ -178,47 +205,42 @@ export default function Chat() {
       (!user && item.username === anonUsername);
 
     return (
-      <View
-        style={[
-          styles.messageContainer,
-          isOwnMessage ? styles.ownMessage : styles.otherMessage,
-        ]}
-      >
+      <View style={styles.messageContainer}>
         <View
           style={[
             styles.messageBubble,
-            {
-              backgroundColor: isOwnMessage ? textColor : `${textColor}15`,
-              borderColor: textColor,
-            },
+            { backgroundColor: isOwnMessage ? textColor : `${textColor}15` },
           ]}
         >
-          <ThemedText
-            style={[
-              styles.username,
-              { color: isOwnMessage ? backgroundColor : textColor },
-            ]}
-          >
-            {item.username}
-          </ThemedText>
-          <ThemedText
-            style={[
-              styles.messageText,
-              { color: isOwnMessage ? backgroundColor : textColor },
-            ]}
-          >
-            {item.message}
-          </ThemedText>
-          <ThemedText
-            style={[
-              styles.timestamp,
-              {
-                color: isOwnMessage ? `${backgroundColor}99` : `${textColor}80`,
-              },
-            ]}
-          >
-            {formatTime(item.created_at)}
-          </ThemedText>
+          <View style={styles.metaRow}>
+            <ThemedText
+              style={[
+                styles.username,
+                { color: isOwnMessage ? backgroundColor : textColor },
+              ]}
+            >
+              {item.username}
+            </ThemedText>
+            <ThemedText
+              style={[
+                styles.timestamp,
+                { color: isOwnMessage ? `${backgroundColor}99` : `${textColor}80` },
+              ]}
+            >
+              {formatTimestamp(item.created_at)}
+            </ThemedText>
+          </View>
+          {item.message ? (
+            <ThemedText
+              style={[
+                styles.messageText,
+                { color: isOwnMessage ? backgroundColor : textColor },
+              ]}
+            >
+              {item.message}
+            </ThemedText>
+          ) : null}
+          {item.image && <ChatImage uri={item.image} />}
         </View>
       </View>
     );
@@ -402,22 +424,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginVertical: 2,
   },
-  ownMessage: {
-    justifyContent: "flex-end",
-  },
-  otherMessage: {
-    justifyContent: "flex-start",
-  },
   messageBubble: {
     maxWidth: "80%",
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderWidth: 1,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+    marginBottom: 2,
   },
   username: {
     fontSize: 12,
     fontFamily: "VisueltMedium",
-    marginBottom: 2,
   },
   messageText: {
     fontSize: 16,
@@ -425,8 +445,6 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 10,
-    marginTop: 4,
-    textAlign: "right",
   },
   inputContainer: {
     flexDirection: "row",
