@@ -20,9 +20,14 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.refuge-worldwide",
       "displayName": "Refuge Worldwide",
-      "associatedDomains": ["applinks:refugeworldwide.com"],
+      "associatedDomains": [
+        "applinks:refugeworldwide.com"
+      ],
       "infoPlist": {
-        "UIBackgroundModes": ["audio", "audio"],
+        "UIBackgroundModes": [
+          "audio",
+          "audio"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -56,7 +61,10 @@
               "pathPrefix": "/artists"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -76,7 +84,8 @@
         }
       ],
       "expo-audio",
-      "expo-font"
+      "expo-font",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
