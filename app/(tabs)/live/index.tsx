@@ -32,6 +32,7 @@ export default function Live() {
     status: string;
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const textColor = useThemeColor({}, "text");
@@ -61,6 +62,7 @@ export default function Live() {
     try {
       const res = await fetch("https://refugeworldwide.com/api/schedule");
       const data = await res.json();
+      setLoadError(false);
       setLiveNow(data.liveNow);
       // Set Channel 2 data if available
       if (data.ch2) {
@@ -72,6 +74,7 @@ export default function Live() {
       // Note: Live track metadata updates are handled by AudioPlayer
     } catch (error) {
       console.error("Failed to fetch live show:", error);
+      setLoadError(true);
     }
   }, []);
 
@@ -160,6 +163,14 @@ export default function Live() {
           <RefugeLogo size={50} variant="text" />
         </Pressable>
       </View>
+
+      {loadError && (
+        <View style={styles.errorBanner}>
+          <ThemedText style={styles.errorText}>
+            No connection. Please check your internet and try again.
+          </ThemedText>
+        </View>
+      )}
 
       <ScrollView
         style={styles.scrollViewContainer}
@@ -295,6 +306,15 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     gap: 8,
+  },
+  errorBanner: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 4,
+  },
+  errorText: {
+    opacity: 0.6,
+    textAlign: "center",
   },
   scrollViewContainer: {
     flex: 1,

@@ -15,6 +15,7 @@ import TrackPlayer, {
   Capability,
   Event,
   State,
+  TrackType,
   useTrackPlayerEvents,
 } from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
@@ -244,22 +245,29 @@ export function AudioPlayer() {
               Capability.Pause,
               Capability.Stop,
               Capability.SeekTo,
+              Capability.JumpForward,
+              Capability.JumpBackward,
             ],
             compactCapabilities: [
+              Capability.JumpBackward,
               Capability.Play,
               Capability.Pause,
-              Capability.Stop,
+              Capability.JumpForward,
             ],
             notificationCapabilities: [
               Capability.Play,
               Capability.Pause,
-              Capability.Stop,
+              Capability.JumpForward,
+              Capability.JumpBackward,
             ],
+            forwardJumpInterval: 30,
+            backwardJumpInterval: 30,
           });
 
         const addTrackPromise = TrackPlayer.add({
           id: currentTrack.id,
           url: streamUrl,
+          type: streamUrl.includes('.m3u8') ? TrackType.HLS : TrackType.Default,
           title: currentTrack.title,
           artist: currentTrack.artist || "Unknown Artist",
           artwork: optimizePlayerImage(currentTrack.artwork),

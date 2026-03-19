@@ -26,7 +26,6 @@ export default function Layout() {
         },
       }}>
       <Stack.Screen name="index" options={{ headerShown: false, title: "Live" }} />
-      <Stack.Screen name="chat" />
       <Stack.Screen name="schedule" />
       <Stack.Screen name="show/[slug]" />
       <Stack.Screen name="artist/[slug]" />
