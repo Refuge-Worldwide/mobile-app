@@ -2,7 +2,7 @@
   "expo": {
     "name": "Refuge Worldwide",
     "slug": "refuge-worldwide",
-    "version": "0.1.4.1",
+    "version": "0.1.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "refugeworldwideapp",
