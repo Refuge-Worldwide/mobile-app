@@ -20,6 +20,7 @@ interface ShowCardProps {
   onPlayPress?: () => void;
   showId?: string;
   slug?: string;
+  disableNavigation?: boolean;
 }
 
 export function ShowCard({
@@ -33,6 +34,7 @@ export function ShowCard({
   onPlayPress,
   showId,
   slug,
+  disableNavigation = false,
 }: ShowCardProps) {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
@@ -156,7 +158,7 @@ export function ShowCard({
   };
 
   return (
-    <Pressable onPress={onPress || handleDefaultPress}>
+    <Pressable onPress={disableNavigation ? undefined : (onPress || handleDefaultPress)}>
       <View style={styles.imageContainer}>
         {imageUrl ? (
           <Image

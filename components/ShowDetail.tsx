@@ -258,6 +258,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
             mixcloudLink={show.mixcloudLink}
             showId={show.id}
             slug={show.slug}
+            disableNavigation
           />
 
           {/* Description */}
