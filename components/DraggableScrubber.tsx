@@ -67,12 +67,28 @@ export function DraggableScrubber({
     }
   }, [seekPosition, duration, position]);
 
+  // Direct seek for taps — bypasses state batching issue that causes double-tap
+  const handleTap = useCallback(async (touchX: number) => {
+    if (!duration || duration === 0) return;
+    const newPosition = Math.max(0, Math.min((touchX / progressBarWidth) * duration, duration));
+    setLastSeekPosition(newPosition);
+    try {
+      await TrackPlayer.seekTo(newPosition);
+    } catch (error) {
+      console.error("Error seeking:", error);
+      setLastSeekPosition(null);
+    }
+  }, [progressBarWidth, duration]);
+
+  const PLAY_BUTTON_WIDTH = 50;
+
   // Gesture handler - activates on horizontal movement, fails on vertical
   // This allows the bottom sheet to capture vertical gestures
   const panGesture = Gesture.Pan()
-    .activeOffsetX([-10, 10]) // Activate after 10px horizontal movement
-    .failOffsetY([-10, 10]) // Fail if vertical movement exceeds 10px first
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-10, 10])
     .onStart((event) => {
+      if (event.x < PLAY_BUTTON_WIDTH) return;
       runOnJS(startSeeking)(event.x);
     })
     .onUpdate((event) => {
@@ -82,11 +98,11 @@ export function DraggableScrubber({
       runOnJS(finishSeeking)();
     });
 
-  // Tap gesture for tapping to seek (separate from pan)
+  // Tap gesture - uses direct seek to avoid double-tap issue from state batching
   const tapGesture = Gesture.Tap()
     .onEnd((event) => {
-      runOnJS(startSeeking)(event.x);
-      runOnJS(finishSeeking)();
+      if (event.x < PLAY_BUTTON_WIDTH) return;
+      runOnJS(handleTap)(event.x);
     });
 
   const formatTime = (seconds: number) => {
