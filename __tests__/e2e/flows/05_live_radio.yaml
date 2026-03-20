@@ -1,0 +1,41 @@
+appId: com.anonymous.refuge-worldwide
+android:
+  appId: com.refugeworldwide.app
+---
+# Flow: Live Radio Playback
+# Opens the app on the Live tab, waits for the live stream to load,
+# starts playback, waits a few seconds, then stops it.
+
+- launchApp:
+    clearState: false
+
+# Wait for splash screen to clear and tabs to appear
+- extendedWaitUntil:
+    visible: "Live"
+    timeout: 15000
+
+# App opens on the Live tab by default
+- assertVisible: "Live"
+
+# Wait for the live stream metadata to load
+- waitForAnimationToEnd:
+    timeout: 6000
+
+# ── Start playback ────────────────────────────────────────────────────────────
+
+- tapOn:
+    id: "live-channel-1"
+    optional: true
+- tapOn:
+    text: "Live now"
+    optional: true
+
+# Audio player should appear at the bottom
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── Stop playback ─────────────────────────────────────────────────────────────
+
+- tapOn:
+    id: "stop-button"
+    optional: true

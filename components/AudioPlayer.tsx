@@ -508,6 +508,7 @@ export function AudioPlayer() {
                   onPress={handleLivePlayStop}
                   disabled={isLoading}
                   style={styles.playButton}
+                  testID={isPlaying ? "stop-button" : "play-button"}
                 >
                   {isLoading ? (
                     <Icon name="loading" size={24} color={textColor} />

@@ -1,0 +1,61 @@
+appId: com.anonymous.refuge-worldwide
+android:
+  appId: com.refugeworldwide.app
+---
+# Flow: Tab Navigation
+# Verifies all six tabs are reachable and show their expected content.
+
+- launchApp:
+    clearState: false
+
+# Wait for splash screen to clear and tabs to appear
+- extendedWaitUntil:
+    visible: "Live"
+    timeout: 15000
+
+# ── Live tab (default) ────────────────────────────────────────────────────────
+
+- assertVisible: "Live"
+- assertVisible: "Archive"
+- assertVisible: "Search"
+
+# ── Archive tab ───────────────────────────────────────────────────────────────
+
+- tapOn: "Archive"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "Featured"
+- assertVisible: "Latest"
+
+# ── Playlists tab ─────────────────────────────────────────────────────────────
+
+- tapOn: "Playlists"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── Search tab ────────────────────────────────────────────────────────────────
+
+- tapOn: "Search"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "Search shows and genres..."
+
+# ── Account tab ───────────────────────────────────────────────────────────────
+
+- tapOn: "Account"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "Sign In"
+
+# ── Chat tab ──────────────────────────────────────────────────────────────────
+
+- tapOn: "Chat"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── Return to Live ────────────────────────────────────────────────────────────
+
+- tapOn: "Live"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "Live"

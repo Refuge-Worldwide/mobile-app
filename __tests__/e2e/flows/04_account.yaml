@@ -1,0 +1,40 @@
+appId: com.anonymous.refuge-worldwide
+android:
+  appId: com.refugeworldwide.app
+---
+# Flow: Account — sign-in form validation
+# Verifies the sign-in form is shown for unauthenticated users,
+# switches to sign-up, and confirms field labels are correct.
+# Does NOT submit credentials (no test account needed).
+
+- launchApp:
+    clearState: false
+
+# Wait for splash screen to clear and tabs to appear
+- extendedWaitUntil:
+    visible: "Live"
+    timeout: 15000
+
+- tapOn: "Account"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── Sign-in form ──────────────────────────────────────────────────────────────
+
+- assertVisible: "Sign In"
+- assertVisible: "Email"
+- assertVisible: "Password"
+- assertVisible: "Forgot your password?"
+- assertVisible: "Don't have an account? Sign Up"
+
+# ── Switch to sign-up form ────────────────────────────────────────────────────
+
+- tapOn: "Don't have an account? Sign Up"
+- assertVisible: "Sign Up"
+- assertVisible: "Confirm Password"
+- assertVisible: "Already have an account? Sign In"
+
+# ── Switch back ───────────────────────────────────────────────────────────────
+
+- tapOn: "Already have an account? Sign In"
+- assertVisible: "Sign In"

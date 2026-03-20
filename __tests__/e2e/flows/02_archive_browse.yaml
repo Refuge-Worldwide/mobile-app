@@ -1,0 +1,45 @@
+appId: com.anonymous.refuge-worldwide
+android:
+  appId: com.refugeworldwide.app
+---
+# Flow: Archive Browse
+# Navigates to the Archive tab, switches between Featured/Latest tabs,
+# opens the genre filter, and taps into a show detail page.
+
+- launchApp:
+    clearState: false
+
+# Wait for splash screen to clear and tabs to appear
+- extendedWaitUntil:
+    visible: "Live"
+    timeout: 15000
+
+- tapOn: "Archive"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "Featured"
+- assertVisible: "Latest"
+
+# ── Latest tab ────────────────────────────────────────────────────────────────
+
+- tapOn: "Latest"
+- waitForAnimationToEnd:
+    timeout: 6000
+
+# ── Genre filter ──────────────────────────────────────────────────────────────
+
+- tapOn: "Genre"
+- waitForAnimationToEnd:
+    timeout: 2000
+- pressKey: Back
+
+# ── Back to Featured, open a show ────────────────────────────────────────────
+
+- tapOn: "Featured"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 3000
+- pressKey: Back

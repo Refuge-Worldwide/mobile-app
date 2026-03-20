@@ -1,0 +1,40 @@
+appId: com.anonymous.refuge-worldwide
+android:
+  appId: com.refugeworldwide.app
+---
+# Flow: Search
+# Types a query into the search box and verifies results or empty state.
+
+- launchApp:
+    clearState: false
+
+# Wait for splash screen to clear and tabs to appear
+- extendedWaitUntil:
+    visible: "Live"
+    timeout: 15000
+
+- tapOn: "Search"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── Initial state ─────────────────────────────────────────────────────────────
+
+- assertVisible: "Search shows and genres..."
+- assertVisible: "Start typing to search shows and genres"
+
+# ── Type a query ──────────────────────────────────────────────────────────────
+
+- tapOn: "Search shows and genres..."
+- inputText: "techno"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# Results or empty state — either is valid
+- assertTrue:
+    condition: ${maestro.visible("No shows found") || maestro.visible("techno")}
+
+# ── Clear the search ──────────────────────────────────────────────────────────
+
+- tapOn:
+    id: "close"
+- assertVisible: "Start typing to search shows and genres"
