@@ -224,6 +224,8 @@ export function DraggableScrubber({
         onPress={onPlayPause}
         disabled={showLoading}
         style={styles.playButtonInteractive}
+        accessibilityLabel={isPlaying ? "Pause" : "Play"}
+        accessibilityRole="button"
       >
         <View style={{ width: 40, height: 40 }} />
       </Pressable>

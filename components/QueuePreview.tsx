@@ -3,6 +3,7 @@ import { Track, useAudioStore } from "@/store/audioStore";
 import { optimizeShowImage } from "@/utils/imageOptimization";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
+import { Share } from "react-native";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -135,6 +136,25 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     }
   };
 
+  const handleShare = async () => {
+    if (!currentTrack) return;
+
+    try {
+      const shareUrl = currentTrack.slug
+        ? `https://refugeworldwide.com/radio/${currentTrack.slug}`
+        : currentTrack.url;
+
+      const shareMessage = `🎵 Check out ${currentTrack.title} on Refuge Worldwide`;
+
+      await Share.share({
+        message: shareMessage,
+        url: shareUrl,
+      });
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
+  };
+
   const handleTitlePress = () => {
     if (currentTrack?.slug) {
       bottomSheetRef.current?.dismiss();
@@ -217,14 +237,31 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
 
             <View style={styles.actionButtons}>
               <View style={styles.actionButtonsLeft}>
-                <Pressable style={styles.actionButton}>
+                <Pressable
+                  style={styles.actionButton}
+                  accessibilityLabel="Add to favorites"
+                  accessibilityRole="button"
+                >
                   <Icon name="heart-outline" size={24} />
                 </Pressable>
                 {currentTrack?.url?.includes("soundcloud.com") && (
-                  <Pressable style={styles.actionButton} onPress={handleSoundCloudPress}>
+                  <Pressable
+                    style={styles.actionButton}
+                    onPress={handleSoundCloudPress}
+                    accessibilityLabel="Open on SoundCloud"
+                    accessibilityRole="button"
+                  >
                     <FontAwesome5 name="soundcloud" size={24} color={textColor} />
                   </Pressable>
                 )}
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={handleShare}
+                  accessibilityLabel="Share this track"
+                  accessibilityRole="button"
+                >
+                  <Icon name="share" size={24} color={textColor} />
+                </Pressable>
               </View>
               <Pressable
                 style={styles.viewShowButton}

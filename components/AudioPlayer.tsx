@@ -158,7 +158,13 @@ export function AudioPlayer() {
       }
 
       try {
-        await TrackPlayer.setupPlayer();
+        await TrackPlayer.setupPlayer({
+          // Improved buffering for mobile network resilience without being excessive
+          minBuffer: 15, // Minimum 15 seconds of buffer
+          maxBuffer: 120, // Maximum 2 minutes of buffer for archive content
+          playBuffer: 3, // Start playing after 3 seconds of buffer
+          backBuffer: 20, // Keep 20 seconds of past audio in buffer for seeking
+        });
         await TrackPlayer.updateOptions({
           android: {
             appKilledPlaybackBehavior:
@@ -473,7 +479,12 @@ export function AudioPlayer() {
         <View style={styles.content}>
           {/* Left side - Show image */}
           {currentTrack?.artwork && (
-            <View style={styles.imageContainer}>
+            <Pressable
+              style={styles.imageContainer}
+              onPress={() => queueSheetRef.current?.present()}
+              accessibilityLabel="Open queue and show details"
+              accessibilityRole="button"
+            >
               <Image
                 source={{ uri: optimizeShowImage(currentTrack.artwork) }}
                 placeholder={{ blurhash: defaultBlurhash }}
@@ -481,7 +492,7 @@ export function AudioPlayer() {
                 style={styles.artwork}
                 contentFit="cover"
               />
-            </View>
+            </Pressable>
           )}
 
           {/* Middle - Track info and controls */}
@@ -498,6 +509,8 @@ export function AudioPlayer() {
                 <Pressable
                   onPress={() => queueSheetRef.current?.present()}
                   style={styles.queueButtonExternal}
+                  accessibilityLabel="Open queue"
+                  accessibilityRole="button"
                 >
                   <Ionicons name="list" size={18} color={textColor} />
                 </Pressable>
@@ -508,6 +521,8 @@ export function AudioPlayer() {
                   onPress={handleLivePlayStop}
                   disabled={isLoading}
                   style={styles.playButton}
+                  accessibilityLabel={isPlaying ? "Stop live stream" : "Start live stream"}
+                  accessibilityRole="button"
                 >
                   {isLoading ? (
                     <Icon name="loading" size={24} color={textColor} />
@@ -524,6 +539,8 @@ export function AudioPlayer() {
                 <Pressable
                   onPress={() => queueSheetRef.current?.present()}
                   style={styles.liveTitleContainer}
+                  accessibilityLabel="Open queue and show details"
+                  accessibilityRole="button"
                 >
                   <ThemedText numberOfLines={1}>
                     {currentTrack?.title}
