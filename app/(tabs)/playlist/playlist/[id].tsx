@@ -7,7 +7,8 @@ import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFavouritesWithShows } from "@/lib/favourites";
 import { fetchPlaylistBySlug } from "@/lib/playlistsApi";
-import { useAudioStore } from "@/store/audioStore";
+import { useAudioStore, Track } from "@/store/audioStore";
+import { playFromPlaylistPosition } from "@/lib/playlistUtils";
 import { Show } from "@/types/shows";
 import { ensureHttps } from "@/utils/imageOptimization";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -49,6 +50,7 @@ export default function PlaylistDetailScreen() {
   const bottomPadding = useBottomSafePadding();
 
   const setTrack = useAudioStore((state) => state.setTrack);
+  const clearQueue = useAudioStore((state) => state.clearQueue);
   const addToQueue = useAudioStore((state) => state.addToQueue);
 
   useEffect(() => {
@@ -88,15 +90,37 @@ export default function PlaylistDetailScreen() {
 
   const getImageUrl = ensureHttps;
 
-  const handleShowPlay = (show: Show, index: number) => {
-    const track = mapShowToTrack(show, getImageUrl, formatDate);
-    if (!track) return;
-    setTrack(track);
-    const next = shows.slice(index + 1, index + 31);
-    next.forEach((s) => {
-      const t = mapShowToTrack(s, getImageUrl, formatDate);
-      if (t) addToQueue(t);
-    });
+  const handleShowPlay = async (show: Show, index: number) => {
+    // Find the index of the clicked show in the current shows array
+    const clickedIndex = shows.findIndex(s => s.id === show.id);
+    if (clickedIndex === -1) return;
+
+    // Create a function to get more shows starting from a specific index
+    const getMoreShows = async (fromIndex: number, count: number): Promise<Track[]> => {
+      // For now, work with the shows we have loaded
+      // When pagination is added, this can fetch more pages as needed
+      const startIndex = Math.max(0, fromIndex);
+      const endIndex = Math.min(shows.length, startIndex + count);
+      const requestedShows = shows.slice(startIndex, endIndex);
+
+      // Convert to tracks and filter out non-playable ones
+      const tracks = requestedShows
+        .map(s => mapShowToTrack(s, getImageUrl, formatDate))
+        .filter((track): track is Track => track !== null);
+
+      return tracks;
+    };
+
+    try {
+      // Use playlist utility to clear queue and build new one starting from clicked show
+      await playFromPlaylistPosition(clickedIndex, getMoreShows, {
+        setTrack,
+        clearQueue,
+        addToQueue,
+      });
+    } catch (error) {
+      console.error('Error playing show from playlist:', error);
+    }
   };
 
   const handleShowPress = (slug: string) => {

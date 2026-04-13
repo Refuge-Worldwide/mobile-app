@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFavouritesWithShows } from "@/lib/favourites";
 import { ApiPlaylist, fetchPlaylistBySlug, fetchPlaylists } from "@/lib/playlistsApi";
 import { useAudioStore } from "@/store/audioStore";
+import { playFromPlaylistPosition } from "@/lib/playlistUtils";
 import { ensureHttps } from "@/utils/imageOptimization";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -30,8 +31,8 @@ export default function PlaylistScreen() {
   const backgroundColor = useThemeColor({}, "background");
 
   const setTrack = useAudioStore((state) => state.setTrack);
-  const addToQueue = useAudioStore((state) => state.addToQueue);
   const clearQueue = useAudioStore((state) => state.clearQueue);
+  const addToQueue = useAudioStore((state) => state.addToQueue);
 
   useEffect(() => {
     fetchPlaylists()
@@ -55,31 +56,31 @@ export default function PlaylistScreen() {
       const shows = await getFavouritesWithShows();
       const playable = shows.filter((s) => s.mixcloudLink?.includes("soundcloud.com"));
       if (playable.length === 0) return;
-      clearQueue();
-      const first = playable[0];
-      setTrack({
-        id: first.title,
-        url: first.mixcloudLink!,
-        title: first.title,
-        artist: first.date ?? "",
-        artwork: ensureHttps(first.coverImage || first.artwork),
-        mode: "archive",
-        isLive: false,
-        showId: first.id,
-        slug: first.slug,
-      });
-      playable.slice(1, 30).forEach((s) => {
-        addToQueue({
+
+      // Create a function to get more shows from favorites
+      const getMoreShows = async (fromIndex: number, count: number) => {
+        const startIndex = Math.max(0, fromIndex);
+        const endIndex = Math.min(playable.length, startIndex + count);
+        const requestedShows = playable.slice(startIndex, endIndex);
+
+        return requestedShows.map((s) => ({
           id: s.title,
           url: s.mixcloudLink!,
           title: s.title,
           artist: s.date ?? "",
           artwork: ensureHttps(s.coverImage || s.artwork),
-          mode: "archive",
+          mode: "archive" as const,
           isLive: false,
           showId: s.id,
           slug: s.slug,
-        });
+        }));
+      };
+
+      // Use playlist utility to start playing from the first track
+      await playFromPlaylistPosition(0, getMoreShows, {
+        setTrack,
+        clearQueue,
+        addToQueue,
       });
     } catch (err) {
       console.error("Error playing favorites:", err);
@@ -92,31 +93,31 @@ export default function PlaylistScreen() {
       const playlist = await fetchPlaylistBySlug(slug);
       const playable = playlist.shows.filter((s) => s.mixcloudLink?.includes("soundcloud.com"));
       if (playable.length === 0) return;
-      clearQueue();
-      const first = playable[0];
-      setTrack({
-        id: first.title,
-        url: first.mixcloudLink!,
-        title: first.title,
-        artist: first.date ?? "",
-        artwork: ensureHttps(first.coverImage || first.artwork),
-        mode: "archive",
-        isLive: false,
-        showId: first.id,
-        slug: first.slug,
-      });
-      playable.slice(1, 30).forEach((s) => {
-        addToQueue({
+
+      // Create a function to get more shows from this playlist
+      const getMoreShows = async (fromIndex: number, count: number) => {
+        const startIndex = Math.max(0, fromIndex);
+        const endIndex = Math.min(playable.length, startIndex + count);
+        const requestedShows = playable.slice(startIndex, endIndex);
+
+        return requestedShows.map((s) => ({
           id: s.title,
           url: s.mixcloudLink!,
           title: s.title,
           artist: s.date ?? "",
           artwork: ensureHttps(s.coverImage || s.artwork),
-          mode: "archive",
+          mode: "archive" as const,
           isLive: false,
           showId: s.id,
           slug: s.slug,
-        });
+        }));
+      };
+
+      // Use playlist utility to start playing from the first track
+      await playFromPlaylistPosition(0, getMoreShows, {
+        setTrack,
+        clearQueue,
+        addToQueue,
       });
     } catch (err) {
       console.error("Error playing playlist:", err);
