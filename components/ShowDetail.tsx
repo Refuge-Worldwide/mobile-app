@@ -1,6 +1,7 @@
 import { Icon } from "@/components/Icon";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
+import { ShowDetailSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -223,9 +224,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   if (loading) {
     return (
       <ThemedView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <ShowDetailSkeleton />
       </ThemedView>
     );
   }
