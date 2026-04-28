@@ -1,6 +1,5 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React from 'react';
 import { ActivityIndicator, type StyleProp, type TextStyle } from 'react-native';
 
 // Define available icon names
@@ -15,6 +14,8 @@ export type IconName =
   | 'plus'
   | 'share'
   | 'open-outline'
+  | 'skip-forward'
+  | 'skip-backward'
 
 interface IconProps {
   name: IconName;
@@ -58,6 +59,10 @@ export function Icon({
         return <Ionicons name="share-outline" size={size} color={iconColor} style={style} />;
       case 'open-outline':
         return <Ionicons name="open-outline" size={size} color={iconColor} style={style} />;
+      case 'skip-forward':
+        return <Ionicons name="reload" size={size} color={iconColor} style={style} />;
+      case 'skip-backward':
+        return <Ionicons name="reload" size={size} color={iconColor} style={{ transform: [{ scaleX: -1 }] }} />;
       default:
         return null;
     }

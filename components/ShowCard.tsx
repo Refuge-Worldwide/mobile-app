@@ -287,5 +287,6 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 6,
     justifyContent: "space-between",
+    marginTop: -1,
   },
 });

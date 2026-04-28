@@ -8,9 +8,9 @@ import { Icon } from "./Icon";
 import { ThemedText } from "./ThemedText";
 
 interface DraggableScrubberProps {
-  onPlayPause: () => void;
-  isPlaying: boolean;
-  isLoading: boolean;
+  onPlayPause?: () => void;
+  isPlaying?: boolean;
+  isLoading?: boolean;
 }
 
 export function DraggableScrubber({
@@ -80,7 +80,7 @@ export function DraggableScrubber({
     }
   }, [progressBarWidth, duration]);
 
-  const PLAY_BUTTON_WIDTH = 50;
+  const PLAY_BUTTON_WIDTH = onPlayPause ? 50 : 0;
 
   // Gesture handler - activates on horizontal movement, fails on vertical
   // This allows the bottom sheet to capture vertical gestures
@@ -88,7 +88,7 @@ export function DraggableScrubber({
     .activeOffsetX([-10, 10])
     .failOffsetY([-10, 10])
     .onStart((event) => {
-      if (event.x < PLAY_BUTTON_WIDTH) return;
+      if (onPlayPause && event.x < PLAY_BUTTON_WIDTH) return;
       runOnJS(startSeeking)(event.x);
     })
     .onUpdate((event) => {
@@ -101,7 +101,7 @@ export function DraggableScrubber({
   // Tap gesture - uses direct seek to avoid double-tap issue from state batching
   const tapGesture = Gesture.Tap()
     .onEnd((event) => {
-      if (event.x < PLAY_BUTTON_WIDTH) return;
+      if (onPlayPause && event.x < PLAY_BUTTON_WIDTH) return;
       runOnJS(handleTap)(event.x);
     });
 
@@ -160,19 +160,21 @@ export function DraggableScrubber({
 
       {/* UI overlay - play button and time (normal colors) - non-interactive */}
       <View style={styles.uiOverlay} pointerEvents="none">
-        <View style={styles.playButtonOverlay}>
-          {showLoading ? (
-            <View style={{ marginLeft: 5 }}>
-              <Icon name="loading" size={20} color={textColor} />
-            </View>
-          ) : (
-            <Icon
-              name={isPlaying ? "pause" : "play"}
-              size={30}
-              color={textColor}
-            />
-          )}
-        </View>
+        {onPlayPause && (
+          <View style={styles.playButtonOverlay}>
+            {showLoading ? (
+              <View style={{ marginLeft: 5 }}>
+                <Icon name="loading" size={20} color={textColor} />
+              </View>
+            ) : (
+              <Icon
+                name={isPlaying ? "pause" : "play"}
+                size={30}
+                color={textColor}
+              />
+            )}
+          </View>
+        )}
 
         <View style={styles.timeOverlay}>
           <ThemedText type="player" style={{ color: textColor }}>
@@ -192,19 +194,21 @@ export function DraggableScrubber({
         pointerEvents="none"
       >
         <View style={[styles.invertedContent, { width: progressBarWidth }]}>
-          <View style={styles.playButtonOverlay}>
-            {showLoading ? (
-              <View style={{ marginLeft: 5 }}>
-                <Icon name="loading" size={20} color={backgroundColor} />
-              </View>
-            ) : (
-              <Icon
-                name={isPlaying ? "pause" : "play"}
-                size={30}
-                color={backgroundColor}
-              />
-            )}
-          </View>
+          {onPlayPause && (
+            <View style={styles.playButtonOverlay}>
+              {showLoading ? (
+                <View style={{ marginLeft: 5 }}>
+                  <Icon name="loading" size={20} color={backgroundColor} />
+                </View>
+              ) : (
+                <Icon
+                  name={isPlaying ? "pause" : "play"}
+                  size={30}
+                  color={backgroundColor}
+                />
+              )}
+            </View>
+          )}
 
           <View style={styles.timeOverlayInverted}>
             <ThemedText type="player" style={{ color: backgroundColor }}>
@@ -220,15 +224,17 @@ export function DraggableScrubber({
       </GestureDetector>
 
       {/* Play/Pause button - interactive, on top of drag layer */}
-      <Pressable
-        onPress={onPlayPause}
-        disabled={showLoading}
-        style={styles.playButtonInteractive}
-        accessibilityLabel={isPlaying ? "Pause" : "Play"}
-        accessibilityRole="button"
-      >
-        <View style={{ width: 40, height: 40 }} />
-      </Pressable>
+      {onPlayPause && (
+        <Pressable
+          onPress={onPlayPause}
+          disabled={showLoading}
+          style={styles.playButtonInteractive}
+          accessibilityLabel={isPlaying ? "Pause" : "Play"}
+          accessibilityRole="button"
+        >
+          <View style={{ width: 40, height: 40 }} />
+        </Pressable>
+      )}
     </View>
   );
 }

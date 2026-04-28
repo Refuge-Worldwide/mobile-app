@@ -3,7 +3,7 @@ import { StyleSheet, Text, type TextProps } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'large' | 'title' | 'subtitle' | 'tag' | 'player';
+  type?: 'default' | 'large' | 'title' | 'subtitle' | 'tag' | 'beefyTag' | 'player';
 };
 
 export function ThemedText({
@@ -22,6 +22,7 @@ export function ThemedText({
         type === 'title' ? styles.title : undefined,
         type === 'subtitle' ? styles.subtitle : undefined,
         type === 'tag' ? styles.tag : undefined,
+        type === 'beefyTag' ? styles.beefyTag : undefined,
         type === 'player' ? styles.player : undefined,
         style,
       ]}
@@ -55,6 +56,11 @@ const styles = StyleSheet.create({
   tag: {
     fontSize: 17,
     lineHeight: 19,
+    fontFamily: 'ABCArizonaFlare',
+  },
+  beefyTag: {
+    fontSize: 19,
+    lineHeight: 22,
     fontFamily: 'ABCArizonaFlare',
   },
   player: {

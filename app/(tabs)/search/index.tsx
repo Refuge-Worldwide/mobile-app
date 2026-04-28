@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
   genresContainer: {
     flexDirection: "row",
-    gap: 8,
+    gap: 4,
     paddingRight: 16,
   },
 });

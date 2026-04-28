@@ -2,8 +2,6 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { Track, useAudioStore } from "@/store/audioStore";
 import { optimizeShowImage } from "@/utils/imageOptimization";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
-import * as WebBrowser from "expo-web-browser";
-import { Share } from "react-native";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -11,6 +9,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import {
   forwardRef,
   useCallback,
@@ -18,13 +17,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, Share, StyleSheet, View } from "react-native";
 import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { Swipeable } from "react-native-gesture-handler";
-import TrackPlayer from "react-native-track-player";
+import TrackPlayer, { State } from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
 import { Icon } from "./Icon";
 import { NextUp } from "./NextUp";
@@ -125,6 +124,43 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     }
   };
 
+  const handleSkipBackward = async () => {
+    try {
+      const state = await TrackPlayer.getState();
+      const wasPlaying = state === State.Playing;
+      const position = await TrackPlayer.getPosition();
+      const newPosition = Math.max(0, position - 30);
+
+      // Seek and resume playback only if it was playing
+      TrackPlayer.seekTo(newPosition).then(() => {
+        if (wasPlaying) {
+          TrackPlayer.play();
+        }
+      });
+    } catch (error) {
+      console.error("Skip backward failed:", error);
+    }
+  };
+
+  const handleSkipForward = async () => {
+    try {
+      const state = await TrackPlayer.getState();
+      const wasPlaying = state === State.Playing;
+      const position = await TrackPlayer.getPosition();
+      const duration = await TrackPlayer.getDuration();
+      const newPosition = Math.min(duration, position + 30);
+
+      // Seek and resume playback only if it was playing
+      TrackPlayer.seekTo(newPosition).then(() => {
+        if (wasPlaying) {
+          TrackPlayer.play();
+        }
+      });
+    } catch (error) {
+      console.error("Skip forward failed:", error);
+    }
+  };
+
   const handleLivePlayStop = () => {
     // Toggle play/pause for live streams
     setIsPlaying(!isPlaying);
@@ -185,6 +221,48 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
             ) : (
               <View style={[styles.image, { backgroundColor: textColor }]} />
             )}
+
+            {/* Play button and skip buttons inside image */}
+            <View style={styles.buttonContainer}>
+              {!isLiveMode && (
+                <Pressable
+                  style={[styles.iconButton, { backgroundColor: textColor }]}
+                  onPress={handleSkipBackward}
+                  accessibilityLabel="Skip backward 30 seconds"
+                >
+                  <Icon name="skip-backward" size={32} color={backgroundColor} />
+                </Pressable>
+              )}
+              <Pressable
+                style={[styles.iconButton, { backgroundColor: textColor }]}
+                onPress={isLiveMode ? handleLivePlayStop : handlePlayPause}
+                disabled={isLoading}
+                accessibilityLabel={
+                  isLiveMode
+                    ? (isPlaying ? "Stop live stream" : "Start live stream")
+                    : (isPlaying ? "Pause" : "Play")
+                }
+              >
+                {isLoading ? (
+                  <Icon name="loading" size={24} color={backgroundColor} />
+                ) : (
+                  <Icon
+                    name={isLiveMode ? (isPlaying ? "stop" : "play") : (isPlaying ? "pause" : "play")}
+                    size={40}
+                    color={backgroundColor}
+                  />
+                )}
+              </Pressable>
+              {!isLiveMode && (
+                <Pressable
+                  style={[styles.iconButton, { backgroundColor: textColor }]}
+                  onPress={handleSkipForward}
+                  accessibilityLabel="Skip forward 30 seconds"
+                >
+                  <Icon name="skip-forward" size={32} color={backgroundColor} />
+                </Pressable>
+              )}
+            </View>
           </View>
 
           {!isLiveMode && (
@@ -194,32 +272,12 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
                 { borderColor: textColor, backgroundColor },
               ]}
             >
-              <DraggableScrubber
-                onPlayPause={handlePlayPause}
-                isPlaying={isPlaying}
-                isLoading={isLoading}
-              />
+              <DraggableScrubber />
             </View>
           )}
 
           <View style={styles.showContentWrapper}>
             <View style={[styles.titleRow, { borderBottomColor: textColor }]}>
-              {isLiveMode && (
-                <Pressable
-                  style={{ marginRight: 12, padding: 4 }}
-                  onPress={handleLivePlayStop}
-                  disabled={isLoading}
-                  accessibilityLabel={
-                    isPlaying ? "Stop live stream" : "Start live stream"
-                  }
-                >
-                  <Icon
-                    name={isPlaying ? "stop" : "play"}
-                    size={24}
-                    color={textColor}
-                  />
-                </Pressable>
-              )}
               <Pressable
                 style={styles.titlePressable}
                 onPress={handleTitlePress}
@@ -311,6 +369,20 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     const index = getIndex() ?? 0;
     const imageUri = item.artwork ? optimizeImage(item.artwork) : null;
 
+    const handleQueueItemPress = async () => {
+      if (!item.slug) return;
+
+      // Close the bottom sheet
+      bottomSheetRef.current?.dismiss();
+
+      // Navigate to the show page
+      if (item.isLive) {
+        router.push(`/(tabs)/live/show/${item.slug}` as any);
+      } else {
+        router.push(`/(tabs)/radio/${item.slug}` as any);
+      }
+    };
+
     return (
       <ScaleDecorator>
         <Swipeable
@@ -323,6 +395,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
           overshootRight={false}
         >
           <Pressable
+            onPress={handleQueueItemPress}
             onLongPress={drag}
             disabled={isActive}
             style={[
@@ -363,7 +436,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
-      snapPoints={["65%", "95%"]}
+      snapPoints={["65%", "80%"]}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={{
@@ -458,6 +531,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     overflow: "hidden",
     // backgroundColor set inline with theme color
+  },
+  skipButtonsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+  },
+  skipButton: {
+    padding: 8,
+  },
+  scrubberWrapper: {
+    flex: 1,
   },
   // Description
   descriptionContainer: {
@@ -581,5 +666,17 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     padding: 4,
+  },
+  buttonContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    flexDirection: "row",
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
