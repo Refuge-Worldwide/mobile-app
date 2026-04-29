@@ -23,7 +23,8 @@
       "associatedDomains": ["applinks:refugeworldwide.com"],
       "infoPlist": {
         "UIBackgroundModes": ["audio", "audio"],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIDesignRequiresCompatibility": true
       }
     },
     "android": {

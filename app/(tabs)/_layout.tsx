@@ -5,12 +5,14 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { Tabs } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NavigationProvider, useNavigationContext } from "@/contexts/NavigationContext";
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
   const insets = useSafeAreaInsets();
   const bottomPadding = Math.max(insets.bottom, 11);
+  const { getTabNavigation } = useNavigationContext();
 
   const handleTabPress = (route: any, index: number) => {
     const isFocused = state.index === index;
@@ -24,6 +26,15 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
       if (!event.defaultPrevented) {
         navigation.navigate(route.name);
+      }
+    } else {
+      // If tab is already focused, go back to the main page of that tab
+      const stackNavigation = getTabNavigation(route.name);
+      if (stackNavigation) {
+        console.log('Found stack navigation for tab:', route.name);
+        stackNavigation.popToTop();
+      } else {
+        console.log('No stack navigation found for tab:', route.name);
       }
     }
   };
@@ -94,18 +105,19 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
 export default function TabLayout() {
   return (
-    <View style={{ flex: 1 }}>
-      <Tabs
-        tabBar={(props) => (
-          <>
-            <AudioPlayer />
-            <CustomTabBar {...props} />
-          </>
-        )}
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
+    <NavigationProvider>
+      <View style={{ flex: 1 }}>
+        <Tabs
+          tabBar={(props) => (
+            <>
+              <AudioPlayer />
+              <CustomTabBar {...props} />
+            </>
+          )}
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
         <Tabs.Screen
           name="live"
           options={{
@@ -155,6 +167,7 @@ export default function TabLayout() {
         />
       </Tabs>
     </View>
+    </NavigationProvider>
   );
 }
 

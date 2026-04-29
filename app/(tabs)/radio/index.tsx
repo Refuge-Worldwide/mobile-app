@@ -34,7 +34,7 @@ export default function Archive() {
   const [skip, setSkip] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>("featured");
+  const [activeTab, setActiveTab] = useState<TabType>("latest");
   const [genres, setGenres] = useState<string[]>([]);
   const [genresLoading, setGenresLoading] = useState(false);
   const [genresError, setGenresError] = useState<string | null>(null);
@@ -227,29 +227,6 @@ export default function Archive() {
         <Pressable
           style={[
             styles.tab,
-            activeTab === "featured" && styles.tabActive,
-            {
-              borderColor: textColor,
-              backgroundColor:
-                activeTab === "featured" ? textColor : "transparent",
-            },
-          ]}
-          onPress={() => setActiveTab("featured")}
-        >
-          <ThemedText
-            type="tag"
-            style={[
-              activeTab === "featured" && styles.tabTextActive,
-              { color: activeTab === "featured" ? backgroundColor : textColor },
-            ]}
-          >
-            Featured
-          </ThemedText>
-        </Pressable>
-
-        <Pressable
-          style={[
-            styles.tab,
             activeTab === "latest" && styles.tabActive,
             {
               borderColor: textColor,
@@ -267,6 +244,29 @@ export default function Archive() {
             ]}
           >
             Latest
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
+          style={[
+            styles.tab,
+            activeTab === "featured" && styles.tabActive,
+            {
+              borderColor: textColor,
+              backgroundColor:
+                activeTab === "featured" ? textColor : "transparent",
+            },
+          ]}
+          onPress={() => setActiveTab("featured")}
+        >
+          <ThemedText
+            type="tag"
+            style={[
+              activeTab === "featured" && styles.tabTextActive,
+              { color: activeTab === "featured" ? backgroundColor : textColor },
+            ]}
+          >
+            Featured
           </ThemedText>
         </Pressable>
 
