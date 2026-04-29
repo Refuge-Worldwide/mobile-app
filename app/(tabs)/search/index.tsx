@@ -285,8 +285,7 @@ const styles = StyleSheet.create({
   clearButton: {
     position: "absolute",
     right: 0,
-    top: 0,
-    bottom: 0,
+    bottom: 6,
     justifyContent: "center",
     alignItems: "center",
     width: 40,
