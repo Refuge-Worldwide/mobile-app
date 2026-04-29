@@ -1,5 +1,6 @@
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
+import { ShowCardSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -112,8 +113,23 @@ export default function PlaylistDetailScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
+        <View
+          style={[
+            styles.headerContainer,
+            { backgroundColor, borderBottomColor: textColor },
+          ]}
+        >
+          <View style={styles.headerContent}>
+            <View style={[styles.skeletonTitle, { backgroundColor: textColor + "40" }]} />
+          </View>
+        </View>
+        <View style={[styles.scrollContent, { paddingBottom: bottomPadding }]}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <View key={index}>
+              <ShowCardSkeleton />
+              {index < 3 && <ShowCardSeparator />}
+            </View>
+          ))}
         </View>
       </ThemedView>
     );
@@ -256,5 +272,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
     marginBottom: 20,
+  },
+  skeletonTitle: {
+    height: 24,
+    width: "60%",
+    borderRadius: 4,
   },
 });

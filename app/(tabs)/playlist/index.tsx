@@ -18,6 +18,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { PlaylistCardSkeleton } from "@/components/SkeletonLoader";
 
 
 export default function PlaylistScreen() {
@@ -156,7 +157,11 @@ export default function PlaylistScreen() {
 
           {/* API playlists */}
           {loading ? (
-            <ActivityIndicator style={styles.loader} />
+            <>
+              {Array.from({ length: 3 }).map((_, index) => (
+                <PlaylistCardSkeleton key={index} />
+              ))}
+            </>
           ) : (
             playlists.map((playlist) => (
               <Pressable

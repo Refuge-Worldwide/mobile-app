@@ -87,6 +87,23 @@ export function LivePlayerSkeleton() {
   );
 }
 
+export function PlaylistCardSkeleton() {
+  return (
+    <View style={styles.playlistCardContainer}>
+      {/* Playlist image */}
+      <View style={styles.playlistImageContainer}>
+        <Skeleton width="100%" height={200} borderRadius={0} />
+        {/* Play button skeleton */}
+        <View style={styles.playButtonSkeleton}>
+          <Skeleton width={40} height={40} borderRadius={0} />
+        </View>
+      </View>
+      {/* Playlist title */}
+      <Skeleton width="70%" height={16} style={{ marginTop: 4, marginBottom: 4 }} />
+    </View>
+  );
+}
+
 export function ShowDetailSkeleton() {
   return (
     <View style={styles.showDetailContainer}>
@@ -174,5 +191,20 @@ const styles = StyleSheet.create({
   },
   showDetailContent: {
     padding: 16,
+  },
+  playlistCardContainer: {
+    marginBottom: 16,
+  },
+  playlistImageContainer: {
+    width: "100%",
+    height: 200,
+    position: "relative",
+  },
+  playButtonSkeleton: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 40,
+    height: 40,
   },
 });
