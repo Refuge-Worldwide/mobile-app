@@ -1,5 +1,6 @@
 import { ShowCard } from '@/components/ShowCard';
 import { ShowCardSeparator } from '@/components/ShowCardSeparator';
+import { ShowCardSkeleton, Skeleton } from '@/components/SkeletonLoader';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
@@ -135,9 +136,38 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
   if (loading) {
     return (
       <ThemedView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.artistHeader}>
+            {/* Artist name skeleton */}
+            <Skeleton width="60%" height={28} style={{ marginBottom: 16 }} />
+
+            {/* Artist image skeleton */}
+            <View style={styles.imageContainer}>
+              <Skeleton width="100%" height={200} borderRadius={0} />
+            </View>
+
+            {/* Bio skeleton */}
+            <View style={{ marginTop: 16 }}>
+              <Skeleton width="100%" height={16} style={{ marginBottom: 8 }} />
+              <Skeleton width="90%" height={16} style={{ marginBottom: 8 }} />
+              <Skeleton width="75%" height={16} />
+            </View>
+          </View>
+
+          {/* Shows section skeleton */}
+          <View style={styles.showsSection}>
+            <Skeleton width="25%" height={20} style={{ marginBottom: 16 }} />
+            {Array.from({ length: 2 }).map((_, index) => (
+              <View key={index}>
+                <ShowCardSkeleton />
+                {index < 1 && <ShowCardSeparator />}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       </ThemedView>
     );
   }

@@ -1,5 +1,6 @@
 import { Icon } from "@/components/Icon";
 import { RefugeLogo } from "@/components/RefugeLogo";
+import { LivePlayerSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
@@ -189,6 +190,13 @@ export default function Live() {
         }
       >
         <View style={[styles.channelsContainer, { gap: 30 }]}>
+          {/* Loading skeleton */}
+          {!liveNow && !loadError && (
+            <View style={styles.channelSection}>
+              <LivePlayerSkeleton />
+            </View>
+          )}
+
           {/* Channel 1 */}
           {liveNow && (
             <View style={styles.channelSection}>

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { ShowCard } from './ShowCard';
 import { ShowCardSeparator } from './ShowCardSeparator';
+import { ShowCardSkeleton } from './SkeletonLoader';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
@@ -148,7 +149,16 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
           </ThemedText>
         </View>
       </View>
-      {shows.length === 0 && !loading ? (
+      {shows.length === 0 && loading ? (
+        <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <View key={index}>
+              <ShowCardSkeleton />
+              {index < 3 && <ShowCardSeparator />}
+            </View>
+          ))}
+        </View>
+      ) : shows.length === 0 && !loading ? (
         <View style={styles.emptyState}>
           <ThemedText style={styles.emptyText}>
             No shows found for "{genre}"
