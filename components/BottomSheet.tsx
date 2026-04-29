@@ -11,7 +11,7 @@ interface BottomSheetProps {
 }
 
 export const BottomSheet = forwardRef<BottomSheetModal, BottomSheetProps>(
-  ({ children, snapPoints = ['70%', '90%'], onDismiss }, ref) => {
+  ({ children, snapPoints = ['80%', '80%'], onDismiss }, ref) => {
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
     const insets = useSafeAreaInsets();

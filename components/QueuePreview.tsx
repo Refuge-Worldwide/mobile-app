@@ -438,6 +438,7 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
       ref={bottomSheetRef}
       snapPoints={["65%", "80%"]}
       enablePanDownToClose
+      enableDynamicSizing={false}
       backdropComponent={renderBackdrop}
       backgroundStyle={{
         backgroundColor,
