@@ -200,7 +200,7 @@ export default function Live() {
           {/* Channel 1 */}
           {liveNow && (
             <View style={styles.channelSection}>
-              <Pressable onPress={playFunction} style={styles.imageContainer}>
+              <Pressable onPress={playFunction} style={styles.imageContainer} testID="live-channel-1">
                 <Image
                   style={styles.image}
                   contentFit="cover"

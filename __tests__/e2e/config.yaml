@@ -1,0 +1,12 @@
+# Maestro workspace configuration
+# Run all flows: maestro test __tests__/e2e/
+# Run one flow: maestro test __tests__/e2e/flows/01_tab_navigation.yaml
+
+flows:
+  - flows/01_tab_navigation.yaml
+  - flows/02_archive_browse.yaml
+  - flows/03_search.yaml
+  - flows/04_account.yaml
+  - flows/05_live_radio.yaml
+
+# Fixed: Added accessibility labels to bottom tab items for better accessibility and reliable E2E testing

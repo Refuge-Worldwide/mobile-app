@@ -521,6 +521,7 @@ export function AudioPlayer() {
                   onPress={handleLivePlayStop}
                   disabled={isLoading}
                   style={styles.playButton}
+                  testID={isPlaying ? "stop-button" : "play-button"}
                   accessibilityLabel={isPlaying ? "Stop live stream" : "Start live stream"}
                   accessibilityRole="button"
                 >

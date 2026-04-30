@@ -1,0 +1,25 @@
+appId: com.anonymous.refuge-worldwide
+android:
+  appId: com.refugeworldwide.app
+---
+# Debug: What can Maestro actually see?
+
+- launchApp:
+    clearState: false
+
+# Wait for app to load
+- waitForAnimationToEnd:
+    timeout: 10000
+
+# Take screenshot
+- takeScreenshot: "debug_loaded_app.png"
+
+# Try to find tab elements by different methods
+- assertTrue:
+    condition: ${maestro.visible("Live") || maestro.visible("Archive") || maestro.visible("tab-live") || maestro.visible("Live Tab")}
+    message: "Cannot find any tab elements"
+
+# List what's actually visible (this will show in logs)
+- evalScript: |
+    console.log("=== DEBUGGING VISIBLE ELEMENTS ===");
+    // This will help us see what Maestro can detect
