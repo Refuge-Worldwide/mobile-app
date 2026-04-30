@@ -8,10 +8,10 @@ android:
 - launchApp:
     clearState: false
 
-# Wait for splash screen to clear and tabs to appear
+# Wait for splash screen to clear and live content to load
 - extendedWaitUntil:
-    visible: "Live"
-    timeout: 15000
+    visible: "Live now"
+    timeout: 5000
 
 - tapOn: "Search"
 - waitForAnimationToEnd:

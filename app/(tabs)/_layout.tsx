@@ -44,6 +44,9 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             borderColor: colors.text,
           },
         ]}
+        accessibilityLabel={label}
+        accessibilityRole="tab"
+        accessibilityHint={`Navigate to ${label} section`}
       >
         <ThemedText
           type="large"

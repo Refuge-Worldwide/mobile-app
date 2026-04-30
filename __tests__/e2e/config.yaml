@@ -1,6 +1,6 @@
 # Maestro workspace configuration
-# Run all flows: maestro test .maestro/
-# Run one flow: maestro test .maestro/flows/01_tab_navigation.yaml
+# Run all flows: maestro test __tests__/e2e/
+# Run one flow: maestro test __tests__/e2e/flows/01_tab_navigation.yaml
 
 flows:
   - flows/01_tab_navigation.yaml
@@ -9,4 +9,4 @@ flows:
   - flows/04_account.yaml
   - flows/05_live_radio.yaml
 
-# TODO: fix e2e tests as they are not working with tapOn on bottom tab items.
+# Fixed: Added accessibility labels to bottom tab items for better accessibility and reliable E2E testing

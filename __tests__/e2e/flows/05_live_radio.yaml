@@ -9,17 +9,17 @@ android:
 - launchApp:
     clearState: false
 
-# Wait for splash screen to clear and tabs to appear
+# Wait for splash screen to clear and live content to load
 - extendedWaitUntil:
-    visible: "Live"
-    timeout: 15000
+    visible: "Live now"
+    timeout: 5000
 
-# App opens on the Live tab by default
-- assertVisible: "Live"
+# App opens on the Live tab by default - live content should be loaded
+- assertVisible: "Live now"
 
 # Wait for the live stream metadata to load
 - waitForAnimationToEnd:
-    timeout: 6000
+    timeout: 3000
 
 # ── Start playback ────────────────────────────────────────────────────────────
 
