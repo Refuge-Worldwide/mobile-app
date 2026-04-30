@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   },
   scheduleItem: {
     borderBottomWidth: 1,
-    paddingVertical: 0,
+    paddingTop: 4,
     paddingHorizontal: 0,
     flexDirection: 'row',
   },

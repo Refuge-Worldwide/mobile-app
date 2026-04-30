@@ -1,6 +1,7 @@
 import { Icon } from "@/components/Icon";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
+import { ShowDetailSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -130,7 +131,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const handleShare = async () => {
     try {
       const shareUrl = `https://refugeworldwide.com/radio/${slug}`;
-      const shareMessage = `${show?.title} - ${formatDate(show?.date || "")}`;
+      const shareMessage = `🎵 Check out ${show?.title} on Refuge Worldwide`;
 
       await Share.share({
         message: shareMessage,
@@ -223,9 +224,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   if (loading) {
     return (
       <ThemedView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <ShowDetailSkeleton />
       </ThemedView>
     );
   }

@@ -1,11 +1,11 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { Ionicons } from '@expo/vector-icons';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedInput } from './ThemedInput';
 import { ThemedText } from './ThemedText';
-import { Ionicons } from '@expo/vector-icons';
 
 interface GenreFilterProps {
   selectedGenres: string[];
@@ -104,7 +104,7 @@ export function GenreFilter({
                     onClose?.();
                   }}
                 >
-                  <ThemedText type="tag" style={
+                  <ThemedText type="beefyTag" style={
                     { color: isSelected ? backgroundColor : textColor }
                   }>
                     {genre}
@@ -138,8 +138,7 @@ const styles = StyleSheet.create({
   clearButton: {
     position: 'absolute',
     right: 0,
-    top: 8,
-    bottom: 0,
+    bottom: 6,
     justifyContent: 'center',
     alignItems: 'center',
     width: 40,
@@ -149,11 +148,13 @@ const styles = StyleSheet.create({
     paddingBottom: 300,
   },
   genresList: {
-    gap: 12,
-    paddingTop: 10
+    gap: 6,
+    paddingTop: 10,
   },
   genreButton: {
     width: '100%',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
     borderRadius: 99,
     borderWidth: 1,
     alignItems: 'center',

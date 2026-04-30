@@ -23,7 +23,7 @@ export function GenreTag({ name, onPress }: GenreTagProps) {
 const styles = StyleSheet.create({
   genreTag: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 99,
     borderWidth: 1,
   },

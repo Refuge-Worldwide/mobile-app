@@ -2,6 +2,7 @@ import { BottomSheet } from "@/components/BottomSheet";
 import { GenreFilter } from "@/components/GenreFilter";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
+import { ShowCardSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
@@ -34,7 +35,7 @@ export default function Archive() {
   const [skip, setSkip] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>("featured");
+  const [activeTab, setActiveTab] = useState<TabType>("latest");
   const [genres, setGenres] = useState<string[]>([]);
   const [genresLoading, setGenresLoading] = useState(false);
   const [genresError, setGenresError] = useState<string | null>(null);
@@ -227,29 +228,6 @@ export default function Archive() {
         <Pressable
           style={[
             styles.tab,
-            activeTab === "featured" && styles.tabActive,
-            {
-              borderColor: textColor,
-              backgroundColor:
-                activeTab === "featured" ? textColor : "transparent",
-            },
-          ]}
-          onPress={() => setActiveTab("featured")}
-        >
-          <ThemedText
-            type="tag"
-            style={[
-              activeTab === "featured" && styles.tabTextActive,
-              { color: activeTab === "featured" ? backgroundColor : textColor },
-            ]}
-          >
-            Featured
-          </ThemedText>
-        </Pressable>
-
-        <Pressable
-          style={[
-            styles.tab,
             activeTab === "latest" && styles.tabActive,
             {
               borderColor: textColor,
@@ -267,6 +245,29 @@ export default function Archive() {
             ]}
           >
             Latest
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
+          style={[
+            styles.tab,
+            activeTab === "featured" && styles.tabActive,
+            {
+              borderColor: textColor,
+              backgroundColor:
+                activeTab === "featured" ? textColor : "transparent",
+            },
+          ]}
+          onPress={() => setActiveTab("featured")}
+        >
+          <ThemedText
+            type="tag"
+            style={[
+              activeTab === "featured" && styles.tabTextActive,
+              { color: activeTab === "featured" ? backgroundColor : textColor },
+            ]}
+          >
+            Featured
           </ThemedText>
         </Pressable>
 
@@ -297,25 +298,37 @@ export default function Archive() {
         </View>
       )}
 
-      <FlatList
-        data={shows}
-        renderItem={renderShowItem}
-        keyExtractor={(item) => item.id}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
-        ItemSeparatorComponent={ShowCardSeparator}
-        contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={textColor}
-            colors={[textColor]}
-          />
-        }
-      />
+      {/* Loading skeleton for initial load */}
+      {shows.length === 0 && loading ? (
+        <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <View key={index}>
+              <ShowCardSkeleton />
+              {index < 2 && <ShowCardSeparator />}
+            </View>
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={shows}
+          renderItem={renderShowItem}
+          keyExtractor={(item) => item.id}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          ItemSeparatorComponent={ShowCardSeparator}
+          contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={textColor}
+              colors={[textColor]}
+            />
+          }
+        />
+      )}
 
       {/* Genre Filter Bottom Sheet */}
       <BottomSheet ref={bottomSheetRef} snapPoints={["70%", "90%"]}>
