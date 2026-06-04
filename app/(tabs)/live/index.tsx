@@ -31,6 +31,7 @@ export default function Live() {
   const [liveNowCh2, setLiveNowCh2] = useState<{
     title: string;
     status: string;
+    artwork?: string;
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -65,13 +66,16 @@ export default function Live() {
       const data = await res.json();
       setLoadError(false);
       setLiveNow(data.liveNow);
+
       // Set Channel 2 data if available
       if (data.ch2) {
         setLiveNowCh2({
           title: data.ch2.liveNow,
           status: data.ch2.status,
+          artwork: data.ch2.artwork, // Add artwork field
         });
       }
+
       // Note: Live track metadata updates are handled by AudioPlayer
     } catch (error) {
       console.error("Failed to fetch live show:", error);
@@ -231,7 +235,7 @@ export default function Live() {
                     type="subtitle"
                     style={{ color: backgroundColor }}
                   >
-                    Live now
+                    {isBothChannelsLive ? "Live on 1" : "Live now"}
                   </ThemedText>
                 </View>
                 <Pressable
@@ -262,7 +266,7 @@ export default function Live() {
                   contentFit="cover"
                   transition={1000}
                   placeholder="blurhash"
-                  source={optimizeLiveImage(liveNow?.artwork)} // Use Channel 1 artwork as fallback
+                  source={optimizeLiveImage(liveNowCh2?.artwork)}
                 />
                 <View
                   style={[
@@ -287,7 +291,7 @@ export default function Live() {
                     type="subtitle"
                     style={{ color: backgroundColor }}
                   >
-                    Live now
+                    Live on 2
                   </ThemedText>
                 </View>
                 <View style={{ backgroundColor: textColor, padding: 4 }}>
