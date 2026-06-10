@@ -4,10 +4,10 @@ import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ShowDetailSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { useAuth } from "@/contexts/AuthContext";
+// import { useAuth } from "@/contexts/AuthContext"; // COMMENTED OUT - Removing for Directus migration
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { isFavourited, toggleFavourite } from "@/lib/favourites";
+// import { isFavourited, toggleFavourite } from "@/lib/favourites"; // COMMENTED OUT - Removing for Directus migration
 import { Artist } from "@/types/artists";
 import { Show } from "@/types/shows";
 import { ensureHttps, optimizeArtistImage } from "@/utils/imageOptimization";
@@ -34,14 +34,14 @@ interface ShowDetailProps {
 export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
-  const { user } = useAuth();
+  // const { user } = useAuth(); // COMMENTED OUT - Removing for Directus migration
   const [show, setShow] = useState<Show | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  // const [isFavorite, setIsFavorite] = useState(false); // COMMENTED OUT - Removing for Directus migration
+  // const [favoriteLoading, setFavoriteLoading] = useState(false); // COMMENTED OUT - Removing for Directus migration
   const [artistDetails, setArtistDetails] = useState<
     Map<string, Artist & { shows?: Show[] }>
   >(new Map());
@@ -56,11 +56,13 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     }
   }, [slug]);
 
+  /* COMMENTED OUT - Removing for Directus migration
   useEffect(() => {
     if (user && show) {
       checkFavoriteStatus();
     }
   }, [user, show?.id]);
+  */
 
   useEffect(() => {
     if (show?.artists && show.artists.length > 0) {
@@ -142,6 +144,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     }
   };
 
+  /* COMMENTED OUT - Removing favorites for Directus migration
   const checkFavoriteStatus = async () => {
     if (!show?.id) return;
     const favourited = await isFavourited(show.id);
@@ -166,6 +169,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
       setIsFavorite(!isFavorite);
     }
   };
+  END COMMENTED OUT FAVORITES */
 
   const fetchArtistDetails = async () => {
     if (!show?.artists) return;
@@ -296,6 +300,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
+            {/* COMMENTED OUT - Removing favorites for Directus migration
             <Pressable
               onPress={handleToggleFavorite}
               style={styles.actionButton}
@@ -310,6 +315,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                 />
               )}
             </Pressable>
+            END COMMENTED OUT FAVORITES */}
             <Pressable onPress={handleShare} style={styles.actionButton}>
               <Icon name="share" size={24} />
             </Pressable>

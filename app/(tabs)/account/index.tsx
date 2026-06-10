@@ -26,15 +26,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 32,
+    paddingVertical: 60,
     gap: 32,
   },
   textContainer: {
     alignItems: "center",
     gap: 16,
+    minHeight: 80,
   },
   title: {
     textAlign: "center",
     marginBottom: 8,
+    fontSize: 24,
+    lineHeight: 32,
   },
   description: {
     textAlign: "center",
@@ -53,7 +57,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { getFavourites } from "@/lib/favourites";
+// import { getFavourites } from "@/lib/favourites"; // REMOVED SUPABASE IMPORT
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -79,14 +83,15 @@ export default function AccountScreenOriginal() {
 
   useEffect(() => {
     if (user) {
-      loadFavoritesCount();
+      // loadFavoritesCount(); // REMOVED - No longer using Supabase
     }
   }, [user]);
 
-  const loadFavoritesCount = async () => {
-    const favourites = await getFavourites();
-    setFavoritesCount(favourites.length);
-  };
+  // REMOVED - No longer using Supabase favorites
+  // const loadFavoritesCount = async () => {
+  //   const favourites = await getFavourites();
+  //   setFavoritesCount(favourites.length);
+  // };
 
   const handleAuth = async () => {
     if (!email || !password) {

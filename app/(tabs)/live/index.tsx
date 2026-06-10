@@ -27,14 +27,16 @@ export default function Live() {
     artwork: string;
     slug: string;
     isMixedFeelings: boolean;
+    streamUrl: string;
   } | null>(null);
   const [liveNowCh2, setLiveNowCh2] = useState<{
     title: string;
     status: string;
     artwork?: string;
+    streamUrl: string;
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const textColor = useThemeColor({}, "text");
@@ -62,24 +64,51 @@ export default function Live() {
 
   const fetchLiveShow = useCallback(async () => {
     try {
-      const res = await fetch("https://refugeworldwide.com/api/schedule");
-      const data = await res.json();
-      setLoadError(false);
-      setLiveNow(data.liveNow);
+      const res = await fetch("https://refugeworldwide.com/api/v2/schedule");
 
-      // Set Channel 2 data if available
-      if (data.ch2) {
-        setLiveNowCh2({
-          title: data.ch2.liveNow,
-          status: data.ch2.status,
-          artwork: data.ch2.artwork, // Add artwork field
+      if (!res.ok) {
+        setLoadError("Unable to load live schedule. Please try again later.");
+        return;
+      }
+
+      const data = await res.json();
+      setLoadError(null);
+
+      // Set Channel 1 data
+      if (data.ch1 && data.ch1.status === "online") {
+        setLiveNow({
+          title: data.ch1.liveNow.title,
+          artwork: data.ch1.liveNow.artwork,
+          slug: data.ch1.liveNow.slug,
+          isMixedFeelings: data.ch1.liveNow.isMixedFeelings,
+          streamUrl: data.ch1.streamUrl,
         });
+      } else {
+        setLiveNow(null);
+      }
+
+      // Set Channel 2 data if available and online
+      if (data.ch2 && data.ch2.status === "online" && data.ch2.liveNow.title) {
+        setLiveNowCh2({
+          title: data.ch2.liveNow.title,
+          status: data.ch2.status,
+          artwork: data.ch2.liveNow.artwork,
+          streamUrl: data.ch2.streamUrl,
+        });
+      } else {
+        setLiveNowCh2(null);
       }
 
       // Note: Live track metadata updates are handled by AudioPlayer
     } catch (error) {
       console.error("Failed to fetch live show:", error);
-      setLoadError(true);
+
+      // Check if it's a network connectivity issue
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setLoadError("No internet connection. Please check your connection and try again.");
+      } else {
+        setLoadError("Unable to load live schedule. Please try again later.");
+      }
     }
   }, []);
 
@@ -110,6 +139,7 @@ export default function Live() {
           artwork: liveNow.artwork,
           showId: liveNow.slug || "live-stream",
           slug: liveNow.slug,
+          streamUrl: liveNow.streamUrl,
         });
       }
     }
@@ -127,9 +157,10 @@ export default function Live() {
       if (liveNowCh2) {
         setLiveTrackChannel2({
           title: liveNowCh2.title,
-          artwork: liveNow?.artwork, // Use Channel 1 artwork as fallback since Ch2 doesn't have artwork
+          artwork: liveNowCh2.artwork,
           showId: "live-stream-ch2",
           slug: undefined, // Channel 2 doesn't have show details
+          streamUrl: liveNowCh2.streamUrl,
         });
       }
     }
@@ -172,7 +203,7 @@ export default function Live() {
       {loadError && (
         <View style={styles.errorBanner}>
           <ThemedText style={styles.errorText}>
-            No connection. Please check your internet and try again.
+            {loadError}
           </ThemedText>
         </View>
       )}

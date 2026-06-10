@@ -153,7 +153,6 @@ export function AudioPlayer() {
       }
 
       if (isSetup) {
-        console.log("Player already setup, skipping initialization");
         return;
       }
 
@@ -206,7 +205,7 @@ export function AudioPlayer() {
           await TrackPlayer.seekTo(event.position);
         });
       } catch (error) {
-        console.log("Error setting up player:", error);
+        // Player setup error - handle silently in production
       }
     };
 
@@ -432,7 +431,6 @@ export function AudioPlayer() {
         const nextTrack = playNextFromQueue();
         if (nextTrack) {
           // The track will be loaded by the existing effect that watches currentTrack
-          console.log("Playing next from queue:", nextTrack.title);
         }
       }
     },

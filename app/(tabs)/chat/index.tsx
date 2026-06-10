@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { openBrowserAsync } from "expo-web-browser";
 import { StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Chat() {
   const handleJoinChat = async () => {
@@ -38,15 +39,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 32,
+    paddingVertical: 60,
     gap: 32,
   },
   textContainer: {
     alignItems: "center",
     gap: 16,
+    minHeight: 80,
   },
   title: {
     textAlign: "center",
     marginBottom: 8,
+    fontSize: 24,
+    lineHeight: 32,
   },
   description: {
     textAlign: "center",
@@ -62,7 +67,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { supabase } from "@/lib/supabase";
+// import { supabase } from "@/lib/supabase"; // REMOVED SUPABASE IMPORT
 import { useAudioStore } from "@/store/audioStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";

@@ -2,8 +2,13 @@
   "expo": {
     "name": "Refuge Worldwide",
     "slug": "refuge-worldwide",
-    "version": "0.1.6",
+    "version": "0.2.0",
+    "description": "Stream live radio and explore curated playlists from Refuge Worldwide - Berlin's forward-thinking music platform featuring underground artists, experimental sounds, and diverse programming from around the globe.",
+    "shortDescription": "Community radio and curated playlists from Berlin's Refuge Worldwide",
+    "keywords": ["radio", "music", "streaming"],
     "orientation": "portrait",
+    "privacy": "https://refugeworldwide.com/privacy-policy",
+    "supportUrl": "https://refugeworldwide.com/imprint",
     "icon": "./assets/images/icon.png",
     "scheme": "refugeworldwideapp",
     "userInterfaceStyle": "automatic",
@@ -18,11 +23,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.refuge-worldwide",
+      "bundleIdentifier": "com.refugeworldwide.app",
       "displayName": "Refuge Worldwide",
       "associatedDomains": ["applinks:refugeworldwide.com"],
       "infoPlist": {
-        "UIBackgroundModes": ["audio", "audio"],
+        "UIBackgroundModes": ["audio"],
         "ITSAppUsesNonExemptEncryption": false,
         "UIDesignRequiresCompatibility": true
       }
@@ -36,7 +41,6 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.WAKE_LOCK",
         "android.permission.FOREGROUND_SERVICE"
