@@ -1,8 +1,73 @@
+// COMING SOON VERSION - Original chat functionality is commented out below for future use
+import { ThemedButton } from "@/components/ThemedButton";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { openBrowserAsync } from "expo-web-browser";
+import { StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+export default function Chat() {
+  const handleJoinChat = async () => {
+    await openBrowserAsync("https://refugeworldwide.com/chat");
+  };
+
+  return (
+    <ThemedView style={styles.container}>
+      <View style={styles.content}>
+        <View style={styles.textContainer}>
+          <ThemedText type="title" style={styles.title}>
+            Coming Soon
+          </ThemedText>
+        </View>
+
+        <ThemedButton
+          title="Join Chat"
+          onPress={handleJoinChat}
+          variant="filled"
+        />
+      </View>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+    paddingVertical: 60,
+    gap: 32,
+  },
+  textContainer: {
+    alignItems: "center",
+    gap: 16,
+    minHeight: 80,
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: 8,
+    fontSize: 24,
+    lineHeight: 32,
+  },
+  description: {
+    textAlign: "center",
+    opacity: 0.8,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+});
+
+/* ORIGINAL CHAT FUNCTIONALITY - COMMENTED OUT FOR FUTURE USE
+
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { supabase } from "@/lib/supabase";
+// import { supabase } from "@/lib/supabase"; // REMOVED SUPABASE IMPORT
 import { useAudioStore } from "@/store/audioStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
@@ -49,7 +114,7 @@ function ChatImage({ uri }: { uri: string }) {
 // Audio player height: paddingVertical 4 * 2 + content height 40 = 48px
 const AUDIO_PLAYER_HEIGHT = 48;
 
-export default function Chat() {
+export default function ChatOriginal() {
   const { user } = useAuth();
   const { currentTrack } = useAudioStore();
   const textColor = useThemeColor({}, "text");
@@ -205,17 +270,17 @@ export default function Chat() {
       (!user && item.username === anonUsername);
 
     return (
-      <View style={styles.messageContainer}>
+      <View style={chatStyles.messageContainer}>
         <View
           style={[
-            styles.messageBubble,
+            chatStyles.messageBubble,
             { backgroundColor: isOwnMessage ? textColor : `${textColor}15` },
           ]}
         >
-          <View style={styles.metaRow}>
+          <View style={chatStyles.metaRow}>
             <ThemedText
               style={[
-                styles.username,
+                chatStyles.username,
                 { color: isOwnMessage ? backgroundColor : textColor },
               ]}
             >
@@ -223,7 +288,7 @@ export default function Chat() {
             </ThemedText>
             <ThemedText
               style={[
-                styles.timestamp,
+                chatStyles.timestamp,
                 { color: isOwnMessage ? `${backgroundColor}99` : `${textColor}80` },
               ]}
             >
@@ -233,7 +298,7 @@ export default function Chat() {
           {item.message ? (
             <ThemedText
               style={[
-                styles.messageText,
+                chatStyles.messageText,
                 { color: isOwnMessage ? backgroundColor : textColor },
               ]}
             >
@@ -249,14 +314,14 @@ export default function Chat() {
   // Username prompt modal for anonymous users
   if (isSettingUsername) {
     return (
-      <ThemedView style={styles.container}>
-        <View style={styles.usernamePrompt}>
-          <ThemedText type="subtitle" style={styles.promptTitle}>
+      <ThemedView style={chatStyles.container}>
+        <View style={chatStyles.usernamePrompt}>
+          <ThemedText type="subtitle" style={chatStyles.promptTitle}>
             Set your username
           </ThemedText>
           <TextInput
             style={[
-              styles.usernameInput,
+              chatStyles.usernameInput,
               {
                 color: textColor,
                 borderColor: textColor,
@@ -271,14 +336,14 @@ export default function Chat() {
             autoCapitalize="none"
             maxLength={20}
           />
-          <View style={styles.promptButtons}>
+          <View style={chatStyles.promptButtons}>
             <Pressable
               onPress={() => {
                 setIsSettingUsername(false);
                 setTempUsername("");
               }}
               style={[
-                styles.promptButton,
+                chatStyles.promptButton,
                 { borderColor: textColor, borderWidth: 1 },
               ]}
             >
@@ -290,7 +355,7 @@ export default function Chat() {
                   saveAnonUsername(tempUsername.trim());
                 }
               }}
-              style={[styles.promptButton, { backgroundColor: textColor }]}
+              style={[chatStyles.promptButton, { backgroundColor: textColor }]}
               disabled={!tempUsername.trim()}
             >
               <ThemedText style={{ color: backgroundColor }}>Save</ThemedText>
@@ -302,31 +367,31 @@ export default function Chat() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={chatStyles.container}>
       <View
         style={[
-          styles.headerContainer,
+          chatStyles.headerContainer,
           { backgroundColor, borderBottomColor: textColor },
         ]}
       >
-        <View style={styles.headerContent}>
+        <View style={chatStyles.headerContent}>
           <ThemedText type="title">Chat</ThemedText>
           {!user && anonUsername && (
             <Pressable onPress={() => setIsSettingUsername(true)}>
-              <ThemedText style={[styles.usernameLabel, { color: textColor }]}>
+              <ThemedText style={[chatStyles.usernameLabel, { color: textColor }]}>
                 @{anonUsername}
               </ThemedText>
             </Pressable>
           )}
           {user && (
-            <ThemedText style={[styles.usernameLabel, { color: textColor }]}>
+            <ThemedText style={[chatStyles.usernameLabel, { color: textColor }]}>
               @{getCurrentUsername()}
             </ThemedText>
           )}
         </View>
       </View>
       <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
+        style={chatStyles.keyboardAvoid}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
@@ -335,8 +400,8 @@ export default function Chat() {
           data={messages}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
-          style={styles.messageList}
-          contentContainerStyle={styles.messageListContent}
+          style={chatStyles.messageList}
+          contentContainerStyle={chatStyles.messageListContent}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() =>
             flatListRef.current?.scrollToEnd({ animated: false })
@@ -345,7 +410,7 @@ export default function Chat() {
 
         <View
           style={[
-            styles.inputContainer,
+            chatStyles.inputContainer,
             {
               borderTopColor: textColor,
               paddingBottom: 8 + totalBottomPadding,
@@ -354,7 +419,7 @@ export default function Chat() {
         >
           <TextInput
             style={[
-              styles.input,
+              chatStyles.input,
               {
                 color: textColor,
                 borderColor: textColor,
@@ -376,7 +441,7 @@ export default function Chat() {
             onPress={sendMessage}
             disabled={sending || !newMessage.trim()}
             style={[
-              styles.sendButton,
+              chatStyles.sendButton,
               {
                 backgroundColor: textColor,
                 opacity: sending || !newMessage.trim() ? 0.5 : 1,
@@ -391,7 +456,7 @@ export default function Chat() {
   );
 }
 
-const styles = StyleSheet.create({
+const chatStyles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -494,3 +559,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 });
+
+END ORIGINAL CHAT FUNCTIONALITY */

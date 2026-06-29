@@ -1,3 +1,55 @@
+// COMING SOON VERSION - Original auth functionality is commented out below for future use
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { StyleSheet, View } from "react-native";
+
+export default function AccountScreen() {
+  return (
+    <ThemedView style={styles.container}>
+      <View style={styles.content}>
+        <View style={styles.textContainer}>
+          <ThemedText type="title" style={styles.title}>
+            Coming Soon
+          </ThemedText>
+        </View>
+      </View>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+    paddingVertical: 60,
+    gap: 32,
+  },
+  textContainer: {
+    alignItems: "center",
+    gap: 16,
+    minHeight: 80,
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: 8,
+    fontSize: 24,
+    lineHeight: 32,
+  },
+  description: {
+    textAlign: "center",
+    opacity: 0.8,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+});
+
+/* ORIGINAL AUTH FUNCTIONALITY - COMMENTED OUT FOR FUTURE USE
+
 import { RefugeLogo } from "@/components/RefugeLogo";
 import { ThemedButton } from "@/components/ThemedButton";
 import { ThemedInput } from "@/components/ThemedInput";
@@ -5,7 +57,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { getFavourites } from "@/lib/favourites";
+// import { getFavourites } from "@/lib/favourites"; // REMOVED SUPABASE IMPORT
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -19,7 +71,7 @@ import {
   View,
 } from "react-native";
 
-export default function AccountScreen() {
+export default function AccountScreenOriginal() {
   const { user, loading, signIn, signUp, signOut, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,14 +83,15 @@ export default function AccountScreen() {
 
   useEffect(() => {
     if (user) {
-      loadFavoritesCount();
+      // loadFavoritesCount(); // REMOVED - No longer using Supabase
     }
   }, [user]);
 
-  const loadFavoritesCount = async () => {
-    const favourites = await getFavourites();
-    setFavoritesCount(favourites.length);
-  };
+  // REMOVED - No longer using Supabase favorites
+  // const loadFavoritesCount = async () => {
+  //   const favourites = await getFavourites();
+  //   setFavoritesCount(favourites.length);
+  // };
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -121,7 +174,7 @@ export default function AccountScreen() {
 
   if (loading) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={authStyles.container}>
         <ActivityIndicator size="large" />
       </ThemedView>
     );
@@ -132,10 +185,10 @@ export default function AccountScreen() {
 
   if (user) {
     return (
-      <ThemedView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={[styles.card, { backgroundColor: textColor }]}>
-            <View style={styles.nameContainer}>
+      <ThemedView style={authStyles.container}>
+        <ScrollView contentContainerStyle={authStyles.scrollContent}>
+          <View style={[authStyles.card, { backgroundColor: textColor }]}>
+            <View style={authStyles.nameContainer}>
               <ThemedText
                 style={{ color: backgroundColor }}
                 adjustsFontSizeToFit
@@ -151,7 +204,7 @@ export default function AccountScreen() {
             >
               <RefugeLogo size={70} variant="background" />
             </View>
-            <View style={styles.cardRow}>
+            <View style={authStyles.cardRow}>
               <ThemedText style={{ color: backgroundColor }}>
                 Joined:
               </ThemedText>
@@ -159,7 +212,7 @@ export default function AccountScreen() {
                 January 24, 2024
               </ThemedText>
             </View>
-            <View style={styles.cardRow}>
+            <View style={authStyles.cardRow}>
               <ThemedText style={{ color: backgroundColor }}>
                 Subscription:
               </ThemedText>
@@ -167,7 +220,7 @@ export default function AccountScreen() {
             </View>
           </View>
 
-          <View style={styles.buttonsContainer}>
+          <View style={authStyles.buttonsContainer}>
             <ThemedButton
               title="Favourites Shows"
               onPress={handleFavoritesPress}
@@ -204,13 +257,9 @@ export default function AccountScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* <ThemedText type="title" style={styles.title}>
-          {isSignUp ? 'Sign Up' : 'Sign In'}
-        </ThemedText> */}
-
-        <View style={styles.form}>
+    <ThemedView style={authStyles.container}>
+      <ScrollView contentContainerStyle={authStyles.scrollContent}>
+        <View style={authStyles.form}>
           <ThemedInput
             placeholder="Email"
             value={email}
@@ -229,11 +278,11 @@ export default function AccountScreen() {
             />
             {!isSignUp && (
               <Pressable
-                style={styles.forgotPassword}
+                style={authStyles.forgotPassword}
                 onPress={handleForgotPassword}
                 disabled={submitting}
               >
-                <ThemedText style={styles.forgotPasswordText}>
+                <ThemedText style={authStyles.forgotPasswordText}>
                   Forgot your password?
                 </ThemedText>
               </Pressable>
@@ -257,7 +306,7 @@ export default function AccountScreen() {
           />
 
           <Pressable
-            style={styles.toggleButton}
+            style={authStyles.toggleButton}
             onPress={() => setIsSignUp(!isSignUp)}
           >
             <ThemedText style={{ textDecorationLine: "underline" }}>
@@ -272,7 +321,7 @@ export default function AccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const authStyles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -322,3 +371,5 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 });
+
+END ORIGINAL AUTH FUNCTIONALITY */

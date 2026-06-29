@@ -31,10 +31,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
       // If tab is already focused, go back to the main page of that tab
       const stackNavigation = getTabNavigation(route.name);
       if (stackNavigation) {
-        console.log('Found stack navigation for tab:', route.name);
         stackNavigation.popToTop();
-      } else {
-        console.log('No stack navigation found for tab:', route.name);
       }
     }
   };

@@ -49,25 +49,13 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
     setError(null);
     try {
       const url = `${API_BASE_URL}/${artistSlug}`;
-      console.log('=== ARTIST FETCH DEBUG ===');
-      console.log('Artist slug:', artistSlug);
-      console.log('Fetching artist from:', url);
       const response = await fetch(url);
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
       if (!response.ok) {
-        console.error('Artist fetch failed with status:', response.status);
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
         throw new Error(`Failed to fetch artist: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Artist data received (keys):', Object.keys(data));
-      console.log('Artist data.name:', data.name);
-      console.log('Full artist data:', JSON.stringify(data, null, 2));
 
       if (!data.name) {
         console.error('No name field in data. Data keys:', Object.keys(data));
@@ -104,9 +92,6 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
         console.error('Error transforming shows:', showErr);
         transformedShows = [];
       }
-
-      console.log('Transformed artist:', transformedArtist);
-      console.log('Transformed shows count:', transformedShows.length);
 
       setArtist(transformedArtist);
       setShows(transformedShows);

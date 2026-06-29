@@ -1,6 +1,6 @@
 import { Show } from '@/types/shows';
 
-const PLAYLISTS_API = 'https://refuge-worldwide-git-playlist-api-refugeworldwide.vercel.app/api/playlists';
+const PLAYLISTS_API = 'https://refugeworldwide.com/api/playlists';
 
 export interface ApiPlaylist {
   id: string;

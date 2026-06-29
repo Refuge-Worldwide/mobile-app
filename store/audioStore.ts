@@ -34,12 +34,14 @@ interface AudioStore {
     artwork?: string;
     showId?: string;
     slug?: string;
+    streamUrl: string;
   }) => void;
   setLiveTrackChannel2: (liveData: {
     title: string;
     artwork?: string;
     showId?: string;
     slug?: string;
+    streamUrl: string;
   }) => void;
   updateLiveTrackMetadata: (liveData: {
     title: string;
@@ -106,7 +108,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
     const state = get();
     const trackData = {
       id: "live-stream",
-      url: "https://streaming.radio.co/s3699c5e49/listen",
+      url: liveData.streamUrl,
       title: liveData.title,
       artist: "Live on Refuge Worldwide",
       artwork: liveData.artwork,
@@ -136,7 +138,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
     const state = get();
     const trackData = {
       id: "live-stream-ch2",
-      url: "https://s4.radio.co/s8ce53d687/listen",
+      url: liveData.streamUrl,
       title: liveData.title,
       artist: "Live on Refuge Worldwide - Channel 2",
       artwork: liveData.artwork,

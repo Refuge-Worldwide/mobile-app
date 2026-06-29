@@ -84,7 +84,6 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
         `https://refugeworldwide.com/api/shows/${currentTrack.slug}`,
       );
       if (response.ok) {
-        console.log(response);
         const data = await response.json();
         setShowDescription(data.show?.description || null);
       }
