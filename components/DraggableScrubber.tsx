@@ -1,9 +1,10 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { seek } from "@/lib/playbackController";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS } from "react-native-reanimated";
-import TrackPlayer, { useProgress } from "react-native-track-player";
+import { useProgress } from "react-native-track-player";
 import { Icon } from "./Icon";
 import { ThemedText } from "./ThemedText";
 
@@ -60,7 +61,7 @@ export function DraggableScrubber({
 
     // Perform the actual seek operation in the background
     try {
-      await TrackPlayer.seekTo(finalPosition);
+      await seek(finalPosition);
     } catch (error) {
       console.error("Error seeking:", error);
       setLastSeekPosition(null);
@@ -73,7 +74,7 @@ export function DraggableScrubber({
     const newPosition = Math.max(0, Math.min((touchX / progressBarWidth) * duration, duration));
     setLastSeekPosition(newPosition);
     try {
-      await TrackPlayer.seekTo(newPosition);
+      await seek(newPosition);
     } catch (error) {
       console.error("Error seeking:", error);
       setLastSeekPosition(null);

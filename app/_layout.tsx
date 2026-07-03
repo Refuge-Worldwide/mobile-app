@@ -1,4 +1,5 @@
 import { PlaybackService } from '@/service';
+import { initPlaybackController } from '@/lib/playbackController';
 import TrackPlayer from 'react-native-track-player';
 import { ColourPicker } from '@/components/ColourPicker';
 import { SplashScreen } from '@/components/SplashScreen';
@@ -17,6 +18,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 TrackPlayer.registerPlaybackService(() => PlaybackService);
+initPlaybackController();
 
 function RootLayoutContent() {
   const colorScheme = useColorScheme();

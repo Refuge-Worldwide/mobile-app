@@ -1,42 +1,20 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { fetchShowBySlug } from "@/lib/showsApi";
 import { useAudioStore } from "@/store/audioStore";
-import {
-  optimizePlayerImage,
-  optimizeShowImage,
-} from "@/utils/imageOptimization";
+import { optimizeShowImage } from "@/utils/imageOptimization";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import TrackPlayer, {
-  AppKilledPlaybackBehavior,
-  Capability,
-  Event,
-  State,
-  TrackType,
-  useTrackPlayerEvents,
-} from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
 import { Icon } from "./Icon";
 import { QueuePreview, QueuePreviewRef } from "./QueuePreview";
 import { ThemedText } from "./ThemedText";
 
-async function resolveStreamUrl(url: string): Promise<string | null> {
-  if (!url.includes("soundcloud.com")) return url;
-  try {
-    const res = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL}/api/soundcloud-resolve?url=${encodeURIComponent(url)}`
-    );
-    if (!res.ok) throw new Error(`soundcloud-resolve ${res.status}`);
-    const data = await res.json();
-    return data.streamUrl || null;
-  } catch (error) {
-    console.error("Error resolving SoundCloud stream URL:", error);
-    return null;
-  }
-}
+// All TrackPlayer orchestration (setup, loading, play/pause reconciliation,
+// remote controls) lives in lib/playbackController.ts, which is wired up
+// once at app boot. This component only reads the store and renders UI.
 
 export function AudioPlayer() {
   const {
@@ -44,9 +22,7 @@ export function AudioPlayer() {
     isPlaying,
     isLoading,
     setIsPlaying,
-    setIsLoading,
     clearTrack,
-    playNextFromQueue,
     queue,
     addToQueue,
   } = useAudioStore();
@@ -104,7 +80,6 @@ export function AudioPlayer() {
   const slideAnim = useRef(new Animated.Value(100)).current; // Start below screen
   const isLiveMode = currentTrack?.isLive;
   const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
-  const lastLoadedTrackId = useRef<string | null>(null);
 
   // Animation functions
   const slideUp = useCallback(() => {
@@ -138,194 +113,6 @@ export function AudioPlayer() {
       slideDown();
     }
   }, [currentTrack, slideUp, slideDown]);
-
-  // Setup Track Player
-  useEffect(() => {
-    let isSetup = false;
-
-    const setupPlayer = async () => {
-      try {
-        // Check if player is already setup
-        const state = await TrackPlayer.getActiveTrackIndex();
-        isSetup = state !== undefined;
-      } catch {
-        isSetup = false;
-      }
-
-      if (isSetup) {
-        return;
-      }
-
-      try {
-        await TrackPlayer.setupPlayer({
-          // Improved buffering for mobile network resilience without being excessive
-          minBuffer: 15, // Minimum 15 seconds of buffer
-          maxBuffer: 120, // Maximum 2 minutes of buffer for archive content
-          playBuffer: 3, // Start playing after 3 seconds of buffer
-          backBuffer: 20, // Keep 20 seconds of past audio in buffer for seeking
-        });
-        await TrackPlayer.updateOptions({
-          android: {
-            appKilledPlaybackBehavior:
-              AppKilledPlaybackBehavior.ContinuePlayback,
-          },
-          capabilities: [
-            Capability.Play,
-            Capability.Pause,
-            Capability.Stop,
-            Capability.SeekTo,
-          ],
-          compactCapabilities: [
-            Capability.Play,
-            Capability.Pause,
-            Capability.Stop,
-          ],
-          notificationCapabilities: [
-            Capability.Play,
-            Capability.Pause,
-            Capability.Stop,
-          ],
-        });
-
-        // Setup remote control event handlers for lock screen
-        TrackPlayer.addEventListener(Event.RemotePlay, async () => {
-          await TrackPlayer.play();
-        });
-
-        TrackPlayer.addEventListener(Event.RemotePause, async () => {
-          await TrackPlayer.pause();
-        });
-
-        TrackPlayer.addEventListener(Event.RemoteStop, async () => {
-          await TrackPlayer.stop();
-          clearTrack();
-        });
-
-        TrackPlayer.addEventListener(Event.RemoteSeek, async (event) => {
-          await TrackPlayer.seekTo(event.position);
-        });
-      } catch (error) {
-        // Player setup error - handle silently in production
-      }
-    };
-
-    setupPlayer();
-  }, [clearTrack]);
-
-  // Load and play track when currentTrack ID or URL changes (not on metadata updates)
-  useEffect(() => {
-    if (!currentTrack) {
-      lastLoadedTrackId.current = null;
-      return;
-    }
-
-    // Only reload if the track ID has actually changed
-    if (lastLoadedTrackId.current === currentTrack.id) {
-      return;
-    }
-
-    const loadTrack = async () => {
-      try {
-        // Reset first to stop any current playback
-        await TrackPlayer.reset();
-
-        // Resolve SoundCloud URLs to direct stream URLs before loading
-        const streamUrl = await resolveStreamUrl(currentTrack.url);
-        if (!streamUrl) {
-          setIsLoading(false);
-          setIsPlaying(false);
-          return;
-        }
-
-        // Update player options and add track in parallel for faster loading
-        const updateOptionsPromise = currentTrack.isLive
-          ? TrackPlayer.updateOptions({
-            capabilities: [Capability.Play, Capability.Stop],
-            compactCapabilities: [Capability.Play, Capability.Stop],
-            notificationCapabilities: [Capability.Play, Capability.Stop],
-          })
-          : TrackPlayer.updateOptions({
-            capabilities: [
-              Capability.Play,
-              Capability.Pause,
-              Capability.Stop,
-              Capability.SeekTo,
-              Capability.JumpForward,
-              Capability.JumpBackward,
-            ],
-            compactCapabilities: [
-              Capability.JumpBackward,
-              Capability.Play,
-              Capability.Pause,
-              Capability.JumpForward,
-            ],
-            notificationCapabilities: [
-              Capability.Play,
-              Capability.Pause,
-              Capability.JumpForward,
-              Capability.JumpBackward,
-            ],
-            forwardJumpInterval: 30,
-            backwardJumpInterval: 30,
-          });
-
-        const addTrackPromise = TrackPlayer.add({
-          id: currentTrack.id,
-          url: streamUrl,
-          type: streamUrl.includes('.m3u8') ? TrackType.HLS : TrackType.Default,
-          title: currentTrack.title,
-          artist: currentTrack.artist || "Unknown Artist",
-          artwork: optimizePlayerImage(currentTrack.artwork),
-          isLiveStream: currentTrack.isLive,
-        });
-
-        // Wait for both to complete
-        await Promise.all([updateOptionsPromise, addTrackPromise]);
-
-        // Play the track - isPlaying is already true from setTrack
-        await TrackPlayer.play();
-
-        // Update the ref to track this loaded track
-        lastLoadedTrackId.current = currentTrack.id;
-        // Loading state will be cleared by PlaybackState event
-      } catch (error) {
-        console.error("Error loading track:", error);
-        setIsLoading(false);
-        setIsPlaying(false);
-      }
-    };
-
-    loadTrack();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrack?.id, currentTrack?.url]);
-
-  // Update now playing metadata for live streams when track info changes
-  useEffect(() => {
-    const updateMetadata = async () => {
-      if (!currentTrack?.isLive) return;
-
-      try {
-        // Check if there's a track in the player before updating metadata
-        const queue = await TrackPlayer.getQueue();
-        if (queue.length === 0) return;
-
-        await TrackPlayer.updateNowPlayingMetadata({
-          title: currentTrack.title,
-          artist: currentTrack.artist || "Live on Refuge Worldwide",
-          artwork: optimizePlayerImage(currentTrack.artwork),
-        });
-      } catch (error) {
-        // Silently ignore errors - metadata will be set when track loads
-      }
-    };
-
-    updateMetadata();
-  }, [
-    currentTrack?.title,
-    currentTrack?.artwork,
-    currentTrack?.artist,
-    currentTrack?.isLive,
-  ]);
 
   // Fetch and update live show metadata periodically when live stream is loaded
   useEffect(() => {
@@ -369,80 +156,8 @@ export function AudioPlayer() {
     return () => clearInterval(interval);
   }, [currentTrack?.isLive, currentTrack?.id]);
 
-  // Sync isPlaying state from store to TrackPlayer
-  useEffect(() => {
-    if (!currentTrack) return;
-
-    const syncPlaybackState = async () => {
-      try {
-        const state = await TrackPlayer.getState();
-        const isCurrentlyPlaying = state === State.Playing;
-        const isCurrentlyPaused = state === State.Paused;
-        const isReady = state === State.Ready;
-
-        // Only sync when player is in a stable state (not buffering/loading)
-        // This prevents fighting with transitional states
-        if (isPlaying && (isCurrentlyPaused || isReady)) {
-          // Store says play, but player is paused/ready - start playing
-          await TrackPlayer.play();
-        } else if (!isPlaying && isCurrentlyPlaying) {
-          // Store says pause, but player is playing - pause it
-          await TrackPlayer.pause();
-        }
-      } catch (error) {
-        console.error("Error syncing playback state:", error);
-      }
-    };
-
-    syncPlaybackState();
-  }, [isPlaying, currentTrack]);
-
-  // Update store when playback state changes
-  useTrackPlayerEvents(
-    [Event.PlaybackState, Event.PlaybackQueueEnded],
-    async (event) => {
-      if (event.type === Event.PlaybackState) {
-        const state = await TrackPlayer.getState();
-        const isActuallyPlaying = state === State.Playing;
-        const isActuallyPaused = state === State.Paused;
-        const isBuffering =
-          state === State.Buffering || state === State.Loading;
-
-        // Only update isPlaying for definitive states (Playing or Paused)
-        // Ignore transitional states (Buffering, Loading, Ready, Connecting)
-        // This prevents flickering during state transitions
-        if (isActuallyPlaying && !isPlaying) {
-          setIsPlaying(true);
-        } else if (isActuallyPaused && isPlaying) {
-          setIsPlaying(false);
-        }
-
-        // Update loading state
-        if (isBuffering && !isLoading) {
-          setIsLoading(true);
-        } else if ((isActuallyPlaying || isActuallyPaused) && isLoading) {
-          // Clear loading when we reach a stable state
-          setIsLoading(false);
-        }
-      }
-
-      // When current track ends, play next from queue
-      if (event.type === Event.PlaybackQueueEnded) {
-        const nextTrack = playNextFromQueue();
-        if (nextTrack) {
-          // The track will be loaded by the existing effect that watches currentTrack
-        }
-      }
-    },
-  );
-
-  const handlePlayPause = async () => {
-    const state = await TrackPlayer.getState();
-    if (state === State.Playing) {
-      await TrackPlayer.pause();
-    } else {
-      await TrackPlayer.play();
-    }
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
   };
 
   const handleLivePlayStop = () => {
@@ -450,9 +165,8 @@ export function AudioPlayer() {
     setIsPlaying(!isPlaying);
   };
 
-  const handleClose = async () => {
-    slideDown(async () => {
-      await TrackPlayer.reset();
+  const handleClose = () => {
+    slideDown(() => {
       clearTrack();
     });
   };

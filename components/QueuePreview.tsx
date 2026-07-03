@@ -1,4 +1,5 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { seek } from "@/lib/playbackController";
 import { Track, useAudioStore } from "@/store/audioStore";
 import { optimizeShowImage } from "@/utils/imageOptimization";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
@@ -23,7 +24,7 @@ import DraggableFlatList, {
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { Swipeable } from "react-native-gesture-handler";
-import TrackPlayer, { State } from "react-native-track-player";
+import TrackPlayer from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
 import { Icon } from "./Icon";
 import { NextUp } from "./NextUp";
@@ -114,28 +115,17 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
     reorderQueue(data);
   };
 
-  const handlePlayPause = async () => {
-    const state = await TrackPlayer.getState();
-    if (state === "playing") {
-      await TrackPlayer.pause();
-    } else {
-      await TrackPlayer.play();
-    }
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
   };
 
+  // Seeking always resumes playback if it was already playing - the
+  // reconciler in lib/playbackController.ts handles that, so these just
+  // need to move the position; no need to track/restore play state here.
   const handleSkipBackward = async () => {
     try {
-      const state = await TrackPlayer.getState();
-      const wasPlaying = state === State.Playing;
       const position = await TrackPlayer.getPosition();
-      const newPosition = Math.max(0, position - 30);
-
-      // Seek and resume playback only if it was playing
-      TrackPlayer.seekTo(newPosition).then(() => {
-        if (wasPlaying) {
-          TrackPlayer.play();
-        }
-      });
+      await seek(Math.max(0, position - 30));
     } catch (error) {
       console.error("Skip backward failed:", error);
     }
@@ -143,18 +133,9 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
 
   const handleSkipForward = async () => {
     try {
-      const state = await TrackPlayer.getState();
-      const wasPlaying = state === State.Playing;
       const position = await TrackPlayer.getPosition();
       const duration = await TrackPlayer.getDuration();
-      const newPosition = Math.min(duration, position + 30);
-
-      // Seek and resume playback only if it was playing
-      TrackPlayer.seekTo(newPosition).then(() => {
-        if (wasPlaying) {
-          TrackPlayer.play();
-        }
-      });
+      await seek(Math.min(duration, position + 30));
     } catch (error) {
       console.error("Skip forward failed:", error);
     }
