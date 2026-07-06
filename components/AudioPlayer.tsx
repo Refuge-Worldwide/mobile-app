@@ -158,11 +158,8 @@ export function AudioPlayer() {
 
       try {
         await TrackPlayer.setupPlayer({
-          // Improved buffering for mobile network resilience without being excessive
-          minBuffer: 15, // Minimum 15 seconds of buffer
-          maxBuffer: 120, // Maximum 2 minutes of buffer for archive content
-          playBuffer: 3, // Start playing after 3 seconds of buffer
-          backBuffer: 20, // Keep 20 seconds of past audio in buffer for seeking
+          // Allow buffering further ahead on good connections for resilience
+          maxBuffer: 120,
         });
         await TrackPlayer.updateOptions({
           android: {
