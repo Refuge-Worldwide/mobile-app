@@ -324,24 +324,24 @@ export function AudioPlayer() {
 
     const fetchAndUpdateLiveShow = async () => {
       try {
-        const res = await fetch("https://refugeworldwide.com/api/schedule");
+        const res = await fetch("https://refugeworldwide.com/api/v2/schedule");
         const data = await res.json();
 
         const { updateLiveTrackMetadata } = useAudioStore.getState();
 
-        if (currentTrack.id === "live-stream" && data.liveNow) {
+        if (currentTrack.id === "live-stream" && data.ch1?.liveNow) {
           // Update Channel 1 metadata only (no playback change)
           updateLiveTrackMetadata({
-            title: data.liveNow.title,
-            artwork: data.liveNow.artwork,
-            showId: data.liveNow.slug || "live-stream",
-            slug: data.liveNow.slug,
+            title: data.ch1.liveNow.title,
+            artwork: data.ch1.liveNow.artwork,
+            showId: data.ch1.liveNow.slug || "live-stream",
+            slug: data.ch1.liveNow.slug,
           });
-        } else if (currentTrack.id === "live-stream-ch2" && data.ch2) {
+        } else if (currentTrack.id === "live-stream-ch2" && data.ch2?.liveNow) {
           // Update Channel 2 metadata only (no playback change)
           updateLiveTrackMetadata({
-            title: data.ch2.liveNow,
-            artwork: data.liveNow?.artwork,
+            title: data.ch2.liveNow.title,
+            artwork: data.ch2.liveNow.artwork,
             showId: "live-stream-ch2",
             slug: undefined, // Channel 2 doesn't have show details
           });

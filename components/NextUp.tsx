@@ -62,9 +62,9 @@ export function NextUp() {
 
   const fetchNextUp = useCallback(async () => {
     try {
-      const res = await fetch("https://refugeworldwide.com/api/schedule");
+      const res = await fetch("https://refugeworldwide.com/api/v2/schedule");
       const data = await res.json();
-      setShows(data.nextUp || []);
+      setShows(data.ch1?.nextUp || []);
     } catch (error) {
       console.error("Failed to fetch next up shows:", error);
     } finally {
