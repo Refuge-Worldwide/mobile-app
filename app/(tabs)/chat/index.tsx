@@ -1,78 +1,16 @@
-// COMING SOON VERSION - Original chat functionality is commented out below for future use
-import { ThemedButton } from "@/components/ThemedButton";
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { openBrowserAsync } from "expo-web-browser";
-import { StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-export default function Chat() {
-  const handleJoinChat = async () => {
-    await openBrowserAsync("https://refugeworldwide.com/chat");
-  };
-
-  return (
-    <ThemedView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.textContainer}>
-          <ThemedText type="title" style={styles.title}>
-            Coming Soon
-          </ThemedText>
-        </View>
-
-        <ThemedButton
-          title="Join Chat"
-          onPress={handleJoinChat}
-          variant="filled"
-        />
-      </View>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-    paddingVertical: 60,
-    gap: 32,
-  },
-  textContainer: {
-    alignItems: "center",
-    gap: 16,
-    minHeight: 80,
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: 8,
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  description: {
-    textAlign: "center",
-    opacity: 0.8,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-});
-
-/* ORIGINAL CHAT FUNCTIONALITY - COMMENTED OUT FOR FUTURE USE
-
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
-// import { supabase } from "@/lib/supabase"; // REMOVED SUPABASE IMPORT
-import { useAudioStore } from "@/store/audioStore";
+import { directus } from "@/lib/directus";
+import { readItems } from "@directus/sdk";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -81,18 +19,21 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ChatMessage {
-  id: string;
-  user_id: string | null;
+  id: number;
+  user: string | null;
   username: string;
   message: string;
   image: string | null;
-  created_at: string;
+  date_created: string;
 }
 
 const ANON_USERNAME_KEY = "chat_anon_username";
+
+const BACKEND_API_URL =
+  Constants.expoConfig?.extra?.backendApiUrl ||
+  process.env.EXPO_PUBLIC_API_URL;
 
 function ChatImage({ uri }: { uri: string }) {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
@@ -111,13 +52,11 @@ function ChatImage({ uri }: { uri: string }) {
   );
 }
 
-export default function ChatOriginal() {
+export default function Chat() {
   const { user } = useAuth();
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
-  const insets = useSafeAreaInsets();
-
-  const totalBottomPadding = useLayoutStore((s) => s.bottomStackHeight);
+  const totalBottomPadding = useBottomSafePadding();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -146,18 +85,17 @@ export default function ChatOriginal() {
   // Fetch initial messages
   useEffect(() => {
     const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from("chat")
-        .select("*")
-        .order("created_at", { ascending: true })
-        .limit(100);
-
-      if (error) {
+      try {
+        const data = await directus.request(
+          readItems("chat", {
+            sort: ["date_created"],
+            limit: 100,
+          }),
+        );
+        setMessages(data as unknown as ChatMessage[]);
+      } catch (error) {
         console.error("Error fetching messages:", error);
-        return;
       }
-
-      setMessages(data || []);
     };
 
     fetchMessages();
@@ -165,24 +103,34 @@ export default function ChatOriginal() {
 
   // Subscribe to realtime updates
   useEffect(() => {
-    const channel = supabase
-      .channel("chat-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat",
-        },
-        (payload) => {
-          const newMsg = payload.new as ChatMessage;
-          setMessages((prev) => [...prev, newMsg]);
-        },
-      )
-      .subscribe();
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+
+    const listen = async () => {
+      try {
+        const { subscription, unsubscribe: unsub } = await directus.subscribe(
+          "chat",
+          { event: "create" },
+        );
+        unsubscribe = unsub;
+
+        for await (const message of subscription) {
+          if (cancelled) break;
+          if (message.event === "create") {
+            const newMsgs = message.data as unknown as ChatMessage[];
+            setMessages((prev) => [...prev, ...newMsgs]);
+          }
+        }
+      } catch (error) {
+        console.error("Error subscribing to chat:", error);
+      }
+    };
+
+    listen();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      unsubscribe?.();
     };
   }, []);
 
@@ -225,16 +173,29 @@ export default function ChatOriginal() {
 
     setSending(true);
 
-    const { error } = await supabase.from("chat").insert({
-      user_id: user?.id || null,
-      username: username,
-      message: newMessage.trim(),
-    });
+    try {
+      const token = await directus.getToken();
+      const response = await fetch(`${BACKEND_API_URL}/api/chat/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ username, message: newMessage.trim() }),
+      });
 
-    if (error) {
-      console.error("Error sending message:", error);
-    } else {
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error ?? "Failed to send message");
+      }
+
       setNewMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+      Alert.alert(
+        "Message not sent",
+        error instanceof Error ? error.message : "Please try again.",
+      );
     }
 
     setSending(false);
@@ -255,7 +216,7 @@ export default function ChatOriginal() {
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isOwnMessage =
-      (user?.id && item.user_id === user.id) ||
+      (user?.id && item.user === user.id) ||
       (!user && item.username === anonUsername);
 
     return (
@@ -281,7 +242,7 @@ export default function ChatOriginal() {
                 { color: isOwnMessage ? `${backgroundColor}99` : `${textColor}80` },
               ]}
             >
-              {formatTimestamp(item.created_at)}
+              {formatTimestamp(item.date_created)}
             </ThemedText>
           </View>
           {item.message ? (
@@ -388,7 +349,7 @@ export default function ChatOriginal() {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           style={chatStyles.messageList}
           contentContainerStyle={chatStyles.messageListContent}
           showsVerticalScrollIndicator={false}
@@ -548,5 +509,3 @@ const chatStyles = StyleSheet.create({
     paddingVertical: 12,
   },
 });
-
-END ORIGINAL CHAT FUNCTIONALITY */

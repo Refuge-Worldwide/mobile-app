@@ -3,10 +3,9 @@ import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ShowCardSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-// import { useAuth } from "@/contexts/AuthContext"; // COMMENTED OUT - Removing for Directus migration
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
-// import { getFavouritesWithShows } from "@/lib/favourites"; // COMMENTED OUT - Removing for Directus migration
+import { getFavouritesWithShows } from "@/lib/favourites";
 import { fetchPlaylistBySlug } from "@/lib/playlistsApi";
 import { useAudioStore } from "@/store/audioStore";
 import { Show } from "@/types/shows";
@@ -61,18 +60,10 @@ export default function PlaylistDetailScreen() {
     setError(null);
 
     try {
-      /* COMMENTED OUT - Removing favorites for Directus migration
       if (id === "favorites") {
         setPlaylistTitle("Favorites");
         const enrichedShows = await getFavouritesWithShows();
         setShows(enrichedShows);
-      } else {
-      */
-      if (id === "favorites") {
-        // Temporarily disable favorites - will be re-implemented with Directus
-        setError("Favorites feature coming soon!");
-        setLoading(false);
-        return;
       } else {
         const playlist = await fetchPlaylistBySlug(id!);
         setPlaylistTitle(playlist.title);

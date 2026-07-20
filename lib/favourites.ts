@@ -1,16 +1,17 @@
+import { directus } from "@/lib/directus";
 import { Show } from "@/types/shows";
+import { createItem, deleteItems, readItems } from "@directus/sdk";
 import Constants from "expo-constants";
-import { supabase } from "./supabase";
 
 const BACKEND_API_URL =
   Constants.expoConfig?.extra?.backendApiUrl ||
   process.env.EXPO_PUBLIC_API_URL;
 
 export interface Favourite {
-  id: string;
-  user_id: string;
+  id: number;
+  user_created: string | null;
   show_id: string;
-  created_at: string;
+  date_created: string;
 }
 
 /**
@@ -18,25 +19,18 @@ export interface Favourite {
  * @param showId - The immutable show ID (not slug, as slugs can change)
  */
 export async function addFavourite(showId: string) {
-  // Get the current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!(await directus.getToken())) {
     return { data: null, error: new Error("User not authenticated") };
   }
 
-  const { data, error } = await supabase
-    .from("show_favourites")
-    .insert({
-      user_id: user.id,
-      show_id: showId,
-    })
-    .select()
-    .single();
-
-  return { data, error };
+  try {
+    const data = await directus.request(
+      createItem("show_favourites", { show_id: showId }),
+    );
+    return { data, error: null as Error | null };
+  } catch (error) {
+    return { data: null, error: toError(error) };
+  }
 }
 
 /**
@@ -44,22 +38,24 @@ export async function addFavourite(showId: string) {
  * @param showId - The immutable show ID
  */
 export async function removeFavourite(showId: string) {
-  // Get the current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!(await directus.getToken())) {
     return { error: new Error("User not authenticated") };
   }
 
-  const { error } = await supabase
-    .from("show_favourites")
-    .delete()
-    .eq("user_id", user.id)
-    .eq("show_id", showId);
+  try {
+    await directus.request(
+      deleteItems("show_favourites", {
+        filter: { show_id: { _eq: showId } },
+      }),
+    );
+    return { error: null as Error | null };
+  } catch (error) {
+    return { error: toError(error) };
+  }
+}
 
-  return { error };
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 /**
@@ -67,22 +63,19 @@ export async function removeFavourite(showId: string) {
  * @param showId - The immutable show ID
  */
 export async function isFavourited(showId: string): Promise<boolean> {
-  // Get the current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (!(await directus.getToken())) return false;
 
-  if (!user) return false;
-
-  const { data, error } = await supabase
-    .from("show_favourites")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("show_id", showId)
-    .single();
-
-  if (error) return false;
-  return !!data;
+  try {
+    const data = await directus.request(
+      readItems("show_favourites", {
+        filter: { show_id: { _eq: showId } },
+        limit: 1,
+      }),
+    );
+    return data.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -90,27 +83,19 @@ export async function isFavourited(showId: string): Promise<boolean> {
  * Returns only the show IDs - you'll need to fetch show details separately
  */
 export async function getFavourites(): Promise<Favourite[]> {
-  // Get the current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (!(await directus.getToken())) return [];
 
-  if (!user) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("show_favourites")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
+  try {
+    const data = await directus.request(
+      readItems("show_favourites", {
+        sort: ["-date_created"],
+      }),
+    );
+    return data as unknown as Favourite[];
+  } catch (error) {
     console.error("Error fetching favourites:", error);
     return [];
   }
-
-  return data || [];
 }
 
 /**
@@ -133,16 +118,11 @@ export async function toggleFavourite(showId: string) {
  */
 export async function getFavouritesWithShows(): Promise<Show[]> {
   try {
-    // Get the current user session for authentication
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
+    if (!(await directus.getToken())) {
       return [];
     }
 
-    // Get favourite show IDs from Supabase
+    // Get favourite show IDs from Directus
     const favourites = await getFavourites();
 
     if (favourites.length === 0) {

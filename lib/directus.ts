@@ -1,10 +1,14 @@
 import * as SecureStore from 'expo-secure-store';
-import { authentication, createDirectus, rest } from '@directus/sdk';
+import { authentication, createDirectus, realtime, rest } from '@directus/sdk';
 
 const TOKEN_KEY = 'directus_access_token';
 const REFRESH_KEY = 'directus_refresh_token';
 
-const directusUrl = process.env.EXPO_PUBLIC_DIRECTUS_URL ?? 'https://cms.radiodopo.it';
+const directusUrl = process.env.EXPO_PUBLIC_DIRECTUS_URL;
+
+if (!directusUrl) {
+  throw new Error('EXPO_PUBLIC_DIRECTUS_URL is not set');
+}
 
 export const directus = createDirectus(directusUrl)
   .with(
@@ -30,4 +34,5 @@ export const directus = createDirectus(directusUrl)
       },
     })
   )
-  .with(rest());
+  .with(rest())
+  .with(realtime());

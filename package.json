@@ -13,7 +13,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "maestro test __tests__/e2e/",
-    "test:e2e:flow": "maestro test"
+    "test:e2e:flow": "maestro test",
+    "directus:schema:apply": "node --env-file=.env.local scripts/directus-schema/apply.mjs"
   },
   "dependencies": {
     "@directus/sdk": "^21.2.0",

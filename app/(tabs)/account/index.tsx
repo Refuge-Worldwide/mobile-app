@@ -1,55 +1,3 @@
-// COMING SOON VERSION - Original auth functionality is commented out below for future use
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { StyleSheet, View } from "react-native";
-
-export default function AccountScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.textContainer}>
-          <ThemedText type="title" style={styles.title}>
-            Coming Soon
-          </ThemedText>
-        </View>
-      </View>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-    paddingVertical: 60,
-    gap: 32,
-  },
-  textContainer: {
-    alignItems: "center",
-    gap: 16,
-    minHeight: 80,
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: 8,
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  description: {
-    textAlign: "center",
-    opacity: 0.8,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-});
-
-/* ORIGINAL AUTH FUNCTIONALITY - COMMENTED OUT FOR FUTURE USE
-
 import { RefugeLogo } from "@/components/RefugeLogo";
 import { ThemedButton } from "@/components/ThemedButton";
 import { ThemedInput } from "@/components/ThemedInput";
@@ -57,11 +5,10 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
-// import { getFavourites } from "@/lib/favourites"; // REMOVED SUPABASE IMPORT
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -71,27 +18,14 @@ import {
   View,
 } from "react-native";
 
-export default function AccountScreenOriginal() {
+export default function AccountScreen() {
   const { user, loading, signIn, signUp, signOut, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [favoritesCount, setFavoritesCount] = useState(0);
   const router = useRouter();
-
-  useEffect(() => {
-    if (user) {
-      // loadFavoritesCount(); // REMOVED - No longer using Supabase
-    }
-  }, [user]);
-
-  // REMOVED - No longer using Supabase favorites
-  // const loadFavoritesCount = async () => {
-  //   const favourites = await getFavourites();
-  //   setFavoritesCount(favourites.length);
-  // };
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -128,7 +62,6 @@ export default function AccountScreenOriginal() {
 
   const handleSignOut = async () => {
     await signOut();
-    setFavoritesCount(0);
   };
 
   const handleForgotPassword = async () => {
@@ -172,6 +105,9 @@ export default function AccountScreenOriginal() {
     await WebBrowser.openBrowserAsync("https://refugeworldwide.com");
   };
 
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
+
   if (loading) {
     return (
       <ThemedView style={authStyles.container}>
@@ -179,9 +115,6 @@ export default function AccountScreenOriginal() {
       </ThemedView>
     );
   }
-
-  const textColor = useThemeColor({}, "text");
-  const backgroundColor = useThemeColor({}, "background");
 
   if (user) {
     return (
@@ -371,5 +304,3 @@ const authStyles = StyleSheet.create({
     gap: 8,
   },
 });
-
-END ORIGINAL AUTH FUNCTIONALITY */

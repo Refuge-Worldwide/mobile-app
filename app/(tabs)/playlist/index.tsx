@@ -1,10 +1,10 @@
 import { Icon } from "@/components/Icon";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-// import { useAuth } from "@/contexts/AuthContext"; // COMMENTED OUT - Removing for Directus migration
+import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
-// import { getFavouritesWithShows } from "@/lib/favourites"; // COMMENTED OUT - Removing for Directus migration
+import { getFavouritesWithShows } from "@/lib/favourites";
 import { ApiPlaylist, fetchPlaylistBySlug, fetchPlaylists } from "@/lib/playlistsApi";
 import { useAudioStore } from "@/store/audioStore";
 import { ensureHttps } from "@/utils/imageOptimization";
@@ -22,7 +22,7 @@ import { PlaylistCardSkeleton } from "@/components/SkeletonLoader";
 
 
 export default function PlaylistScreen() {
-  // const { user } = useAuth(); // COMMENTED OUT - Removing for Directus migration
+  const { user } = useAuth();
   const router = useRouter();
   const bottomPadding = useBottomSafePadding();
   const [playlists, setPlaylists] = useState<ApiPlaylist[]>([]);
@@ -41,7 +41,6 @@ export default function PlaylistScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* COMMENTED OUT - Removing favorites for Directus migration
   const handleFavoritesPress = () => {
     if (user) {
       router.push("/(tabs)/playlist/playlist/favorites");
@@ -87,7 +86,6 @@ export default function PlaylistScreen() {
       console.error("Error playing favorites:", err);
     }
   };
-  END COMMENTED OUT FAVORITES */
 
   const handlePlayPlaylist = async (e: any, slug: string) => {
     e.stopPropagation();
@@ -133,7 +131,6 @@ export default function PlaylistScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.list}>
-          {/* COMMENTED OUT - Removing favorites for Directus migration
           <Pressable onPress={handleFavoritesPress}>
             <View style={styles.imageContainer}>
               <Image
@@ -156,7 +153,6 @@ export default function PlaylistScreen() {
               {user ? "Favorites" : "Sign in for Favorites"}
             </ThemedText>
           </Pressable>
-          END COMMENTED OUT FAVORITES */}
 
           {/* API playlists */}
           {loading ? (
