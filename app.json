@@ -82,6 +82,7 @@
       ],
       "expo-audio",
       "expo-font",
+      "expo-secure-store",
       "./plugins/withFmtConstevalFix"
     ],
     "experiments": {
