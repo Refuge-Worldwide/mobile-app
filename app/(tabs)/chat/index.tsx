@@ -111,24 +111,13 @@ function ChatImage({ uri }: { uri: string }) {
   );
 }
 
-// Audio player height: paddingVertical 4 * 2 + content height 40 = 48px
-const AUDIO_PLAYER_HEIGHT = 48;
-
 export default function ChatOriginal() {
   const { user } = useAuth();
-  const { currentTrack } = useAudioStore();
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const insets = useSafeAreaInsets();
 
-  // Calculate tab bar height (matches AudioPlayer calculation)
-  const tabBarHeight = 80 + Math.max(insets.bottom, 11);
-
-  // Add extra padding when audio player is visible
-  const audioPlayerPadding = currentTrack ? AUDIO_PLAYER_HEIGHT : 0;
-
-  // Total bottom padding: tab bar + audio player (if visible)
-  const totalBottomPadding = tabBarHeight + audioPlayerPadding;
+  const totalBottomPadding = useLayoutStore((s) => s.bottomStackHeight);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");

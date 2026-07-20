@@ -2,6 +2,7 @@ import { AudioPlayer } from "@/components/AudioPlayer";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useLayoutStore } from "@/store/layoutStore";
 import { Tabs } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -58,6 +59,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
       >
         <ThemedText
           type="large"
+          maxFontSizeMultiplier={1.3}
           style={{ color: isFocused ? colors.text : colors.background }}
         >
           {label}
@@ -109,10 +111,18 @@ export default function TabLayout() {
       <View style={{ flex: 1 }}>
         <Tabs
           tabBar={(props) => (
-            <>
+            <View
+              style={styles.bottomStack}
+              onLayout={(e) => {
+                const height = Math.round(e.nativeEvent.layout.height);
+                if (height !== useLayoutStore.getState().bottomStackHeight) {
+                  useLayoutStore.getState().setBottomStackHeight(height);
+                }
+              }}
+            >
               <AudioPlayer />
               <CustomTabBar {...props} />
-            </>
+            </View>
           )}
           screenOptions={{
             headerShown: false,
@@ -172,14 +182,15 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  bottomStack: {
     position: "absolute",
-    bottom: 0,
     left: 0,
     right: 0,
+    bottom: 0,
+  },
+  container: {
     paddingTop: 6,
     backgroundColor: "#fff",
-    zIndex: 200,
   },
   tabsRow: {
     flexDirection: "row",

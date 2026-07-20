@@ -8,13 +8,13 @@
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
-        "image": "latest"
+        "image": "sdk-55"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
-        "image": "latest"
+        "image": "sdk-55"
       },
       "android": {
         "buildType": "apk"
@@ -23,7 +23,7 @@
     "production": {
       "autoIncrement": true,
       "ios": {
-        "image": "latest"
+        "image": "sdk-55"
       }
     }
   },

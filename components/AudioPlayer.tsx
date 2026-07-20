@@ -9,7 +9,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TrackPlayer, {
   AppKilledPlaybackBehavior,
   Capability,
@@ -94,11 +93,6 @@ export function AudioPlayer() {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const [isVisible, setIsVisible] = useState(false);
-  const insets = useSafeAreaInsets();
-
-  // Calculate bottom position: tab bar height (paddingTop 6 + 2 rows ~24px each + margin/padding ~12px + safe area)
-  // Move up 50px if on live tab to sit above the Chat/Schedule buttons
-  const tabBarHeight = 80 + Math.max(insets.bottom, 11);
 
   const queueSheetRef = useRef<QueuePreviewRef>(null);
   const slideAnim = useRef(new Animated.Value(100)).current; // Start below screen
@@ -330,24 +324,24 @@ export function AudioPlayer() {
 
     const fetchAndUpdateLiveShow = async () => {
       try {
-        const res = await fetch("https://refugeworldwide.com/api/schedule");
+        const res = await fetch("https://refugeworldwide.com/api/v2/schedule");
         const data = await res.json();
 
         const { updateLiveTrackMetadata } = useAudioStore.getState();
 
-        if (currentTrack.id === "live-stream" && data.liveNow) {
+        if (currentTrack.id === "live-stream" && data.ch1?.liveNow) {
           // Update Channel 1 metadata only (no playback change)
           updateLiveTrackMetadata({
-            title: data.liveNow.title,
-            artwork: data.liveNow.artwork,
-            showId: data.liveNow.slug || "live-stream",
-            slug: data.liveNow.slug,
+            title: data.ch1.liveNow.title,
+            artwork: data.ch1.liveNow.artwork,
+            showId: data.ch1.liveNow.slug || "live-stream",
+            slug: data.ch1.liveNow.slug,
           });
-        } else if (currentTrack.id === "live-stream-ch2" && data.ch2) {
+        } else if (currentTrack.id === "live-stream-ch2" && data.ch2?.liveNow) {
           // Update Channel 2 metadata only (no playback change)
           updateLiveTrackMetadata({
-            title: data.ch2.liveNow,
-            artwork: data.liveNow?.artwork,
+            title: data.ch2.liveNow.title,
+            artwork: data.ch2.liveNow.artwork,
             showId: "live-stream-ch2",
             slug: undefined, // Channel 2 doesn't have show details
           });
@@ -466,7 +460,6 @@ export function AudioPlayer() {
           {
             backgroundColor,
             borderTopColor: textColor,
-            bottom: tabBarHeight,
             transform: [{ translateY: slideAnim }],
           },
         ]}
@@ -553,12 +546,8 @@ export function AudioPlayer() {
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    left: 0,
-    right: 0,
     paddingVertical: 4,
     paddingHorizontal: 12,
-    zIndex: 100,
     borderTopWidth: 1,
   },
   content: {

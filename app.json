@@ -81,7 +81,8 @@
         }
       ],
       "expo-audio",
-      "expo-font"
+      "expo-font",
+      "./plugins/withFmtConstevalFix"
     ],
     "experiments": {
       "typedRoutes": true

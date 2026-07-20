@@ -39,13 +39,18 @@ interface LiveNow {
 }
 
 interface ScheduleData {
-  status: string;
-  liveNow: LiveNow;
-  nextUp: ScheduleItem[];
-  schedule: ScheduleItem[];
+  ch1: {
+    status: string;
+    liveNow: LiveNow;
+    nextUp: ScheduleItem[];
+    schedule: ScheduleItem[];
+  };
   ch2?: {
     status: string;
-    liveNow: string;
+    liveNow: {
+      title: string;
+      artwork: string;
+    };
   };
 }
 
@@ -99,7 +104,7 @@ export default function Schedule() {
   const fetchSchedule = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://refugeworldwide.com/api/schedule');
+      const response = await fetch('https://refugeworldwide.com/api/v2/schedule');
       if (!response.ok) {
         throw new Error('Failed to fetch schedule');
       }
@@ -182,8 +187,8 @@ export default function Schedule() {
     );
   }
 
-  const groupedSchedule = scheduleData?.schedule ? groupScheduleByDate(scheduleData.schedule) : {};
-  const isEmpty = !scheduleData?.schedule || scheduleData.schedule.length === 0;
+  const groupedSchedule = scheduleData?.ch1?.schedule ? groupScheduleByDate(scheduleData.ch1.schedule) : {};
+  const isEmpty = !scheduleData?.ch1?.schedule || scheduleData.ch1.schedule.length === 0;
 
   return (
     <ThemedView style={[styles.container]}>
