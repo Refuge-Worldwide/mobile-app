@@ -214,49 +214,34 @@ export default function Chat() {
     return `${date.toLocaleDateString([], { day: "2-digit", month: "2-digit" })} ${time}`;
   };
 
-  const renderMessage = ({ item }: { item: ChatMessage }) => {
-    const isOwnMessage =
-      (user?.id && item.user === user.id) ||
-      (!user && item.username === anonUsername);
+  const GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+  const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
+    const previous = index > 0 ? messages[index - 1] : null;
+    const isGrouped =
+      !!previous &&
+      previous.username === item.username &&
+      new Date(item.date_created).getTime() - new Date(previous.date_created).getTime() <
+        GROUP_WINDOW_MS;
 
     return (
-      <View style={chatStyles.messageContainer}>
-        <View
-          style={[
-            chatStyles.messageBubble,
-            { backgroundColor: isOwnMessage ? textColor : `${textColor}15` },
-          ]}
-        >
+      <View style={[chatStyles.messageRow, isGrouped && chatStyles.messageRowGrouped]}>
+        {!isGrouped && (
           <View style={chatStyles.metaRow}>
-            <ThemedText
-              style={[
-                chatStyles.username,
-                { color: isOwnMessage ? backgroundColor : textColor },
-              ]}
-            >
+            <ThemedText style={[chatStyles.username, { color: textColor }]}>
               {item.username}
             </ThemedText>
-            <ThemedText
-              style={[
-                chatStyles.timestamp,
-                { color: isOwnMessage ? `${backgroundColor}99` : `${textColor}80` },
-              ]}
-            >
+            <ThemedText style={[chatStyles.timestamp, { color: `${textColor}80` }]}>
               {formatTimestamp(item.date_created)}
             </ThemedText>
           </View>
-          {item.message ? (
-            <ThemedText
-              style={[
-                chatStyles.messageText,
-                { color: isOwnMessage ? backgroundColor : textColor },
-              ]}
-            >
-              {item.message}
-            </ThemedText>
-          ) : null}
-          {item.image && <ChatImage uri={item.image} />}
-        </View>
+        )}
+        {item.message ? (
+          <ThemedText style={[chatStyles.messageText, { color: `${textColor}e6` }]}>
+            {item.message}
+          </ThemedText>
+        ) : null}
+        {item.image && <ChatImage uri={item.image} />}
       </View>
     );
   };
@@ -433,30 +418,27 @@ const chatStyles = StyleSheet.create({
   },
   messageListContent: {
     paddingVertical: 12,
-    gap: 8,
   },
-  messageContainer: {
-    flexDirection: "row",
-    marginVertical: 2,
+  messageRow: {
+    marginTop: 14,
   },
-  messageBubble: {
-    maxWidth: "80%",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  messageRowGrouped: {
+    marginTop: 2,
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 6,
-    marginBottom: 2,
+    gap: 8,
+    marginBottom: 3,
   },
   username: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "VisueltMedium",
   },
   messageText: {
     fontSize: 16,
     fontFamily: "VisueltMedium",
+    lineHeight: 21,
   },
   timestamp: {
     fontSize: 10,
