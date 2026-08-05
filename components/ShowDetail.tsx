@@ -17,6 +17,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -135,10 +136,14 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
       const shareUrl = `https://refugeworldwide.com/radio/${slug}`;
       const shareMessage = `🎵 Check out ${show?.title} on Refuge Worldwide`;
 
-      await Share.share({
-        message: shareMessage,
-        url: shareUrl,
-      });
+      // Android's share sheet ignores the `url` field entirely, so the
+      // link has to be part of the message text there. iOS uses `url`
+      // (and would otherwise show the link twice if it were in `message`).
+      await Share.share(
+        Platform.OS === "android"
+          ? { message: `${shareMessage}\n${shareUrl}` }
+          : { message: shareMessage, url: shareUrl }
+      );
     } catch (error) {
       console.error("Error sharing:", error);
     }

@@ -17,7 +17,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Pressable, Share, StyleSheet, View } from "react-native";
+import { Platform, Pressable, Share, StyleSheet, View } from "react-native";
 import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
@@ -181,10 +181,14 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
 
       const shareMessage = `🎵 Check out ${currentTrack.title} on Refuge Worldwide`;
 
-      await Share.share({
-        message: shareMessage,
-        url: shareUrl,
-      });
+      // Android's share sheet ignores the `url` field entirely, so the
+      // link has to be part of the message text there. iOS uses `url`
+      // (and would otherwise show the link twice if it were in `message`).
+      await Share.share(
+        Platform.OS === "android"
+          ? { message: `${shareMessage}\n${shareUrl}` }
+          : { message: shareMessage, url: shareUrl }
+      );
     } catch (error) {
       console.error("Error sharing:", error);
     }

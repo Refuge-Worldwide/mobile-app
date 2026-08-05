@@ -1,0 +1,301 @@
+{
+  "roles": [
+    {
+      "name": "Refuge App User",
+      "note": "Assigned to signed-up app users. Owns the 'Refuge App - Own Favourites' and 'Refuge App - Chat Read' policies."
+    },
+    {
+      "name": "Chat Service",
+      "note": "Dedicated service role for the Next.js moderation server. Only this role can write to the chat collection directly. Create one Directus user with this role and generate a static token for it — that token goes in the Next.js app's server env, never in the mobile app."
+    }
+  ],
+  "directusUsers": {
+    "note": "Supporter/membership fields added directly to the built-in directus_users collection (1:1 with a user, no need for a separate join collection). Written only by the Next.js membership webhook using an admin-level token — see scripts/stripe/provision-supporter-prices.mjs in refuge-worldwide for the Stripe side.",
+    "fields": [
+      {
+        "field": "stripe_customer_id",
+        "type": "string",
+        "meta": { "interface": "input", "readonly": true, "note": "Set by the membership webhook only." },
+        "schema": { "is_nullable": true }
+      },
+      {
+        "field": "stripe_subscription_id",
+        "type": "string",
+        "meta": { "interface": "input", "readonly": true },
+        "schema": { "is_nullable": true }
+      },
+      {
+        "field": "subscription_status",
+        "type": "string",
+        "meta": {
+          "interface": "select-dropdown",
+          "readonly": true,
+          "options": {
+            "choices": [
+              { "text": "Active", "value": "active" },
+              { "text": "Past due", "value": "past_due" },
+              { "text": "Canceled", "value": "canceled" },
+              { "text": "Incomplete", "value": "incomplete" }
+            ]
+          },
+          "note": "Mirrors the Stripe subscription status enum."
+        },
+        "schema": { "is_nullable": true }
+      },
+      {
+        "field": "supporter_amount_cents",
+        "type": "integer",
+        "meta": { "interface": "input", "readonly": true, "note": "Amount in EUR cents, e.g. 750 = €7.50." },
+        "schema": { "is_nullable": true }
+      },
+      {
+        "field": "supporter_interval",
+        "type": "string",
+        "meta": {
+          "interface": "select-dropdown",
+          "readonly": true,
+          "options": {
+            "choices": [
+              { "text": "Monthly", "value": "month" },
+              { "text": "Yearly", "value": "year" }
+            ]
+          }
+        },
+        "schema": { "is_nullable": true }
+      },
+      {
+        "field": "payment_failed_at",
+        "type": "timestamp",
+        "meta": {
+          "interface": "datetime",
+          "readonly": true,
+          "note": "Set by the membership webhook when Stripe reports a failed invoice payment (Stripe itself emails the user — this is just so we can flag it on their account). Cleared once a subsequent sync reports the subscription active again."
+        },
+        "schema": { "is_nullable": true }
+      }
+    ],
+    "policies": [
+      {
+        "name": "Refuge App - Own Membership Read",
+        "note": "Lets a signed-in user read their own supporter/subscription status (needed for the account page), but never write it — only the membership webhook can do that.",
+        "permissions": [
+          {
+            "action": "read",
+            "fields": [
+              "id",
+              "email",
+              "first_name",
+              "last_name",
+              "stripe_customer_id",
+              "subscription_status",
+              "supporter_amount_cents",
+              "supporter_interval",
+              "payment_failed_at"
+            ],
+            "permissions": { "id": { "_eq": "$CURRENT_USER" } }
+          }
+        ],
+        "attachToRoles": ["Refuge App User"]
+      },
+      {
+        "name": "Refuge App - Own Profile Update",
+        "note": "Lets a signed-in user update their own display name (stored in first_name) and password. Added after discovering the read-only policy above didn't cover the website's settings page.",
+        "permissions": [
+          {
+            "action": "update",
+            "fields": ["first_name", "password"],
+            "permissions": { "id": { "_eq": "$CURRENT_USER" } }
+          }
+        ],
+        "attachToRoles": ["Refuge App User"]
+      }
+    ]
+  },
+  "collections": [
+    {
+      "collection": "show_favourites",
+      "meta": {
+        "icon": "favorite",
+        "note": "Per-user favourited shows. One row per (user, show_id) pair."
+      },
+      "schema": {},
+      "fields": [
+        {
+          "field": "id",
+          "type": "integer",
+          "meta": { "hidden": true, "interface": "input", "readonly": true },
+          "schema": { "is_primary_key": true, "has_auto_increment": true }
+        },
+        {
+          "field": "show_id",
+          "type": "string",
+          "meta": {
+            "interface": "input",
+            "required": true,
+            "note": "Immutable show ID from the content API (not the slug)."
+          },
+          "schema": { "is_nullable": false }
+        },
+        {
+          "field": "user_created",
+          "type": "uuid",
+          "meta": {
+            "special": ["user-created"],
+            "interface": "select-dropdown-m2o",
+            "options": { "template": "{{email}}" },
+            "display": "user",
+            "readonly": true,
+            "hidden": true,
+            "width": "half"
+          },
+          "schema": {}
+        },
+        {
+          "field": "date_created",
+          "type": "timestamp",
+          "meta": {
+            "special": ["date-created"],
+            "interface": "datetime",
+            "readonly": true,
+            "hidden": true,
+            "width": "half",
+            "display": "datetime",
+            "display_options": { "relative": true }
+          },
+          "schema": {}
+        }
+      ],
+      "relations": [
+        {
+          "field": "user_created",
+          "related_collection": "directus_users",
+          "meta": { "one_deselect_action": "nullify" },
+          "schema": { "on_delete": "CASCADE" }
+        }
+      ],
+      "policies": [
+        {
+          "name": "Refuge App - Own Favourites",
+          "note": "Lets an authenticated user create/read/delete only their own favourite rows.",
+          "permissions": [
+            {
+              "action": "create",
+              "fields": ["show_id"]
+            },
+            {
+              "action": "read",
+              "fields": ["id", "show_id", "date_created", "user_created"],
+              "permissions": { "user_created": { "_eq": "$CURRENT_USER" } }
+            },
+            {
+              "action": "delete",
+              "permissions": { "user_created": { "_eq": "$CURRENT_USER" } }
+            }
+          ],
+          "attachToRoles": ["Refuge App User"]
+        }
+      ]
+    },
+    {
+      "collection": "chat",
+      "meta": {
+        "icon": "chat",
+        "note": "Live chat messages. Written only by the moderation server, never directly by clients."
+      },
+      "schema": {},
+      "fields": [
+        {
+          "field": "id",
+          "type": "integer",
+          "meta": { "hidden": true, "interface": "input", "readonly": true },
+          "schema": { "is_primary_key": true, "has_auto_increment": true }
+        },
+        {
+          "field": "message",
+          "type": "text",
+          "meta": { "interface": "input-multiline", "required": true },
+          "schema": { "is_nullable": false }
+        },
+        {
+          "field": "username",
+          "type": "string",
+          "meta": { "interface": "input", "required": true },
+          "schema": { "is_nullable": false }
+        },
+        {
+          "field": "image",
+          "type": "string",
+          "meta": {
+            "interface": "input",
+            "note": "Optional image URL attached to the message."
+          },
+          "schema": { "is_nullable": true }
+        },
+        {
+          "field": "user",
+          "type": "uuid",
+          "meta": {
+            "interface": "select-dropdown-m2o",
+            "options": { "template": "{{email}}" },
+            "display": "user",
+            "readonly": false,
+            "hidden": true,
+            "width": "half",
+            "note": "The actual human sender, resolved server-side from the caller's Directus token via readMe() and set explicitly by the moderation server. Never accept this as a client-supplied value. Not the Directus 'user_created' field, which would just show the service account for every row."
+          },
+          "schema": { "is_nullable": true }
+        },
+        {
+          "field": "date_created",
+          "type": "timestamp",
+          "meta": {
+            "special": ["date-created"],
+            "interface": "datetime",
+            "readonly": true,
+            "hidden": true,
+            "width": "half",
+            "display": "datetime",
+            "display_options": { "relative": true }
+          },
+          "schema": {}
+        }
+      ],
+      "relations": [
+        {
+          "field": "user",
+          "related_collection": "directus_users",
+          "meta": { "one_deselect_action": "nullify" },
+          "schema": { "on_delete": "SET NULL" }
+        }
+      ],
+      "policies": [
+        {
+          "name": "Refuge App - Chat Read",
+          "note": "Public and signed-in users can read the chat feed. Nobody can write directly — that only happens through the moderation server.",
+          "permissions": [
+            {
+              "action": "read",
+              "fields": ["id", "message", "username", "image", "date_created", "user"]
+            }
+          ],
+          "attachToRoles": ["Public", "Refuge App User"]
+        },
+        {
+          "name": "Refuge App - Chat Server Write",
+          "note": "Only the moderation server's dedicated Directus user (role: Chat Service) can create chat messages, after resolving the real sender server-side and running its own moderation checks. The 'user' and (for signed-in senders) 'username' fields must be set from the server's own token verification, never trusted from the client request body. Also needs read: the server's own rate-limit check (lib/chatModeration.ts) queries recent messages by this same token before allowing a create.",
+          "permissions": [
+            {
+              "action": "create",
+              "fields": ["message", "username", "image", "user"]
+            },
+            {
+              "action": "read",
+              "fields": ["id", "message", "username", "image", "date_created", "user"]
+            }
+          ],
+          "attachToRoles": ["Chat Service"]
+        }
+      ]
+    }
+  ]
+}

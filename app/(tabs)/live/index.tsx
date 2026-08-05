@@ -243,21 +243,37 @@ export default function Live() {
                   placeholder="blurhash"
                   source={optimizeLiveImage(liveNow?.artwork)}
                 />
-                <View
-                  style={[
-                    styles.playButtonContainer,
-                    { backgroundColor: textColor },
-                  ]}
-                >
-                  {isLoading && currentTrack?.id === "live-stream" ? (
-                    <Icon name="loading" size={50} color={backgroundColor} />
-                  ) : (
-                    <Icon
-                      name={isCurrentlyPlayingLive ? "stop" : "play"}
-                      size={50}
-                      color={backgroundColor}
-                    />
-                  )}
+                <View style={styles.channelOneButtonsRow}>
+                  <View
+                    style={[
+                      styles.playButtonInline,
+                      { backgroundColor: textColor },
+                    ]}
+                  >
+                    {isLoading && currentTrack?.id === "live-stream" ? (
+                      <Icon name="loading" size={40} color={backgroundColor} />
+                    ) : (
+                      <Icon
+                        name={isCurrentlyPlayingLive ? "stop" : "play"}
+                        size={40}
+                        color={backgroundColor}
+                      />
+                    )}
+                  </View>
+                  <Pressable
+                    onPress={() => router.push("/live/schedule" as any)}
+                    style={[
+                      styles.scheduleButtonInline,
+                      {
+                        backgroundColor: textColor,
+                        borderLeftWidth: 1,
+                        borderLeftColor: backgroundColor,
+                      },
+                    ]}
+                    testID="live-channel-1-schedule"
+                  >
+                    <Icon name="schedule" size={30} color={backgroundColor} />
+                  </Pressable>
                 </View>
               </Pressable>
               <View style={styles.liveNowContainer}>
@@ -271,7 +287,7 @@ export default function Live() {
                 </View>
                 <Pressable
                   onPress={() =>
-                    router.push("/live/schedule" as any)
+                    router.push(`/live/show/${liveNow.slug}` as any)
                   }
                   style={{ backgroundColor: textColor, padding: 4 }}
                 >
@@ -396,6 +412,24 @@ const styles = StyleSheet.create({
     right: 0,
     width: 50,
     height: 50,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  channelOneButtonsRow: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    flexDirection: "row",
+  },
+  playButtonInline: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scheduleButtonInline: {
+    width: 40,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
