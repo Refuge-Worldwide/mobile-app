@@ -3,9 +3,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { ThemedInput } from './ThemedInput';
 import { ThemedText } from './ThemedText';
+
+const GENRE_BUTTON_VERTICAL_PADDING = Platform.OS === 'android' ? 6 : 4;
 
 interface GenreFilterProps {
   selectedGenres: string[];
@@ -153,7 +155,7 @@ const styles = StyleSheet.create({
   },
   genreButton: {
     width: '100%',
-    paddingVertical: 4,
+    paddingVertical: GENRE_BUTTON_VERTICAL_PADDING,
     paddingHorizontal: 10,
     borderRadius: 99,
     borderWidth: 1,

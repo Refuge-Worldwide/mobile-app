@@ -1,6 +1,12 @@
-import { StyleSheet, Text, type TextProps } from 'react-native';
+import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
 import { useThemeColor } from '@/hooks/useThemeColor';
+
+// TODO: ABCArizonaFlare causes some short strings to wrap in Android's
+// text layout even though there's plenty of width (e.g. "Art Rock"), only an issue
+// within the genres drawer, for now using VisueltMedium on android to fix this.
+const BEEFY_TAG_FONT_FAMILY = Platform.OS === 'android' ? 'VisueltMedium' : 'ABCArizonaFlare';
+const BEEFY_TAG_ANDROID_STYLE = Platform.OS === 'android' ? { marginBottom: -4 } : null;
 
 export type ThemedTextProps = TextProps & {
   type?: 'default' | 'large' | 'title' | 'subtitle' | 'tag' | 'beefyTag' | 'player';
@@ -61,7 +67,8 @@ const styles = StyleSheet.create({
   beefyTag: {
     fontSize: 19,
     lineHeight: 22,
-    fontFamily: 'ABCArizonaFlare',
+    fontFamily: BEEFY_TAG_FONT_FAMILY,
+    ...BEEFY_TAG_ANDROID_STYLE,
   },
   player: {
     fontSize: 20,
