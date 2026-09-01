@@ -51,6 +51,7 @@ export default function PlaylistDetailScreen() {
 
   const setTrack = useAudioStore((state) => state.setTrack);
   const addToQueue = useAudioStore((state) => state.addToQueue);
+  const clearQueue = useAudioStore((state) => state.clearQueue);
 
   useEffect(() => {
     if (id) loadPlaylist();
@@ -101,6 +102,7 @@ export default function PlaylistDetailScreen() {
     const track = mapShowToTrack(show, getImageUrl, formatDate);
     if (!track) return;
     setTrack(track);
+    clearQueue();
     const next = shows.slice(index + 1, index + 31);
     next.forEach((s) => {
       const t = mapShowToTrack(s, getImageUrl, formatDate);
