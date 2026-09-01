@@ -4,10 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { directus } from "@/lib/directus";
+import { createAnonChatRealtimeClient } from "@/lib/chatRealtime";
 import { readItems } from "@directus/sdk";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -53,7 +56,8 @@ function ChatImage({ uri }: { uri: string }) {
 }
 
 export default function Chat() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const totalBottomPadding = useBottomSafePadding();
@@ -61,6 +65,7 @@ export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [anonUsername, setAnonUsername] = useState("");
+  const [anonUsernameLoaded, setAnonUsernameLoaded] = useState(false);
   const [isSettingUsername, setIsSettingUsername] = useState(false);
   const [tempUsername, setTempUsername] = useState("");
   const [sending, setSending] = useState(false);
@@ -77,10 +82,22 @@ export default function Chat() {
         }
       } catch (error) {
         console.error("Failed to load anon username:", error);
+      } finally {
+        setAnonUsernameLoaded(true);
       }
     };
     loadAnonUsername();
   }, []);
+
+  // Prompt for a username straight away if there isn't one yet, rather than
+  // waiting for the visitor to tap the pencil or try to send a message.
+  // Waits on both auth and the AsyncStorage read so it doesn't flash for a
+  // signed-in user or someone who already has a stored name.
+  useEffect(() => {
+    if (!authLoading && anonUsernameLoaded && !user && !anonUsername) {
+      setIsSettingUsername(true);
+    }
+  }, [authLoading, anonUsernameLoaded, user, anonUsername]);
 
   // Fetch initial messages
   useEffect(() => {
@@ -101,14 +118,23 @@ export default function Chat() {
     fetchMessages();
   }, []);
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates. Signed-in users authenticate the socket
+  // with their own token via the shared `directus` client. Anonymous users
+  // have no token, and this Directus instance's websocket layer requires
+  // every connection to authenticate — so they connect via a dedicated
+  // read-only client instead (see lib/chatRealtime.ts). Re-subscribes if
+  // auth state changes while the screen is open.
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     let cancelled = false;
+    let anonClient: Awaited<ReturnType<typeof createAnonChatRealtimeClient>> | null = null;
 
     const listen = async () => {
       try {
-        const { subscription, unsubscribe: unsub } = await directus.subscribe(
+        const client = user ? directus : (anonClient = await createAnonChatRealtimeClient());
+        if (cancelled) return;
+
+        const { subscription, unsubscribe: unsub } = await client.subscribe(
           "chat",
           { event: "create" },
         );
@@ -131,8 +157,9 @@ export default function Chat() {
     return () => {
       cancelled = true;
       unsubscribe?.();
+      anonClient?.disconnect();
     };
-  }, []);
+  }, [user]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -145,8 +172,10 @@ export default function Chat() {
 
   const getCurrentUsername = useCallback(() => {
     if (user?.email) {
-      // Use email prefix as username for logged in users
-      return user.email.split("@")[0];
+      // Same name as the account's "Username" field on the website
+      // (Account Settings), which is Directus's first_name — not the email,
+      // which was never meant to be shown.
+      return user.first_name?.trim() || user.email.split("@")[0];
     }
     return anonUsername;
   }, [user, anonUsername]);
@@ -204,17 +233,20 @@ export default function Chat() {
   const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
+    const isToday =
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate();
+
     const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-    if (isToday) return `today ${time}`;
-    if (isYesterday) return `yesterday ${time}`;
-    return `${date.toLocaleDateString([], { day: "2-digit", month: "2-digit" })} ${time}`;
+    if (isToday) return time;
+
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${day}/${month}/${date.getFullYear()}, ${time}`;
   };
 
-  const GROUP_WINDOW_MS = 5 * 60 * 1000;
+  const GROUP_WINDOW_MS = 2 * 60 * 1000;
 
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
     const previous = index > 0 ? messages[index - 1] : null;
@@ -237,7 +269,7 @@ export default function Chat() {
           </View>
         )}
         {item.message ? (
-          <ThemedText style={[chatStyles.messageText, { color: `${textColor}e6` }]}>
+          <ThemedText style={[chatStyles.messageText, { color: textColor }]}>
             {item.message}
           </ThemedText>
         ) : null}
@@ -246,13 +278,19 @@ export default function Chat() {
     );
   };
 
-  // Username prompt modal for anonymous users
+  // Username prompt modal for anonymous users. First-time visitors (no
+  // stored anon username yet) are joining the chat; returning anon visitors
+  // opening this via the pencil are just changing their name.
   if (isSettingUsername) {
+    const isFirstTime = !anonUsername;
+
     return (
       <ThemedView style={chatStyles.container}>
         <View style={chatStyles.usernamePrompt}>
           <ThemedText type="subtitle" style={chatStyles.promptTitle}>
-            Set your username
+            {isFirstTime
+              ? "Set your username to join the chat."
+              : "Change your username"}
           </ThemedText>
           <TextInput
             style={[
@@ -274,18 +312,6 @@ export default function Chat() {
           <View style={chatStyles.promptButtons}>
             <Pressable
               onPress={() => {
-                setIsSettingUsername(false);
-                setTempUsername("");
-              }}
-              style={[
-                chatStyles.promptButton,
-                { borderColor: textColor, borderWidth: 1 },
-              ]}
-            >
-              <ThemedText>Cancel</ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => {
                 if (tempUsername.trim()) {
                   saveAnonUsername(tempUsername.trim());
                 }
@@ -293,9 +319,25 @@ export default function Chat() {
               style={[chatStyles.promptButton, { backgroundColor: textColor }]}
               disabled={!tempUsername.trim()}
             >
-              <ThemedText style={{ color: backgroundColor }}>Save</ThemedText>
+              <ThemedText style={{ color: backgroundColor }}>
+                {isFirstTime ? "Join" : "Save"}
+              </ThemedText>
             </Pressable>
           </View>
+
+          {isFirstTime && (
+            <Pressable
+              onPress={() => router.push("/account")}
+              style={chatStyles.signInRow}
+            >
+              <ThemedText style={{ color: `${textColor}80` }}>
+                Already have an account?{" "}
+              </ThemedText>
+              <ThemedText style={[chatStyles.signInLabel, { color: textColor }]}>
+                Sign in
+              </ThemedText>
+            </Pressable>
+          )}
         </View>
       </ThemedView>
     );
@@ -311,11 +353,20 @@ export default function Chat() {
       >
         <View style={chatStyles.headerContent}>
           <ThemedText type="title">Chat</ThemedText>
-          {!user && anonUsername && (
-            <Pressable onPress={() => setIsSettingUsername(true)}>
+          {!user && (
+            <Pressable
+              onPress={() => {
+                // Pre-filled so tapping Save with no edits just keeps the
+                // current name — there's no separate Cancel button.
+                setTempUsername(anonUsername);
+                setIsSettingUsername(true);
+              }}
+              style={chatStyles.identityRow}
+            >
               <ThemedText style={[chatStyles.usernameLabel, { color: textColor }]}>
-                @{anonUsername}
+                @{anonUsername || "anon"}
               </ThemedText>
+              <Ionicons name="pencil-outline" size={16} color={textColor} />
             </Pressable>
           )}
           {user && (
@@ -405,6 +456,11 @@ const chatStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 4,
   },
+  identityRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+  },
   usernameLabel: {
     fontSize: 14,
     opacity: 0.7,
@@ -431,13 +487,16 @@ const chatStyles = StyleSheet.create({
     gap: 8,
     marginBottom: 3,
   },
+  // Medium vs. Light is what separates the name from the message body —
+  // fontWeight has no real effect on VisueltMedium (no bold cut loaded), so
+  // this uses two actual font files instead of a synthetic weight.
   username: {
-    fontSize: 13,
+    fontSize: 16,
     fontFamily: "VisueltMedium",
   },
   messageText: {
     fontSize: 16,
-    fontFamily: "VisueltMedium",
+    fontFamily: "VisueltLight",
     lineHeight: 21,
   },
   timestamp: {
@@ -489,5 +548,12 @@ const chatStyles = StyleSheet.create({
   promptButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
+  },
+  signInRow: {
+    flexDirection: "row",
+    marginTop: 20,
+  },
+  signInLabel: {
+    textDecorationLine: "underline",
   },
 });
