@@ -9,6 +9,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { pushShowDetail } from "@/lib/navigation";
 import { Show } from "@/types/shows";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -208,7 +209,7 @@ export default function Archive() {
         title={item.title}
         date={formatDate(item.date)}
         genres={item.genres}
-        onPress={() => router.push(`/(tabs)/radio/${item.slug}`)}
+        onPress={() => pushShowDetail(router, "/(tabs)/radio", item)}
         showId={item.id}
         slug={item.slug}
       />

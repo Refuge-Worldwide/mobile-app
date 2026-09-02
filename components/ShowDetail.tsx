@@ -8,11 +8,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { isFavourited, toggleFavourite } from "@/lib/favourites";
+import { pushShowDetail, ShowNavigationPrefix } from "@/lib/navigation";
 import { Artist } from "@/types/artists";
 import { Show } from "@/types/shows";
 import { ensureHttps, optimizeArtistImage } from "@/utils/imageOptimization";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -28,15 +29,32 @@ const API_BASE_URL = "https://refugeworldwide.com/api/shows";
 const ARTIST_API_BASE_URL = "https://refugeworldwide.com/api/artists";
 
 interface ShowDetailProps {
-  navigationPrefix: "/(tabs)/radio" | "/(tabs)/search" | "/(tabs)/live";
+  navigationPrefix: ShowNavigationPrefix;
 }
 
 export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug, cached } = useLocalSearchParams<{
+    slug: string;
+    // Optional JSON-encoded Show, already known from wherever the caller
+    // navigated here (the archive list, a related-show card, ...) — lets
+    // this screen render instantly (same image, title, date, genres) while
+    // the full fetch below fills in description/artists/relatedShows in
+    // the background, instead of blocking on a skeleton for data we
+    // already had.
+    cached?: string;
+  }>();
   const router = useRouter();
   const { user } = useAuth();
-  const [show, setShow] = useState<Show | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cachedShow = useMemo<Show | null>(() => {
+    if (!cached) return null;
+    try {
+      return JSON.parse(cached) as Show;
+    } catch {
+      return null;
+    }
+  }, [cached]);
+  const [show, setShow] = useState<Show | null>(cachedShow);
+  const [loading, setLoading] = useState(!cachedShow);
   const [error, setError] = useState<string | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
@@ -51,9 +69,19 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const bottomPadding = useBottomSafePadding();
 
   useEffect(() => {
-    if (slug) {
-      fetchShow(slug);
+    if (!slug) return;
+    // Swap the displayed show immediately on navigation to a new slug —
+    // either the cached one (no loading state) or nothing yet (skeleton).
+    if (cachedShow) {
+      setShow(cachedShow);
+      setLoading(false);
+    } else {
+      setShow(null);
+      setLoading(true);
     }
+    fetchShow(slug, { silent: !!cachedShow });
+    // Only re-run when navigating to a different show.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   useEffect(() => {
@@ -68,8 +96,10 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     }
   }, [show?.artists]);
 
-  const fetchShow = async (showSlug: string) => {
-    setLoading(true);
+  // `silent` skips the loading flag — used when we already have cached
+  // data on screen and this is just a background refresh/fill-in.
+  const fetchShow = async (showSlug: string, { silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const response = await fetch(`${API_BASE_URL}/${showSlug}`);
@@ -103,9 +133,11 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
       setShow(transformedShow);
     } catch (err) {
       console.error("Error fetching show:", err);
-      setError("Failed to load show");
+      // We already have cached data on screen — don't blow it away with an
+      // error state over a background refresh failing.
+      if (!silent) setError("Failed to load show");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -120,12 +152,10 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   // Kept for backwards compatibility with ShowCard usage
   const getImageUrl = ensureHttps;
 
-  const handleRelatedShowPress = (relatedSlug: string) => {
-    // Live tab has shows under /show/ subfolder, other tabs have shows directly
-    const showPath = navigationPrefix === "/(tabs)/live"
-      ? `${navigationPrefix}/show/${relatedSlug}`
-      : `${navigationPrefix}/${relatedSlug}`;
-    router.push(showPath as any);
+  const handleRelatedShowPress = (relatedShow: Show) => {
+    // Related-show cards already carry everything ShowDetail needs for an
+    // instant render — same instant-render trick as every other list.
+    pushShowDetail(router, navigationPrefix, relatedShow);
   };
 
   const handleShare = async () => {
@@ -392,7 +422,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                     date={formatDate(relatedShow.date)}
                     genres={relatedShow.genres}
                     mixcloudLink={relatedShow.mixcloudLink}
-                    onPress={() => handleRelatedShowPress(relatedShow.slug)}
+                    onPress={() => handleRelatedShowPress(relatedShow)}
                     showId={relatedShow.id}
                     slug={relatedShow.slug}
                   />

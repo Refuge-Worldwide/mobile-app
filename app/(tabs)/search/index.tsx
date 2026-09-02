@@ -8,6 +8,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { pushShowDetail } from "@/lib/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -245,7 +246,7 @@ export default function SearchScreen() {
               title={item.title}
               date={formatDate(item.date)}
               genres={item.genres}
-              onPress={() => router.push(`/(tabs)/search/${item.slug}`)}
+              onPress={() => pushShowDetail(router, "/(tabs)/search", item)}
               showId={item.id}
               slug={item.slug}
             />

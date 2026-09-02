@@ -6,6 +6,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFavouritesWithShows } from "@/lib/favourites";
+import { pushShowDetail } from "@/lib/navigation";
 import { fetchPlaylistBySlug } from "@/lib/playlistsApi";
 import { useAudioStore } from "@/store/audioStore";
 import { Show } from "@/types/shows";
@@ -99,8 +100,8 @@ export default function PlaylistDetailScreen() {
     });
   };
 
-  const handleShowPress = (slug: string) => {
-    router.push(`/(tabs)/playlist/${slug}`);
+  const handleShowPress = (show: Show) => {
+    pushShowDetail(router, "/(tabs)/playlist", show);
   };
 
   const handleRefresh = useCallback(async () => {
@@ -171,7 +172,7 @@ export default function PlaylistDetailScreen() {
       date={formatDate(item.date)}
       genres={item.genres}
       mixcloudLink={item.mixcloudLink}
-      onPress={() => handleShowPress(item.slug)}
+      onPress={() => handleShowPress(item)}
       onPlayPress={() => handleShowPlay(item, index)}
       showId={item.id}
       slug={item.slug}
