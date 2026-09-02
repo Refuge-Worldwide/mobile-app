@@ -1,19 +1,24 @@
 import { directus } from '@/lib/directus';
-import { createUser, passwordRequest, readMe } from '@directus/sdk';
+import { passwordRequest, readMe } from '@directus/sdk';
+import Constants from 'expo-constants';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+
+const BACKEND_API_URL =
+  Constants.expoConfig?.extra?.backendApiUrl || process.env.EXPO_PUBLIC_API_URL;
 
 interface DirectusUser {
   id: string;
   email: string;
   first_name?: string;
   last_name?: string;
+  subscription_status?: string | null;
 }
 
 interface AuthContextType {
   user: DirectusUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
 }
@@ -23,7 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
-  signOut: async () => {},
+  signOut: async () => { },
   resetPassword: async () => ({ error: null }),
 });
 
@@ -35,6 +40,8 @@ export const useAuth = () => {
   return context;
 };
 
+const ME_FIELDS = ['id', 'email', 'first_name', 'last_name', 'subscription_status'];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<DirectusUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Restore session from stored token
     directus
-      .request(readMe())
+      .request(readMe({ fields: ME_FIELDS }))
       .then((me) => setUser(me as DirectusUser))
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
@@ -51,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       await directus.login({ email, password });
-      const me = await directus.request(readMe());
+      const me = await directus.request(readMe({ fields: ME_FIELDS }));
       setUser(me as DirectusUser);
       return { error: null };
     } catch (error) {
@@ -59,12 +66,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, username: string) => {
     try {
-      await directus.request(createUser({ email, password }));
-      // Auto sign in after registration
+      const response = await fetch(`${BACKEND_API_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, username }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: new Error(data.error || 'Could not create your account') };
+      }
+
+      // Account now exists — sign in the normal way.
       await directus.login({ email, password });
-      const me = await directus.request(readMe());
+      const me = await directus.request(readMe({ fields: ME_FIELDS }));
       setUser(me as DirectusUser);
       return { error: null };
     } catch (error) {

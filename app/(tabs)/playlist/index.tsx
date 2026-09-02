@@ -1,4 +1,5 @@
 import { Icon } from "@/components/Icon";
+import { PlaylistCardSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,13 +13,11 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
-  View,
+  View
 } from "react-native";
-import { PlaylistCardSkeleton } from "@/components/SkeletonLoader";
 
 
 export default function PlaylistScreen() {
@@ -150,7 +149,7 @@ export default function PlaylistScreen() {
               )}
             </View>
             <ThemedText style={styles.playlistName}>
-              {user ? "Favorites" : "Sign in for Favorites"}
+              {user ? "Favorites" : "Become a supporter to favourite"}
             </ThemedText>
           </Pressable>
 

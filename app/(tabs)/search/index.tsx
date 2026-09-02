@@ -2,8 +2,10 @@ import { GenreTag } from "@/components/GenreTag";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ShowCardSkeleton } from "@/components/SkeletonLoader";
+import { SupporterBanner } from "@/components/SupporterBanner";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
@@ -61,6 +63,7 @@ export default function SearchScreen() {
   const backgroundColor = useThemeColor({}, "background");
   const router = useRouter();
   const bottomPadding = useBottomSafePadding();
+  const { user } = useAuth();
 
   // Fetch genres on mount
   useEffect(() => {
@@ -262,8 +265,11 @@ export default function SearchScreen() {
       )}
 
       {!loading && !error && searchQuery.trim().length === 0 && (
-        <View style={styles.centerContainer}>
-          <ThemedText>Start typing to search shows and genres</ThemedText>
+        <View style={styles.emptyStateContainer}>
+          <View style={styles.centerContainer}>
+            <ThemedText>Start typing to search shows and genres</ThemedText>
+          </View>
+          {!user && <SupporterBanner />}
         </View>
       )}
     </ThemedView>
@@ -301,6 +307,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyStateContainer: {
+    flex: 1,
   },
   listContent: {
     paddingBottom: 100,

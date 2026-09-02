@@ -6,9 +6,9 @@ import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import * as Clipboard from "expo-clipboard";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,15 +21,32 @@ import {
 export default function AccountScreen() {
   const { user, loading, signIn, signUp, signOut, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
+  const params = useLocalSearchParams<{ mode?: string }>();
+
+  useEffect(() => {
+    if (params.mode === "signup") {
+      setIsSignUp(true);
+    }
+  }, [params.mode]);
+
+  const isPaidSupporter =
+    user?.subscription_status === "active" ||
+    user?.subscription_status === "past_due";
 
   const handleAuth = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password");
+      return;
+    }
+
+    if (isSignUp && !username.trim()) {
+      Alert.alert("Error", "Please choose a username");
       return;
     }
 
@@ -40,7 +57,7 @@ export default function AccountScreen() {
 
     setSubmitting(true);
     const { error } = isSignUp
-      ? await signUp(email, password)
+      ? await signUp(email, password, username.trim())
       : await signIn(email, password);
 
     setSubmitting(false);
@@ -50,11 +67,12 @@ export default function AccountScreen() {
     } else {
       if (isSignUp) {
         Alert.alert(
-          "Success",
-          "Account created! Please check your email to verify your account.",
+          "Welcome!",
+          "Your account is ready — complete your account setup any time from here to unlock saving shows and more. We've also sent you an email with a link to do that.",
         );
       }
       setEmail("");
+      setUsername("");
       setPassword("");
       setConfirmPassword("");
     }
@@ -105,6 +123,10 @@ export default function AccountScreen() {
     await WebBrowser.openBrowserAsync("https://refugeworldwide.com");
   };
 
+  const handleBecomeSupporter = async () => {
+    await WebBrowser.openBrowserAsync("https://refugeworldwide.com/supporters");
+  };
+
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
 
@@ -149,7 +171,9 @@ export default function AccountScreen() {
               <ThemedText style={{ color: backgroundColor }}>
                 Subscription:
               </ThemedText>
-              <ThemedText style={{ color: backgroundColor }}>Active</ThemedText>
+              <ThemedText style={{ color: backgroundColor }}>
+                {isPaidSupporter ? "Active" : "Not a Supporter yet"}
+              </ThemedText>
             </View>
           </View>
 
@@ -166,17 +190,27 @@ export default function AccountScreen() {
               variant="outline"
             />
 
-            <ThemedButton
-              title="Copy Discount Code"
-              onPress={handleCopyDiscountCode}
-              variant="outline"
-            />
+            {isPaidSupporter ? (
+              <>
+                <ThemedButton
+                  title="Copy Discount Code"
+                  onPress={handleCopyDiscountCode}
+                  variant="outline"
+                />
 
-            <ThemedButton
-              title="Manage Subscription"
-              onPress={handleManageSubscription}
-              variant="outline"
-            />
+                <ThemedButton
+                  title="Manage Subscription"
+                  onPress={handleManageSubscription}
+                  variant="outline"
+                />
+              </>
+            ) : (
+              <ThemedButton
+                title="Complete Account Setup"
+                onPress={handleBecomeSupporter}
+                variant="outline"
+              />
+            )}
 
             <ThemedButton
               title="Sign Out"
@@ -200,6 +234,15 @@ export default function AccountScreen() {
             autoCapitalize="none"
             keyboardType="email-address"
           />
+
+          {isSignUp && (
+            <ThemedInput
+              placeholder="Username"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          )}
 
           <View>
             <ThemedInput

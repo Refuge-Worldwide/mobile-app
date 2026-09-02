@@ -3,8 +3,10 @@ import { GenreFilter } from "@/components/GenreFilter";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ShowCardSkeleton } from "@/components/SkeletonLoader";
+import { SupporterBanner } from "@/components/SupporterBanner";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Show } from "@/types/shows";
@@ -41,6 +43,7 @@ export default function Archive() {
   const [genresError, setGenresError] = useState<string | null>(null);
 
   const router = useRouter();
+  const { user } = useAuth();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
@@ -301,6 +304,7 @@ export default function Archive() {
       {/* Loading skeleton for initial load */}
       {shows.length === 0 && loading ? (
         <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
+          {!user && <SupporterBanner />}
           {Array.from({ length: 3 }).map((_, index) => (
             <View key={index}>
               <ShowCardSkeleton />
@@ -315,6 +319,7 @@ export default function Archive() {
           keyExtractor={(item) => item.id}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
+          ListHeaderComponent={!user ? <SupporterBanner /> : null}
           ListFooterComponent={renderFooter}
           ItemSeparatorComponent={ShowCardSeparator}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
