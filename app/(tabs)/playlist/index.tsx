@@ -46,7 +46,11 @@ export default function PlaylistScreen() {
     if (isPaidSupporter) {
       router.push("/(tabs)/playlist/playlist/favorites");
     } else {
-      router.push("/(tabs)/account");
+      // ?mode=signup skips straight to the sign-up form for a fully
+      // signed-out visitor. Harmless no-op if they're already signed in
+      // (just unpaid) — that renders the logged-in account view instead,
+      // where the mode param is simply ignored.
+      router.push("/(tabs)/account?mode=signup" as any);
     }
   };
 

@@ -270,7 +270,11 @@ export default function SearchScreen() {
           <View style={styles.centerContainer}>
             <ThemedText>Start typing to search shows and genres</ThemedText>
           </View>
-          {!user && <SupporterBanner overlay="badge" />}
+          {!user && (
+            <View style={styles.supporterBannerWrapper}>
+              <SupporterBanner overlay="badge" />
+            </View>
+          )}
         </View>
       )}
     </ThemedView>
@@ -311,6 +315,12 @@ const styles = StyleSheet.create({
   },
   emptyStateContainer: {
     flex: 1,
+  },
+  // SupporterBanner itself has no bottom margin (the archive tab handles
+  // its own spacing via a FlatList separator) — this is the last element
+  // here, so it needs its own breathing room above the screen edge.
+  supporterBannerWrapper: {
+    marginBottom: 24,
   },
   listContent: {
     paddingBottom: 100,
