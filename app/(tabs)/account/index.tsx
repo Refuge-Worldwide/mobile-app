@@ -3,6 +3,7 @@ import { ThemedButton } from "@/components/ThemedButton";
 import { ThemedInput } from "@/components/ThemedInput";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { BACKEND_API_URL } from "@/constants/backendApiUrl";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import * as Clipboard from "expo-clipboard";
@@ -19,7 +20,8 @@ import {
 } from "react-native";
 
 export default function AccountScreen() {
-  const { user, loading, signIn, signUp, signOut, resetPassword } = useAuth();
+  const { user, loading, signIn, signUp, signOut, resetPassword, refreshUser } =
+    useAuth();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -65,12 +67,9 @@ export default function AccountScreen() {
     if (error) {
       Alert.alert("Error", error.message);
     } else {
-      if (isSignUp) {
-        Alert.alert(
-          "Welcome!",
-          "Your account is ready — complete your account setup any time from here to unlock saving shows and more. We've also sent you an email with a link to do that.",
-        );
-      }
+      // No popup needed — the account screen itself now shows the
+      // "Incomplete" status and "Complete account setup and pay" button right
+      // after this, so the same message would just be said twice.
       setEmail("");
       setUsername("");
       setPassword("");
@@ -120,11 +119,27 @@ export default function AccountScreen() {
   };
 
   const handleManageSubscription = async () => {
-    await WebBrowser.openBrowserAsync("https://refugeworldwide.com");
+    await WebBrowser.openBrowserAsync(BACKEND_API_URL);
   };
 
   const handleBecomeSupporter = async () => {
-    await WebBrowser.openBrowserAsync("https://refugeworldwide.com/supporters");
+    if (!user?.email) return;
+
+    // Dedicated, distraction-free checkout page for the app — just the
+    // price picker, no marketing content and no modal-inside-a-browser-sheet.
+    // See pages/supporters/checkout.tsx on the website.
+    const url = `${BACKEND_API_URL}/supporters/checkout?email=${encodeURIComponent(user.email)}`;
+    const result = await WebBrowser.openAuthSessionAsync(
+      url,
+      "refugeworldwideapp://supporter-callback",
+    );
+
+    // Whether they finished checkout or just closed the browser, re-pull
+    // subscription_status so "Active" shows up without needing a relaunch —
+    // harmless no-op if nothing changed.
+    if (result.type === "success") {
+      await refreshUser();
+    }
   };
 
   const textColor = useThemeColor({}, "text");
@@ -172,26 +187,26 @@ export default function AccountScreen() {
                 Subscription:
               </ThemedText>
               <ThemedText style={{ color: backgroundColor }}>
-                {isPaidSupporter ? "Active" : "Not a Supporter yet"}
+                {isPaidSupporter ? "Active" : "Incomplete"}
               </ThemedText>
             </View>
           </View>
 
           <View style={authStyles.buttonsContainer}>
-            <ThemedButton
-              title="Favourites Shows"
-              onPress={handleFavoritesPress}
-              variant="outline"
-            />
-
-            <ThemedButton
-              title="Podcasts"
-              onPress={handlePodcastPress}
-              variant="outline"
-            />
-
             {isPaidSupporter ? (
               <>
+                <ThemedButton
+                  title="Favourites Shows"
+                  onPress={handleFavoritesPress}
+                  variant="outline"
+                />
+
+                <ThemedButton
+                  title="Podcasts"
+                  onPress={handlePodcastPress}
+                  variant="outline"
+                />
+
                 <ThemedButton
                   title="Copy Discount Code"
                   onPress={handleCopyDiscountCode}
@@ -205,10 +220,13 @@ export default function AccountScreen() {
                 />
               </>
             ) : (
+              // Just the one action while setup is incomplete — favourites/
+              // podcasts/discount code aren't useful yet, so don't clutter
+              // the screen with them.
               <ThemedButton
-                title="Complete Account Setup"
+                title="Complete account setup and payment"
                 onPress={handleBecomeSupporter}
-                variant="outline"
+                variant="filled"
               />
             )}
 

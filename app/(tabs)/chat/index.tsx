@@ -144,7 +144,16 @@ export default function Chat() {
           if (cancelled) break;
           if (message.event === "create") {
             const newMsgs = message.data as unknown as ChatMessage[];
-            setMessages((prev) => [...prev, ...newMsgs]);
+            // The initial REST fetch and this realtime "create" stream are
+            // two independent, unsynchronized sources — a message created
+            // in the gap between the REST snapshot and the subscription
+            // going live can land in both, duplicating its id (React's
+            // "two children with the same key" warning). Dedupe on append.
+            setMessages((prev) => {
+              const existingIds = new Set(prev.map((m) => m.id));
+              const deduped = newMsgs.filter((m) => !existingIds.has(m.id));
+              return deduped.length > 0 ? [...prev, ...deduped] : prev;
+            });
           }
         }
       } catch (error) {

@@ -31,6 +31,19 @@ const ITEMS_PER_PAGE = 20;
 
 type TabType = "featured" | "latest" | "genre";
 
+// The archive list is normally just shows, but signed-out users get a
+// "become a supporter" banner spliced in after the first two — see
+// buildListEntries below.
+type ListEntry = { type: "show"; show: Show } | { type: "banner" };
+
+function buildListEntries(shows: Show[], showBanner: boolean): ListEntry[] {
+  const entries: ListEntry[] = shows.map((show) => ({ type: "show", show }));
+  if (showBanner) {
+    entries.splice(Math.min(2, entries.length), 0, { type: "banner" });
+  }
+  return entries;
+}
+
 export default function Archive() {
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,13 +59,27 @@ export default function Archive() {
   const router = useRouter();
   const { user } = useAuth();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
+  // Synchronous guard against overlapping fetches — `loading` state updates
+  // aren't synchronous, so two onEndReached calls fired back-to-back (a
+  // known FlatList quirk) can both read loading===false before either
+  // setLoading(true) commits, both fetch the same page, and both append —
+  // duplicating every show.id on that page (React's "two children with the
+  // same key" warning).
+  const isFetchingShowsRef = useRef(false);
+  // Bumped every time the list is reset (tab switch, genre change). A
+  // pagination fetch started under the old tab/filter can still resolve
+  // after the switch — this lets it recognize that and discard its result
+  // instead of appending stale data onto the new list.
+  const listGenerationRef = useRef(0);
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const bottomPadding = useBottomSafePadding();
 
   const fetchShows = useCallback(
     async (currentSkip: number, genres: string[] = []) => {
-      if (loading) return;
+      if (isFetchingShowsRef.current) return;
+      isFetchingShowsRef.current = true;
+      const requestGeneration = listGenerationRef.current;
 
       setLoading(true);
       try {
@@ -61,6 +88,10 @@ export default function Archive() {
           `${API_BASE_URL}?take=${ITEMS_PER_PAGE}&skip=${currentSkip}&filter=${genreFilter}`,
         );
         const data: Show[] = await response.json();
+
+        // The tab/genre filter changed while this was in flight — this
+        // page no longer belongs to the list currently on screen.
+        if (requestGeneration !== listGenerationRef.current) return;
 
         if (data.length < ITEMS_PER_PAGE) {
           setHasMore(false);
@@ -74,34 +105,45 @@ export default function Archive() {
             if (!Array.isArray(prev)) {
               return data;
             }
-            return [...prev, ...data];
+            // Defensive dedupe — belt-and-braces against any other source
+            // of overlap (e.g. the underlying list shifting between pages).
+            const existingIds = new Set(prev.map((show) => show.id));
+            return [...prev, ...data.filter((show) => !existingIds.has(show.id))];
           });
         }
         setSkip(currentSkip + ITEMS_PER_PAGE);
       } catch (error) {
         console.error("Error fetching shows:", error);
       } finally {
+        isFetchingShowsRef.current = false;
         setLoading(false);
       }
     },
-    [loading],
+    [],
   );
 
   const fetchFeaturedShows = useCallback(async () => {
-    if (loading) return;
+    if (isFetchingShowsRef.current) return;
+    isFetchingShowsRef.current = true;
+    const requestGeneration = listGenerationRef.current;
 
     setLoading(true);
     try {
       const response = await fetch(FEATURED_API_URL);
       const data: Show[] = await response.json();
+
+      // The tab changed while this was in flight — discard.
+      if (requestGeneration !== listGenerationRef.current) return;
+
       setShows(data);
       setHasMore(false); // Featured shows don't have pagination
     } catch (error) {
       console.error("Error fetching featured shows:", error);
     } finally {
+      isFetchingShowsRef.current = false;
       setLoading(false);
     }
-  }, [loading]);
+  }, []);
 
   const fetchGenres = useCallback(async () => {
     setGenresLoading(true);
@@ -132,6 +174,7 @@ export default function Archive() {
   }, []);
 
   useEffect(() => {
+    listGenerationRef.current += 1;
     setShows([]);
     setSkip(0);
     setHasMore(true);
@@ -157,6 +200,7 @@ export default function Archive() {
   };
 
   const handleRefresh = useCallback(async () => {
+    listGenerationRef.current += 1;
     setRefreshing(true);
     setSkip(0);
     setHasMore(true);
@@ -201,17 +245,22 @@ export default function Archive() {
     return `${day} ${month} ${year}`;
   };
 
-  const renderShowItem = ({ item }: { item: Show }) => {
+  const renderListEntry = ({ item }: { item: ListEntry }) => {
+    if (item.type === "banner") {
+      return <SupporterBanner overlay="pill" />;
+    }
+
+    const show = item.show;
     return (
       <ShowCard
-        imageUrl={item.coverImage || item.artwork}
-        mixcloudLink={item.mixcloudLink}
-        title={item.title}
-        date={formatDate(item.date)}
-        genres={item.genres}
-        onPress={() => pushShowDetail(router, "/(tabs)/radio", item)}
-        showId={item.id}
-        slug={item.slug}
+        imageUrl={show.coverImage || show.artwork}
+        mixcloudLink={show.mixcloudLink}
+        title={show.title}
+        date={formatDate(show.date)}
+        genres={show.genres}
+        onPress={() => pushShowDetail(router, "/(tabs)/radio", show)}
+        showId={show.id}
+        slug={show.slug}
       />
     );
   };
@@ -305,22 +354,27 @@ export default function Archive() {
       {/* Loading skeleton for initial load */}
       {shows.length === 0 && loading ? (
         <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
-          {!user && <SupporterBanner />}
-          {Array.from({ length: 3 }).map((_, index) => (
-            <View key={index}>
-              <ShowCardSkeleton />
-              {index < 2 && <ShowCardSeparator />}
-            </View>
-          ))}
+          <ShowCardSkeleton />
+          <ShowCardSeparator />
+          <ShowCardSkeleton />
+          {!user && (
+            <>
+              <ShowCardSeparator />
+              <SupporterBanner overlay="pill" />
+            </>
+          )}
+          <ShowCardSeparator />
+          <ShowCardSkeleton />
         </View>
       ) : (
         <FlatList
-          data={shows}
-          renderItem={renderShowItem}
-          keyExtractor={(item) => item.id}
+          data={buildListEntries(shows, !user)}
+          renderItem={renderListEntry}
+          keyExtractor={(item) =>
+            item.type === "banner" ? "supporter-banner" : item.show.id
+          }
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
-          ListHeaderComponent={!user ? <SupporterBanner /> : null}
           ListFooterComponent={renderFooter}
           ItemSeparatorComponent={ShowCardSeparator}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}

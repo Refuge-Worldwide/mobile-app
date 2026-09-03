@@ -1,10 +1,7 @@
+import { BACKEND_API_URL } from '@/constants/backendApiUrl';
 import { directus } from '@/lib/directus';
 import { passwordRequest, readMe } from '@directus/sdk';
-import Constants from 'expo-constants';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-
-const BACKEND_API_URL =
-  Constants.expoConfig?.extra?.backendApiUrl || process.env.EXPO_PUBLIC_API_URL;
 
 interface DirectusUser {
   id: string;
@@ -21,6 +18,10 @@ interface AuthContextType {
   signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  // Re-pulls the current user (e.g. subscription_status) without a full
+  // sign-in — used after returning from the website's Stripe checkout, so
+  // the account screen reflects a new subscription immediately.
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => ({ error: null }),
   signOut: async () => { },
   resetPassword: async () => ({ error: null }),
+  refreshUser: async () => { },
 });
 
 export const useAuth = () => {
@@ -106,8 +108,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const me = await directus.request(readMe({ fields: ME_FIELDS }));
+      setUser(me as DirectusUser);
+    } catch {
+      // Not logged in (or the request failed) — leave the existing user
+      // state as-is rather than signing them out over a flaky refresh.
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, resetPassword }}>
+    <AuthContext.Provider
+      value={{ user, loading, signIn, signUp, signOut, resetPassword, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

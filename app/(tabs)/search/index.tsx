@@ -270,7 +270,7 @@ export default function SearchScreen() {
           <View style={styles.centerContainer}>
             <ThemedText>Start typing to search shows and genres</ThemedText>
           </View>
-          {!user && <SupporterBanner />}
+          {!user && <SupporterBanner overlay="badge" />}
         </View>
       )}
     </ThemedView>
