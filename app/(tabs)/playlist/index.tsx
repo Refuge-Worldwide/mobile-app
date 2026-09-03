@@ -21,7 +21,7 @@ import {
 
 
 export default function PlaylistScreen() {
-  const { user } = useAuth();
+  const { isPaidSupporter } = useAuth();
   const router = useRouter();
   const bottomPadding = useBottomSafePadding();
   const [playlists, setPlaylists] = useState<ApiPlaylist[]>([]);
@@ -41,7 +41,9 @@ export default function PlaylistScreen() {
   }, []);
 
   const handleFavoritesPress = () => {
-    if (user) {
+    // Favouriting is a supporter perk, not just a signed-in one — every
+    // account starts out unpaid, so gate on isPaidSupporter, not user.
+    if (isPaidSupporter) {
       router.push("/(tabs)/playlist/playlist/favorites");
     } else {
       router.push("/(tabs)/account");
@@ -50,7 +52,7 @@ export default function PlaylistScreen() {
 
   const handlePlayFavorites = async (e: any) => {
     e.stopPropagation();
-    if (!user) return;
+    if (!isPaidSupporter) return;
     try {
       const shows = await getFavouritesWithShows();
       const playable = shows.filter((s) => s.mixcloudLink?.includes("soundcloud.com"));
@@ -137,7 +139,7 @@ export default function PlaylistScreen() {
                 style={styles.playlistImage}
                 contentFit="cover"
               />
-              {user && (
+              {isPaidSupporter && (
                 <View style={styles.buttonContainer}>
                   <Pressable
                     style={[styles.iconButton, { backgroundColor: textColor }]}
@@ -149,7 +151,7 @@ export default function PlaylistScreen() {
               )}
             </View>
             <ThemedText style={styles.playlistName}>
-              {user ? "Favorites" : "Become a supporter to favourite"}
+              {isPaidSupporter ? "Favorites" : "Become a supporter to favourite"}
             </ThemedText>
           </Pressable>
 

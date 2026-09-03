@@ -14,6 +14,16 @@ interface DirectusUser {
 interface AuthContextType {
   user: DirectusUser | null;
   loading: boolean;
+  // True once payment has actually gone through (or is merely late,
+  // "past_due" — still a supporter) — NOT the same as being signed in.
+  // Every app account starts out signed-in-but-unpaid ("Incomplete" on the
+  // account screen), so anything that's actually a supporter perk (saving
+  // shows, podcasts, discount codes, ...) must gate on this, not on
+  // `!!user`. The "become a supporter" promos (SupporterBanner/
+  // SupporterPrompt) are the one deliberate exception — those stay gated
+  // on sign-in alone so they stop appearing once someone has an account,
+  // whether or not they've paid yet.
+  isPaidSupporter: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -27,6 +37,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  isPaidSupporter: false,
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
   signOut: async () => { },
@@ -47,6 +58,9 @@ const ME_FIELDS = ['id', 'email', 'first_name', 'last_name', 'subscription_statu
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<DirectusUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const isPaidSupporter =
+    user?.subscription_status === 'active' ||
+    user?.subscription_status === 'past_due';
 
   useEffect(() => {
     // Restore session from stored token
@@ -120,7 +134,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signIn, signUp, signOut, resetPassword, refreshUser }}
+      value={{
+        user,
+        loading,
+        isPaidSupporter,
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+        refreshUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

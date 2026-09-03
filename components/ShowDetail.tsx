@@ -44,7 +44,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     cached?: string;
   }>();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isPaidSupporter } = useAuth();
   const cachedShow = useMemo<Show | null>(() => {
     if (!cached) return null;
     try {
@@ -85,10 +85,13 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   }, [slug]);
 
   useEffect(() => {
-    if (user && show) {
+    // Favouriting is a supporter perk, not just a signed-in one — skip the
+    // check (and its network call) entirely for a signed-in-but-unpaid
+    // account, same as the heart would never have anything to show for them.
+    if (isPaidSupporter && show) {
       checkFavoriteStatus();
     }
-  }, [user, show?.id]);
+  }, [isPaidSupporter, show?.id]);
 
   useEffect(() => {
     if (show?.artists && show.artists.length > 0) {
@@ -181,6 +184,23 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   const handleToggleFavorite = async () => {
     if (!user) {
       Alert.alert("Sign in required", "Please sign in to favorite shows");
+      return;
+    }
+
+    // Favouriting is a supporter perk — being signed in isn't enough on
+    // its own, since every account starts out unpaid.
+    if (!isPaidSupporter) {
+      Alert.alert(
+        "Account setup incomplete",
+        "Favouriting shows is a supporter feature, please complete your account setup.",
+        [
+          { text: "Not now", style: "cancel" },
+          {
+            text: "Complete Setup",
+            onPress: () => router.push("/(tabs)/account"),
+          },
+        ],
+      );
       return;
     }
 

@@ -20,8 +20,16 @@ import {
 } from "react-native";
 
 export default function AccountScreen() {
-  const { user, loading, signIn, signUp, signOut, resetPassword, refreshUser } =
-    useAuth();
+  const {
+    user,
+    loading,
+    isPaidSupporter,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword,
+    refreshUser,
+  } = useAuth();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -36,10 +44,6 @@ export default function AccountScreen() {
       setIsSignUp(true);
     }
   }, [params.mode]);
-
-  const isPaidSupporter =
-    user?.subscription_status === "active" ||
-    user?.subscription_status === "past_due";
 
   const handleAuth = async () => {
     if (!email || !password) {
