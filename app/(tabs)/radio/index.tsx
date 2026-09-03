@@ -32,14 +32,14 @@ const ITEMS_PER_PAGE = 20;
 type TabType = "featured" | "latest" | "genre";
 
 // The archive list is normally just shows, but signed-out users get a
-// "become a supporter" banner spliced in after the first two — see
+// "become a supporter" banner spliced in after the first three — see
 // buildListEntries below.
 type ListEntry = { type: "show"; show: Show } | { type: "banner" };
 
 function buildListEntries(shows: Show[], showBanner: boolean): ListEntry[] {
   const entries: ListEntry[] = shows.map((show) => ({ type: "show", show }));
   if (showBanner) {
-    entries.splice(Math.min(2, entries.length), 0, { type: "banner" });
+    entries.splice(Math.min(3, entries.length), 0, { type: "banner" });
   }
   return entries;
 }
@@ -357,14 +357,14 @@ export default function Archive() {
           <ShowCardSkeleton />
           <ShowCardSeparator />
           <ShowCardSkeleton />
+          <ShowCardSeparator />
+          <ShowCardSkeleton />
           {!user && (
             <>
               <ShowCardSeparator />
               <SupporterBanner overlay="pill" />
             </>
           )}
-          <ShowCardSeparator />
-          <ShowCardSkeleton />
         </View>
       ) : (
         <FlatList
