@@ -1,78 +1,19 @@
-// COMING SOON VERSION - Original chat functionality is commented out below for future use
-import { ThemedButton } from "@/components/ThemedButton";
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { openBrowserAsync } from "expo-web-browser";
-import { StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-export default function Chat() {
-  const handleJoinChat = async () => {
-    await openBrowserAsync("https://refugeworldwide.com/chat");
-  };
-
-  return (
-    <ThemedView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.textContainer}>
-          <ThemedText type="title" style={styles.title}>
-            Coming Soon
-          </ThemedText>
-        </View>
-
-        <ThemedButton
-          title="Join Chat"
-          onPress={handleJoinChat}
-          variant="filled"
-        />
-      </View>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-    paddingVertical: 60,
-    gap: 32,
-  },
-  textContainer: {
-    alignItems: "center",
-    gap: 16,
-    minHeight: 80,
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: 8,
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  description: {
-    textAlign: "center",
-    opacity: 0.8,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-});
-
-/* ORIGINAL CHAT FUNCTIONALITY - COMMENTED OUT FOR FUTURE USE
-
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
-// import { supabase } from "@/lib/supabase"; // REMOVED SUPABASE IMPORT
-import { useAudioStore } from "@/store/audioStore";
+import { directus } from "@/lib/directus";
+import { createAnonChatRealtimeClient } from "@/lib/chatRealtime";
+import { readItems } from "@directus/sdk";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -81,18 +22,21 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ChatMessage {
-  id: string;
-  user_id: string | null;
+  id: number;
+  user: string | null;
   username: string;
   message: string;
   image: string | null;
-  created_at: string;
+  date_created: string;
 }
 
 const ANON_USERNAME_KEY = "chat_anon_username";
+
+const BACKEND_API_URL =
+  Constants.expoConfig?.extra?.backendApiUrl ||
+  process.env.EXPO_PUBLIC_API_URL;
 
 function ChatImage({ uri }: { uri: string }) {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
@@ -111,17 +55,17 @@ function ChatImage({ uri }: { uri: string }) {
   );
 }
 
-export default function ChatOriginal() {
-  const { user } = useAuth();
+export default function Chat() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
-  const insets = useSafeAreaInsets();
-
-  const totalBottomPadding = useLayoutStore((s) => s.bottomStackHeight);
+  const totalBottomPadding = useBottomSafePadding();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [anonUsername, setAnonUsername] = useState("");
+  const [anonUsernameLoaded, setAnonUsernameLoaded] = useState(false);
   const [isSettingUsername, setIsSettingUsername] = useState(false);
   const [tempUsername, setTempUsername] = useState("");
   const [sending, setSending] = useState(false);
@@ -138,53 +82,93 @@ export default function ChatOriginal() {
         }
       } catch (error) {
         console.error("Failed to load anon username:", error);
+      } finally {
+        setAnonUsernameLoaded(true);
       }
     };
     loadAnonUsername();
   }, []);
 
+  // Prompt for a username straight away if there isn't one yet, rather than
+  // waiting for the visitor to tap the pencil or try to send a message.
+  // Waits on both auth and the AsyncStorage read so it doesn't flash for a
+  // signed-in user or someone who already has a stored name.
+  useEffect(() => {
+    if (!authLoading && anonUsernameLoaded && !user && !anonUsername) {
+      setIsSettingUsername(true);
+    }
+  }, [authLoading, anonUsernameLoaded, user, anonUsername]);
+
   // Fetch initial messages
   useEffect(() => {
     const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from("chat")
-        .select("*")
-        .order("created_at", { ascending: true })
-        .limit(100);
-
-      if (error) {
+      try {
+        const data = await directus.request(
+          readItems("chat", {
+            sort: ["date_created"],
+            limit: 100,
+          }),
+        );
+        setMessages(data as unknown as ChatMessage[]);
+      } catch (error) {
         console.error("Error fetching messages:", error);
-        return;
       }
-
-      setMessages(data || []);
     };
 
     fetchMessages();
   }, []);
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates. Signed-in users authenticate the socket
+  // with their own token via the shared `directus` client. Anonymous users
+  // have no token, and this Directus instance's websocket layer requires
+  // every connection to authenticate — so they connect via a dedicated
+  // read-only client instead (see lib/chatRealtime.ts). Re-subscribes if
+  // auth state changes while the screen is open.
   useEffect(() => {
-    const channel = supabase
-      .channel("chat-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat",
-        },
-        (payload) => {
-          const newMsg = payload.new as ChatMessage;
-          setMessages((prev) => [...prev, newMsg]);
-        },
-      )
-      .subscribe();
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+    let anonClient: Awaited<ReturnType<typeof createAnonChatRealtimeClient>> | null = null;
+
+    const listen = async () => {
+      try {
+        const client = user ? directus : (anonClient = await createAnonChatRealtimeClient());
+        if (cancelled) return;
+
+        const { subscription, unsubscribe: unsub } = await client.subscribe(
+          "chat",
+          { event: "create" },
+        );
+        unsubscribe = unsub;
+
+        for await (const message of subscription) {
+          if (cancelled) break;
+          if (message.event === "create") {
+            const newMsgs = message.data as unknown as ChatMessage[];
+            // The initial REST fetch and this realtime "create" stream are
+            // two independent, unsynchronized sources — a message created
+            // in the gap between the REST snapshot and the subscription
+            // going live can land in both, duplicating its id (React's
+            // "two children with the same key" warning). Dedupe on append.
+            setMessages((prev) => {
+              const existingIds = new Set(prev.map((m) => m.id));
+              const deduped = newMsgs.filter((m) => !existingIds.has(m.id));
+              return deduped.length > 0 ? [...prev, ...deduped] : prev;
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error subscribing to chat:", error);
+      }
+    };
+
+    listen();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      unsubscribe?.();
+      anonClient?.disconnect();
     };
-  }, []);
+  }, [user]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -197,8 +181,10 @@ export default function ChatOriginal() {
 
   const getCurrentUsername = useCallback(() => {
     if (user?.email) {
-      // Use email prefix as username for logged in users
-      return user.email.split("@")[0];
+      // Same name as the account's "Username" field on the website
+      // (Account Settings), which is Directus's first_name — not the email,
+      // which was never meant to be shown.
+      return user.first_name?.trim() || user.email.split("@")[0];
     }
     return anonUsername;
   }, [user, anonUsername]);
@@ -225,16 +211,29 @@ export default function ChatOriginal() {
 
     setSending(true);
 
-    const { error } = await supabase.from("chat").insert({
-      user_id: user?.id || null,
-      username: username,
-      message: newMessage.trim(),
-    });
+    try {
+      const token = await directus.getToken();
+      const response = await fetch(`${BACKEND_API_URL}/api/chat/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ username, message: newMessage.trim() }),
+      });
 
-    if (error) {
-      console.error("Error sending message:", error);
-    } else {
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error ?? "Failed to send message");
+      }
+
       setNewMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+      Alert.alert(
+        "Message not sent",
+        error instanceof Error ? error.message : "Please try again.",
+      );
     }
 
     setSending(false);
@@ -243,70 +242,64 @@ export default function ChatOriginal() {
   const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
+    const isToday =
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate();
+
     const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-    if (isToday) return `today ${time}`;
-    if (isYesterday) return `yesterday ${time}`;
-    return `${date.toLocaleDateString([], { day: "2-digit", month: "2-digit" })} ${time}`;
+    if (isToday) return time;
+
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${day}/${month}/${date.getFullYear()}, ${time}`;
   };
 
-  const renderMessage = ({ item }: { item: ChatMessage }) => {
-    const isOwnMessage =
-      (user?.id && item.user_id === user.id) ||
-      (!user && item.username === anonUsername);
+  const GROUP_WINDOW_MS = 2 * 60 * 1000;
+
+  const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
+    const previous = index > 0 ? messages[index - 1] : null;
+    const isGrouped =
+      !!previous &&
+      previous.username === item.username &&
+      new Date(item.date_created).getTime() - new Date(previous.date_created).getTime() <
+        GROUP_WINDOW_MS;
 
     return (
-      <View style={chatStyles.messageContainer}>
-        <View
-          style={[
-            chatStyles.messageBubble,
-            { backgroundColor: isOwnMessage ? textColor : `${textColor}15` },
-          ]}
-        >
+      <View style={[chatStyles.messageRow, isGrouped && chatStyles.messageRowGrouped]}>
+        {!isGrouped && (
           <View style={chatStyles.metaRow}>
-            <ThemedText
-              style={[
-                chatStyles.username,
-                { color: isOwnMessage ? backgroundColor : textColor },
-              ]}
-            >
+            <ThemedText style={[chatStyles.username, { color: textColor }]}>
               {item.username}
             </ThemedText>
-            <ThemedText
-              style={[
-                chatStyles.timestamp,
-                { color: isOwnMessage ? `${backgroundColor}99` : `${textColor}80` },
-              ]}
-            >
-              {formatTimestamp(item.created_at)}
+            <ThemedText style={[chatStyles.timestamp, { color: `${textColor}80` }]}>
+              {formatTimestamp(item.date_created)}
             </ThemedText>
           </View>
-          {item.message ? (
-            <ThemedText
-              style={[
-                chatStyles.messageText,
-                { color: isOwnMessage ? backgroundColor : textColor },
-              ]}
-            >
-              {item.message}
-            </ThemedText>
-          ) : null}
-          {item.image && <ChatImage uri={item.image} />}
-        </View>
+        )}
+        {item.message ? (
+          <ThemedText style={[chatStyles.messageText, { color: textColor }]}>
+            {item.message}
+          </ThemedText>
+        ) : null}
+        {item.image && <ChatImage uri={item.image} />}
       </View>
     );
   };
 
-  // Username prompt modal for anonymous users
+  // Username prompt modal for anonymous users. First-time visitors (no
+  // stored anon username yet) are joining the chat; returning anon visitors
+  // opening this via the pencil are just changing their name.
   if (isSettingUsername) {
+    const isFirstTime = !anonUsername;
+
     return (
       <ThemedView style={chatStyles.container}>
         <View style={chatStyles.usernamePrompt}>
           <ThemedText type="subtitle" style={chatStyles.promptTitle}>
-            Set your username
+            {isFirstTime
+              ? "Set your username to join the chat."
+              : "Change your username"}
           </ThemedText>
           <TextInput
             style={[
@@ -328,18 +321,6 @@ export default function ChatOriginal() {
           <View style={chatStyles.promptButtons}>
             <Pressable
               onPress={() => {
-                setIsSettingUsername(false);
-                setTempUsername("");
-              }}
-              style={[
-                chatStyles.promptButton,
-                { borderColor: textColor, borderWidth: 1 },
-              ]}
-            >
-              <ThemedText>Cancel</ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={() => {
                 if (tempUsername.trim()) {
                   saveAnonUsername(tempUsername.trim());
                 }
@@ -347,9 +328,25 @@ export default function ChatOriginal() {
               style={[chatStyles.promptButton, { backgroundColor: textColor }]}
               disabled={!tempUsername.trim()}
             >
-              <ThemedText style={{ color: backgroundColor }}>Save</ThemedText>
+              <ThemedText style={{ color: backgroundColor }}>
+                {isFirstTime ? "Join" : "Save"}
+              </ThemedText>
             </Pressable>
           </View>
+
+          {isFirstTime && (
+            <Pressable
+              onPress={() => router.push("/account")}
+              style={chatStyles.signInRow}
+            >
+              <ThemedText style={{ color: `${textColor}80` }}>
+                Already have an account?{" "}
+              </ThemedText>
+              <ThemedText style={[chatStyles.signInLabel, { color: textColor }]}>
+                Sign in
+              </ThemedText>
+            </Pressable>
+          )}
         </View>
       </ThemedView>
     );
@@ -365,11 +362,20 @@ export default function ChatOriginal() {
       >
         <View style={chatStyles.headerContent}>
           <ThemedText type="title">Chat</ThemedText>
-          {!user && anonUsername && (
-            <Pressable onPress={() => setIsSettingUsername(true)}>
+          {!user && (
+            <Pressable
+              onPress={() => {
+                // Pre-filled so tapping Save with no edits just keeps the
+                // current name — there's no separate Cancel button.
+                setTempUsername(anonUsername);
+                setIsSettingUsername(true);
+              }}
+              style={chatStyles.identityRow}
+            >
               <ThemedText style={[chatStyles.usernameLabel, { color: textColor }]}>
-                @{anonUsername}
+                @{anonUsername || "anon"}
               </ThemedText>
+              <Ionicons name="pencil-outline" size={16} color={textColor} />
             </Pressable>
           )}
           {user && (
@@ -388,7 +394,7 @@ export default function ChatOriginal() {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           style={chatStyles.messageList}
           contentContainerStyle={chatStyles.messageListContent}
           showsVerticalScrollIndicator={false}
@@ -459,6 +465,11 @@ const chatStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 4,
   },
+  identityRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+  },
   usernameLabel: {
     fontSize: 14,
     opacity: 0.7,
@@ -472,30 +483,30 @@ const chatStyles = StyleSheet.create({
   },
   messageListContent: {
     paddingVertical: 12,
-    gap: 8,
   },
-  messageContainer: {
-    flexDirection: "row",
-    marginVertical: 2,
+  messageRow: {
+    marginTop: 14,
   },
-  messageBubble: {
-    maxWidth: "80%",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  messageRowGrouped: {
+    marginTop: 2,
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 6,
-    marginBottom: 2,
+    gap: 8,
+    marginBottom: 3,
   },
+  // Medium vs. Light is what separates the name from the message body —
+  // fontWeight has no real effect on VisueltMedium (no bold cut loaded), so
+  // this uses two actual font files instead of a synthetic weight.
   username: {
-    fontSize: 12,
+    fontSize: 16,
     fontFamily: "VisueltMedium",
   },
   messageText: {
     fontSize: 16,
-    fontFamily: "VisueltMedium",
+    fontFamily: "VisueltLight",
+    lineHeight: 21,
   },
   timestamp: {
     fontSize: 10,
@@ -547,6 +558,11 @@ const chatStyles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
+  signInRow: {
+    flexDirection: "row",
+    marginTop: 20,
+  },
+  signInLabel: {
+    textDecorationLine: "underline",
+  },
 });
-
-END ORIGINAL CHAT FUNCTIONALITY */

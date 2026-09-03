@@ -1,65 +1,13 @@
-// COMING SOON VERSION - Original auth functionality is commented out below for future use
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { StyleSheet, View } from "react-native";
-
-export default function AccountScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.textContainer}>
-          <ThemedText type="title" style={styles.title}>
-            Coming Soon
-          </ThemedText>
-        </View>
-      </View>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-    paddingVertical: 60,
-    gap: 32,
-  },
-  textContainer: {
-    alignItems: "center",
-    gap: 16,
-    minHeight: 80,
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: 8,
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  description: {
-    textAlign: "center",
-    opacity: 0.8,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-});
-
-/* ORIGINAL AUTH FUNCTIONALITY - COMMENTED OUT FOR FUTURE USE
-
 import { RefugeLogo } from "@/components/RefugeLogo";
 import { ThemedButton } from "@/components/ThemedButton";
 import { ThemedInput } from "@/components/ThemedInput";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { BACKEND_API_URL } from "@/constants/backendApiUrl";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
-// import { getFavourites } from "@/lib/favourites"; // REMOVED SUPABASE IMPORT
 import * as Clipboard from "expo-clipboard";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import {
@@ -71,31 +19,40 @@ import {
   View,
 } from "react-native";
 
-export default function AccountScreenOriginal() {
-  const { user, loading, signIn, signUp, signOut, resetPassword } = useAuth();
+export default function AccountScreen() {
+  const {
+    user,
+    loading,
+    isPaidSupporter,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword,
+    refreshUser,
+  } = useAuth();
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [favoritesCount, setFavoritesCount] = useState(0);
   const router = useRouter();
+  const params = useLocalSearchParams<{ mode?: string }>();
 
   useEffect(() => {
-    if (user) {
-      // loadFavoritesCount(); // REMOVED - No longer using Supabase
+    if (params.mode === "signup") {
+      setIsSignUp(true);
     }
-  }, [user]);
-
-  // REMOVED - No longer using Supabase favorites
-  // const loadFavoritesCount = async () => {
-  //   const favourites = await getFavourites();
-  //   setFavoritesCount(favourites.length);
-  // };
+  }, [params.mode]);
 
   const handleAuth = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password");
+      return;
+    }
+
+    if (isSignUp && !username.trim()) {
+      Alert.alert("Error", "Please choose a username");
       return;
     }
 
@@ -106,7 +63,7 @@ export default function AccountScreenOriginal() {
 
     setSubmitting(true);
     const { error } = isSignUp
-      ? await signUp(email, password)
+      ? await signUp(email, password, username.trim())
       : await signIn(email, password);
 
     setSubmitting(false);
@@ -114,13 +71,11 @@ export default function AccountScreenOriginal() {
     if (error) {
       Alert.alert("Error", error.message);
     } else {
-      if (isSignUp) {
-        Alert.alert(
-          "Success",
-          "Account created! Please check your email to verify your account.",
-        );
-      }
+      // No popup needed — the account screen itself now shows the
+      // "Incomplete" status and "Complete account setup and pay" button right
+      // after this, so the same message would just be said twice.
       setEmail("");
+      setUsername("");
       setPassword("");
       setConfirmPassword("");
     }
@@ -128,7 +83,6 @@ export default function AccountScreenOriginal() {
 
   const handleSignOut = async () => {
     await signOut();
-    setFavoritesCount(0);
   };
 
   const handleForgotPassword = async () => {
@@ -169,8 +123,31 @@ export default function AccountScreenOriginal() {
   };
 
   const handleManageSubscription = async () => {
-    await WebBrowser.openBrowserAsync("https://refugeworldwide.com");
+    await WebBrowser.openBrowserAsync(BACKEND_API_URL);
   };
+
+  const handleBecomeSupporter = async () => {
+    if (!user?.email) return;
+
+    // Dedicated, distraction-free checkout page for the app — just the
+    // price picker, no marketing content and no modal-inside-a-browser-sheet.
+    // See pages/supporters/checkout.tsx on the website.
+    const url = `${BACKEND_API_URL}/supporters/checkout?email=${encodeURIComponent(user.email)}`;
+    const result = await WebBrowser.openAuthSessionAsync(
+      url,
+      "refugeworldwideapp://supporter-callback",
+    );
+
+    // Whether they finished checkout or just closed the browser, re-pull
+    // subscription_status so "Active" shows up without needing a relaunch —
+    // harmless no-op if nothing changed.
+    if (result.type === "success") {
+      await refreshUser();
+    }
+  };
+
+  const textColor = useThemeColor({}, "text");
+  const backgroundColor = useThemeColor({}, "background");
 
   if (loading) {
     return (
@@ -179,9 +156,6 @@ export default function AccountScreenOriginal() {
       </ThemedView>
     );
   }
-
-  const textColor = useThemeColor({}, "text");
-  const backgroundColor = useThemeColor({}, "background");
 
   if (user) {
     return (
@@ -216,34 +190,49 @@ export default function AccountScreenOriginal() {
               <ThemedText style={{ color: backgroundColor }}>
                 Subscription:
               </ThemedText>
-              <ThemedText style={{ color: backgroundColor }}>Active</ThemedText>
+              <ThemedText style={{ color: backgroundColor }}>
+                {isPaidSupporter ? "Active" : "Incomplete"}
+              </ThemedText>
             </View>
           </View>
 
           <View style={authStyles.buttonsContainer}>
-            <ThemedButton
-              title="Favourites Shows"
-              onPress={handleFavoritesPress}
-              variant="outline"
-            />
+            {isPaidSupporter ? (
+              <>
+                <ThemedButton
+                  title="Favourites Shows"
+                  onPress={handleFavoritesPress}
+                  variant="outline"
+                />
 
-            <ThemedButton
-              title="Podcasts"
-              onPress={handlePodcastPress}
-              variant="outline"
-            />
+                <ThemedButton
+                  title="Podcasts"
+                  onPress={handlePodcastPress}
+                  variant="outline"
+                />
 
-            <ThemedButton
-              title="Copy Discount Code"
-              onPress={handleCopyDiscountCode}
-              variant="outline"
-            />
+                <ThemedButton
+                  title="Copy Discount Code"
+                  onPress={handleCopyDiscountCode}
+                  variant="outline"
+                />
 
-            <ThemedButton
-              title="Manage Subscription"
-              onPress={handleManageSubscription}
-              variant="outline"
-            />
+                <ThemedButton
+                  title="Manage Subscription"
+                  onPress={handleManageSubscription}
+                  variant="outline"
+                />
+              </>
+            ) : (
+              // Just the one action while setup is incomplete — favourites/
+              // podcasts/discount code aren't useful yet, so don't clutter
+              // the screen with them.
+              <ThemedButton
+                title="Complete account setup and payment"
+                onPress={handleBecomeSupporter}
+                variant="filled"
+              />
+            )}
 
             <ThemedButton
               title="Sign Out"
@@ -267,6 +256,15 @@ export default function AccountScreenOriginal() {
             autoCapitalize="none"
             keyboardType="email-address"
           />
+
+          {isSignUp && (
+            <ThemedInput
+              placeholder="Username"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          )}
 
           <View>
             <ThemedInput
@@ -371,5 +369,3 @@ const authStyles = StyleSheet.create({
     gap: 8,
   },
 });
-
-END ORIGINAL AUTH FUNCTIONALITY */

@@ -49,6 +49,7 @@ function RootLayoutContent() {
 export default function RootLayout() {
   const [loaded] = useFonts({
     VisueltMedium: require('../assets/fonts/VisueltMedium.otf'),
+    VisueltLight: require('../assets/fonts/VisueltLight.ttf'),
     ABCArizonaFlare: require('../assets/fonts/ABCArizonaFlare.otf'),
   });
   const [splashDone, setSplashDone] = useState(false);

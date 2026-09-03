@@ -2,10 +2,13 @@ import { GenreTag } from "@/components/GenreTag";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
 import { ShowCardSkeleton } from "@/components/SkeletonLoader";
+import { SupporterBanner } from "@/components/SupporterBanner";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { pushShowDetail } from "@/lib/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -61,6 +64,7 @@ export default function SearchScreen() {
   const backgroundColor = useThemeColor({}, "background");
   const router = useRouter();
   const bottomPadding = useBottomSafePadding();
+  const { user } = useAuth();
 
   // Fetch genres on mount
   useEffect(() => {
@@ -242,7 +246,7 @@ export default function SearchScreen() {
               title={item.title}
               date={formatDate(item.date)}
               genres={item.genres}
-              onPress={() => router.push(`/(tabs)/search/${item.slug}`)}
+              onPress={() => pushShowDetail(router, "/(tabs)/search", item)}
               showId={item.id}
               slug={item.slug}
             />
@@ -262,8 +266,15 @@ export default function SearchScreen() {
       )}
 
       {!loading && !error && searchQuery.trim().length === 0 && (
-        <View style={styles.centerContainer}>
-          <ThemedText>Start typing to search shows and genres</ThemedText>
+        <View style={styles.emptyStateContainer}>
+          <View style={styles.centerContainer}>
+            <ThemedText>Start typing to search shows and genres</ThemedText>
+          </View>
+          {!user && (
+            <View style={styles.supporterBannerWrapper}>
+              <SupporterBanner overlay="badge" />
+            </View>
+          )}
         </View>
       )}
     </ThemedView>
@@ -301,6 +312,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyStateContainer: {
+    flex: 1,
+  },
+  // SupporterBanner itself has no bottom margin (the archive tab handles
+  // its own spacing via a FlatList separator) — this is the last element
+  // here, so it needs its own breathing room above the screen edge.
+  supporterBannerWrapper: {
+    marginBottom: 24,
   },
   listContent: {
     paddingBottom: 100,

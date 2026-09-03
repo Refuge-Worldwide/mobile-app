@@ -1,16 +1,21 @@
+import { BottomSheet } from "@/components/BottomSheet";
 import { Icon } from "@/components/Icon";
 import { RefugeLogo } from "@/components/RefugeLogo";
 import { LivePlayerSkeleton } from "@/components/SkeletonLoader";
+import { SupporterPrompt } from "@/components/SupporterPrompt";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { useColorSchemeContext } from "@/contexts/ColorSchemeContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAudioStore } from "@/store/audioStore";
 import { optimizeLiveImage } from "@/utils/imageOptimization";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   Pressable,
@@ -20,6 +25,11 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// Only nudge listeners to support us once every 7 days — same interval and
+// gating as the website's live player (components/livePlayer.tsx there).
+const SUPPORT_POPUP_KEY = "rw-supporter-popup-last-shown";
+const SUPPORT_POPUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default function Live() {
   const [liveNow, setLiveNow] = useState<{
@@ -42,6 +52,8 @@ export default function Live() {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const screenHeight = Dimensions.get("window").height;
+  const { user } = useAuth();
+  const supporterSheetRef = useRef<BottomSheetModal>(null);
 
   const {
     currentTrack,
@@ -124,6 +136,29 @@ export default function Live() {
     return () => clearInterval(interval);
   }, [fetchLiveShow]);
 
+  // Nudges signed-out listeners to become a supporter, at most once every
+  // 7 days (persisted, so it also holds across app relaunches) — doesn't
+  // block playback, just opens alongside it.
+  const maybeShowSupporterPrompt = async () => {
+    if (user) return;
+
+    let lastShown = 0;
+    try {
+      lastShown = Number(await AsyncStorage.getItem(SUPPORT_POPUP_KEY)) || 0;
+    } catch (error) {
+      // Storage unavailable - just skip gating.
+    }
+
+    if (Date.now() - lastShown < SUPPORT_POPUP_INTERVAL_MS) return;
+
+    supporterSheetRef.current?.present();
+    try {
+      await AsyncStorage.setItem(SUPPORT_POPUP_KEY, String(Date.now()));
+    } catch (error) {
+      // Ignore - not critical if we can't persist this.
+    }
+  };
+
   const playFunction = async () => {
     if (isCurrentlyPlayingLive) {
       // Pause live playback (keeps player open)
@@ -133,6 +168,7 @@ export default function Live() {
       setIsPlaying(true);
     } else {
       // Start live playback - setLiveTrack will handle isPlaying and isLoading
+      maybeShowSupporterPrompt();
       if (liveNow) {
         setLiveTrack({
           title: liveNow.title,
@@ -154,6 +190,7 @@ export default function Live() {
       setIsPlaying(true);
     } else {
       // Start channel 2 live playback - setLiveTrackChannel2 will handle isPlaying and isLoading
+      maybeShowSupporterPrompt();
       if (liveNowCh2) {
         setLiveTrackChannel2({
           title: liveNowCh2.title,
@@ -356,6 +393,10 @@ export default function Live() {
       </ScrollView>
 
       {/* Sticker flood overlay removed. */}
+
+      <BottomSheet ref={supporterSheetRef} snapPoints={["55%"]}>
+        <SupporterPrompt onClose={() => supporterSheetRef.current?.dismiss()} />
+      </BottomSheet>
     </ThemedView>
   );
 }

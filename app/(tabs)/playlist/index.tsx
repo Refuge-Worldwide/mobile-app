@@ -1,10 +1,11 @@
 import { Icon } from "@/components/Icon";
+import { PlaylistCardSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-// import { useAuth } from "@/contexts/AuthContext"; // COMMENTED OUT - Removing for Directus migration
+import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
-// import { getFavouritesWithShows } from "@/lib/favourites"; // COMMENTED OUT - Removing for Directus migration
+import { getFavouritesWithShows } from "@/lib/favourites";
 import { ApiPlaylist, fetchPlaylistBySlug, fetchPlaylists } from "@/lib/playlistsApi";
 import { useAudioStore } from "@/store/audioStore";
 import { ensureHttps } from "@/utils/imageOptimization";
@@ -12,17 +13,15 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
-  View,
+  View
 } from "react-native";
-import { PlaylistCardSkeleton } from "@/components/SkeletonLoader";
 
 
 export default function PlaylistScreen() {
-  // const { user } = useAuth(); // COMMENTED OUT - Removing for Directus migration
+  const { isPaidSupporter } = useAuth();
   const router = useRouter();
   const bottomPadding = useBottomSafePadding();
   const [playlists, setPlaylists] = useState<ApiPlaylist[]>([]);
@@ -41,18 +40,23 @@ export default function PlaylistScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* COMMENTED OUT - Removing favorites for Directus migration
   const handleFavoritesPress = () => {
-    if (user) {
+    // Favouriting is a supporter perk, not just a signed-in one — every
+    // account starts out unpaid, so gate on isPaidSupporter, not user.
+    if (isPaidSupporter) {
       router.push("/(tabs)/playlist/playlist/favorites");
     } else {
-      router.push("/(tabs)/account");
+      // ?mode=signup skips straight to the sign-up form for a fully
+      // signed-out visitor. Harmless no-op if they're already signed in
+      // (just unpaid) — that renders the logged-in account view instead,
+      // where the mode param is simply ignored.
+      router.push("/(tabs)/account?mode=signup" as any);
     }
   };
 
   const handlePlayFavorites = async (e: any) => {
     e.stopPropagation();
-    if (!user) return;
+    if (!isPaidSupporter) return;
     try {
       const shows = await getFavouritesWithShows();
       const playable = shows.filter((s) => s.mixcloudLink?.includes("soundcloud.com"));
@@ -87,7 +91,6 @@ export default function PlaylistScreen() {
       console.error("Error playing favorites:", err);
     }
   };
-  END COMMENTED OUT FAVORITES */
 
   const handlePlayPlaylist = async (e: any, slug: string) => {
     e.stopPropagation();
@@ -133,7 +136,6 @@ export default function PlaylistScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.list}>
-          {/* COMMENTED OUT - Removing favorites for Directus migration
           <Pressable onPress={handleFavoritesPress}>
             <View style={styles.imageContainer}>
               <Image
@@ -141,7 +143,7 @@ export default function PlaylistScreen() {
                 style={styles.playlistImage}
                 contentFit="cover"
               />
-              {user && (
+              {isPaidSupporter && (
                 <View style={styles.buttonContainer}>
                   <Pressable
                     style={[styles.iconButton, { backgroundColor: textColor }]}
@@ -153,10 +155,9 @@ export default function PlaylistScreen() {
               )}
             </View>
             <ThemedText style={styles.playlistName}>
-              {user ? "Favorites" : "Sign in for Favorites"}
+              {isPaidSupporter ? "Favorites" : "Become a supporter to favourite"}
             </ThemedText>
           </Pressable>
-          END COMMENTED OUT FAVORITES */}
 
           {/* API playlists */}
           {loading ? (
