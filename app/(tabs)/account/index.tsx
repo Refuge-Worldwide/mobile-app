@@ -3,9 +3,12 @@ import { ThemedButton } from "@/components/ThemedButton";
 import { ThemedInput } from "@/components/ThemedInput";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { Toast } from "@/components/ToastNotification";
 import { BACKEND_API_URL } from "@/constants/backendApiUrl";
-import { useAuth } from "@/contexts/AuthContext";
+import { isPaidSupporterStatus, useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { directus } from "@/lib/directus";
+import { readSingleton } from "@directus/sdk";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -36,6 +39,10 @@ export default function AccountScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [discountCodes, setDiscountCodes] = useState<
+    { label?: string; code: string }[] | null
+  >(null);
+  const [discountCodesError, setDiscountCodesError] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string }>();
 
@@ -44,6 +51,34 @@ export default function AccountScreen() {
       setIsSignUp(true);
     }
   }, [params.mode]);
+
+  useEffect(() => {
+    if (!isPaidSupporter) {
+      setDiscountCodes(null);
+      setDiscountCodesError(false);
+      return;
+    }
+
+    let cancelled = false;
+    directus
+      .request(readSingleton("settings", { fields: ["discount_codes"] }))
+      .then((settings) => {
+        if (cancelled) return;
+        setDiscountCodes(
+          (settings?.discount_codes as
+            | { label?: string; code: string }[]
+            | null) ?? [],
+        );
+      })
+      .catch((error) => {
+        console.error("Failed to fetch discount codes:", error);
+        if (!cancelled) setDiscountCodesError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPaidSupporter]);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -109,21 +144,16 @@ export default function AccountScreen() {
     router.push("/(tabs)/playlist/playlist/favorites");
   };
 
-  const handlePodcastPress = () => {
-    router.push("/(tabs)/account/podcast");
-  };
-
-  const handleCopyDiscountCode = async () => {
-    const discountCode = "REFUGE2024";
-    await Clipboard.setStringAsync(discountCode);
+  const handleCopyCode = async (label: string | undefined, code: string) => {
+    await Clipboard.setStringAsync(code);
     Alert.alert(
       "Success",
-      `Discount code ${discountCode} copied to clipboard!`,
+      `${label ? `${label} discount code` : "Discount code"} ${code} copied to clipboard!`,
     );
   };
 
   const handleManageSubscription = async () => {
-    await WebBrowser.openBrowserAsync(BACKEND_API_URL);
+    await WebBrowser.openBrowserAsync(`${BACKEND_API_URL}/account`);
   };
 
   const handleBecomeSupporter = async () => {
@@ -142,7 +172,14 @@ export default function AccountScreen() {
     // subscription_status so "Active" shows up without needing a relaunch —
     // harmless no-op if nothing changed.
     if (result.type === "success") {
-      await refreshUser();
+      const updatedUser = await refreshUser();
+      if (isPaidSupporterStatus(updatedUser?.subscription_status)) {
+        Toast.show({
+          type: "success",
+          text1: "Payment confirmed!",
+          text2: "Your account setup is complete.",
+        });
+      }
     }
   };
 
@@ -161,40 +198,42 @@ export default function AccountScreen() {
     return (
       <ThemedView style={authStyles.container}>
         <ScrollView contentContainerStyle={authStyles.scrollContent}>
-          <View style={[authStyles.card, { backgroundColor: textColor }]}>
-            <View style={authStyles.nameContainer}>
-              <ThemedText
-                style={{ color: backgroundColor }}
-                adjustsFontSizeToFit
-                numberOfLines={1}
-                minimumFontScale={0.5}
-                type="title"
+          {isPaidSupporter && (
+            <View style={[authStyles.card, { backgroundColor: textColor }]}>
+              <View style={authStyles.nameContainer}>
+                <ThemedText
+                  style={{ color: backgroundColor }}
+                  adjustsFontSizeToFit
+                  numberOfLines={1}
+                  minimumFontScale={0.5}
+                  type="title"
+                >
+                  {user.email}
+                </ThemedText>
+              </View>
+              <View
+                style={{ marginTop: 28, marginBottom: 36, alignItems: "center" }}
               >
-                {user.email}
-              </ThemedText>
+                <RefugeLogo size={70} variant="background" />
+              </View>
+              <View style={authStyles.cardRow}>
+                <ThemedText style={{ color: backgroundColor }}>
+                  Joined:
+                </ThemedText>
+                <ThemedText style={{ color: backgroundColor }}>
+                  January 24, 2024
+                </ThemedText>
+              </View>
+              <View style={authStyles.cardRow}>
+                <ThemedText style={{ color: backgroundColor }}>
+                  Subscription:
+                </ThemedText>
+                <ThemedText style={{ color: backgroundColor }}>
+                  Active
+                </ThemedText>
+              </View>
             </View>
-            <View
-              style={{ marginTop: 28, marginBottom: 36, alignItems: "center" }}
-            >
-              <RefugeLogo size={70} variant="background" />
-            </View>
-            <View style={authStyles.cardRow}>
-              <ThemedText style={{ color: backgroundColor }}>
-                Joined:
-              </ThemedText>
-              <ThemedText style={{ color: backgroundColor }}>
-                January 24, 2024
-              </ThemedText>
-            </View>
-            <View style={authStyles.cardRow}>
-              <ThemedText style={{ color: backgroundColor }}>
-                Subscription:
-              </ThemedText>
-              <ThemedText style={{ color: backgroundColor }}>
-                {isPaidSupporter ? "Active" : "Incomplete"}
-              </ThemedText>
-            </View>
-          </View>
+          )}
 
           <View style={authStyles.buttonsContainer}>
             {isPaidSupporter ? (
@@ -205,17 +244,21 @@ export default function AccountScreen() {
                   variant="outline"
                 />
 
-                <ThemedButton
-                  title="Podcasts"
-                  onPress={handlePodcastPress}
-                  variant="outline"
-                />
+                {discountCodesError && (
+                  <ThemedText style={authStyles.incompleteMessage}>
+                    Couldn&apos;t load discount codes. Please try again
+                    later.
+                  </ThemedText>
+                )}
 
-                <ThemedButton
-                  title="Copy Discount Code"
-                  onPress={handleCopyDiscountCode}
-                  variant="outline"
-                />
+                {discountCodes?.map((entry, index) => (
+                  <ThemedButton
+                    key={`${entry.code}-${index}`}
+                    title={`Copy ${entry.label ? `${entry.label} ` : ""}code`}
+                    onPress={() => handleCopyCode(entry.label, entry.code)}
+                    variant="outline"
+                  />
+                ))}
 
                 <ThemedButton
                   title="Manage Subscription"
@@ -225,13 +268,20 @@ export default function AccountScreen() {
               </>
             ) : (
               // Just the one action while setup is incomplete — favourites/
-              // podcasts/discount code aren't useful yet, so don't clutter
-              // the screen with them.
-              <ThemedButton
-                title="Complete account setup and payment"
-                onPress={handleBecomeSupporter}
-                variant="filled"
-              />
+              // discount codes aren't useful yet, so don't clutter the
+              // screen with them.
+              <>
+                <ThemedText style={authStyles.incompleteMessage}>
+                  Thanks for signing up! Please complete your account setup
+                  and payment to become a supporter.
+                </ThemedText>
+
+                <ThemedButton
+                  title="Complete account setup and payment"
+                  onPress={handleBecomeSupporter}
+                  variant="filled"
+                />
+              </>
             )}
 
             <ThemedButton
@@ -367,5 +417,9 @@ const authStyles = StyleSheet.create({
   },
   buttonsContainer: {
     gap: 8,
+  },
+  incompleteMessage: {
+    textAlign: "center",
+    marginBottom: 4,
   },
 });

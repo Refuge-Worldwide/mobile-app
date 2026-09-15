@@ -3,7 +3,7 @@ import { directus } from '@/lib/directus';
 import { passwordRequest, readMe } from '@directus/sdk';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-interface DirectusUser {
+export interface DirectusUser {
   id: string;
   email: string;
   first_name?: string;
@@ -30,8 +30,15 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: any }>;
   // Re-pulls the current user (e.g. subscription_status) without a full
   // sign-in — used after returning from the website's Stripe checkout, so
-  // the account screen reflects a new subscription immediately.
-  refreshUser: () => Promise<void>;
+  // the account screen reflects a new subscription immediately. Returns the
+  // freshly-fetched user so callers can act on the up-to-date status right
+  // away, without waiting a render cycle for `user`/`isPaidSupporter` to
+  // catch up.
+  refreshUser: () => Promise<DirectusUser | null>;
+}
+
+export function isPaidSupporterStatus(status?: string | null) {
+  return status === 'active' || status === 'past_due';
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -42,7 +49,7 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => ({ error: null }),
   signOut: async () => { },
   resetPassword: async () => ({ error: null }),
-  refreshUser: async () => { },
+  refreshUser: async () => null,
 });
 
 export const useAuth = () => {
@@ -58,9 +65,7 @@ const ME_FIELDS = ['id', 'email', 'first_name', 'last_name', 'subscription_statu
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<DirectusUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const isPaidSupporter =
-    user?.subscription_status === 'active' ||
-    user?.subscription_status === 'past_due';
+  const isPaidSupporter = isPaidSupporterStatus(user?.subscription_status);
 
   useEffect(() => {
     // Restore session from stored token
@@ -124,11 +129,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      const me = await directus.request(readMe({ fields: ME_FIELDS }));
-      setUser(me as DirectusUser);
+      const me = (await directus.request(readMe({ fields: ME_FIELDS }))) as DirectusUser;
+      setUser(me);
+      return me;
     } catch {
       // Not logged in (or the request failed) — leave the existing user
       // state as-is rather than signing them out over a flaky refresh.
+      return null;
     }
   };
 

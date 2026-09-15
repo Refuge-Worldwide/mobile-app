@@ -1,8 +1,8 @@
 {
   "roles": [
     {
-      "name": "Refuge App User",
-      "note": "Assigned to signed-up app users. Owns the 'Refuge App - Own Favourites' and 'Refuge App - Chat Read' policies."
+      "name": "Supporter",
+      "note": "Assigned to signed-up app users (id referenced directly by DIRECTUS_SUPPORTER_ROLE_ID in the website's env for signup — that env var is the source of truth for which role this is, since Directus role names can be changed in the admin UI and this one already has been once, from 'Refuge App User'). Owns the 'Supporter - Own Favourites' and 'Supporter - Chat Read' policies."
     },
     {
       "name": "Chat Service",
@@ -76,7 +76,7 @@
     ],
     "policies": [
       {
-        "name": "Refuge App - Own Membership Read",
+        "name": "Supporter - Own Membership Read",
         "note": "Lets a signed-in user read their own supporter/subscription status (needed for the account page), but never write it — only the membership webhook can do that.",
         "permissions": [
           {
@@ -95,10 +95,10 @@
             "permissions": { "id": { "_eq": "$CURRENT_USER" } }
           }
         ],
-        "attachToRoles": ["Refuge App User"]
+        "attachToRoles": ["Supporter"]
       },
       {
-        "name": "Refuge App - Own Profile Update",
+        "name": "Supporter - Own Profile Update",
         "note": "Lets a signed-in user update their own display name (stored in first_name) and password. Added after discovering the read-only policy above didn't cover the website's settings page.",
         "permissions": [
           {
@@ -107,7 +107,7 @@
             "permissions": { "id": { "_eq": "$CURRENT_USER" } }
           }
         ],
-        "attachToRoles": ["Refuge App User"]
+        "attachToRoles": ["Supporter"]
       }
     ]
   },
@@ -175,7 +175,7 @@
       ],
       "policies": [
         {
-          "name": "Refuge App - Own Favourites",
+          "name": "Supporter - Own Favourites",
           "note": "Lets an authenticated user create/read/delete only their own favourite rows.",
           "permissions": [
             {
@@ -192,7 +192,46 @@
               "permissions": { "user_created": { "_eq": "$CURRENT_USER" } }
             }
           ],
-          "attachToRoles": ["Refuge App User"]
+          "attachToRoles": ["Supporter"]
+        }
+      ]
+    },
+    {
+      "collection": "settings",
+      "meta": {
+        "singleton": true,
+        "icon": "settings",
+        "note": "Site-wide settings. Currently just the supporter discount codes shown on the app's account screen."
+      },
+      "schema": {},
+      "fields": [
+        {
+          "field": "discount_codes",
+          "type": "json",
+          "meta": {
+            "interface": "list",
+            "note": "Repeater of discount codes shown to paid supporters in the app (Copy Discount Code button). Each row: { label, code }.",
+            "options": {
+              "fields": [
+                { "field": "label", "name": "Label", "type": "string", "meta": { "interface": "input", "width": "half" } },
+                { "field": "code", "name": "Code", "type": "string", "meta": { "interface": "input", "width": "half" } }
+              ]
+            }
+          },
+          "schema": { "is_nullable": true }
+        }
+      ],
+      "policies": [
+        {
+          "name": "Supporter - Settings Read",
+          "note": "Lets any signed-in app user read the settings singleton via the API (currently just discount_codes). Deliberately NOT attached to Public — this is what keeps the discount codes out of the public API. Directus permissions can't filter this unrelated singleton by the requester's subscription_status, so the app itself further restricts the Copy Discount Code button to paid supporters (see AuthContext isPaidSupporter) on top of this signed-in-only API gate. 'id' must stay in the fields list even though the app never requests it: Directus 500s ('An unexpected error occurred') reading a singleton when the field permission list excludes the primary key — confirmed by testing as an actual Supporter-role user.",
+          "permissions": [
+            {
+              "action": "read",
+              "fields": ["id", "discount_codes"]
+            }
+          ],
+          "attachToRoles": ["Supporter"]
         }
       ]
     },
@@ -270,7 +309,7 @@
       ],
       "policies": [
         {
-          "name": "Refuge App - Chat Read",
+          "name": "Supporter - Chat Read",
           "note": "Public and signed-in users can read the chat feed. Nobody can write directly — that only happens through the moderation server.",
           "permissions": [
             {
@@ -278,7 +317,7 @@
               "fields": ["id", "message", "username", "image", "date_created", "user"]
             }
           ],
-          "attachToRoles": ["Public", "Refuge App User"]
+          "attachToRoles": ["Public", "Supporter"]
         },
         {
           "name": "Refuge App - Chat Server Write",
