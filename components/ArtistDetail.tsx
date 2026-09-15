@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { pushShowDetail, ShowNavigationPrefix } from '@/lib/navigation';
 import { Artist } from '@/types/artists';
 import { Show } from '@/types/shows';
 import { ensureHttps, optimizeArtistHeaderImage } from '@/utils/imageOptimization';
@@ -22,7 +23,7 @@ import {
 const API_BASE_URL = 'https://refugeworldwide.com/api/artists';
 
 interface ArtistDetailProps {
-  navigationPrefix: '/(tabs)/radio' | '/(tabs)/search';
+  navigationPrefix: ShowNavigationPrefix;
 }
 
 export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
@@ -114,8 +115,8 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
   // Kept for backwards compatibility with ShowCard usage
   const getImageUrl = ensureHttps;
 
-  const handleShowPress = (showSlug: string) => {
-    router.push(`${navigationPrefix}/${showSlug}`);
+  const handleShowPress = (show: Show) => {
+    pushShowDetail(router, navigationPrefix, show);
   };
 
   if (loading) {
@@ -231,7 +232,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
                   date={formatDate(show.date)}
                   genres={show.genres}
                   mixcloudLink={show.mixcloudLink}
-                  onPress={() => handleShowPress(show.slug)}
+                  onPress={() => handleShowPress(show)}
                   showId={show.id}
                   slug={show.slug}
                 />
