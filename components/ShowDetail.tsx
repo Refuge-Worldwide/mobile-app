@@ -1,7 +1,6 @@
 import { Icon } from "@/components/Icon";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
-import { ShowDetailSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,6 +55,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   }, [cached]);
   const [show, setShow] = useState<Show | null>(cachedShow);
   const [loading, setLoading] = useState(!cachedShow);
+  const [contentLoading, setContentLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
@@ -104,6 +104,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   // data on screen and this is just a background refresh/fill-in.
   const fetchShow = async (showSlug: string, { silent = false } = {}) => {
     if (!silent) setLoading(true);
+    if (silent) setContentLoading(true);
     setError(null);
     try {
       const response = await fetch(`${API_BASE_URL}/${showSlug}`);
@@ -142,6 +143,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
       if (!silent) setError("Failed to load show");
     } finally {
       if (!silent) setLoading(false);
+      if (silent) setContentLoading(false);
     }
   };
 
@@ -279,7 +281,9 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
   if (loading) {
     return (
       <ThemedView style={styles.container}>
-        <ShowDetailSkeleton />
+        <View style={[styles.errorContainer, { paddingBottom: bottomPadding }]}>
+          <ActivityIndicator size="large" />
+        </View>
       </ThemedView>
     );
   }
@@ -351,20 +355,22 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <Pressable
-              onPress={handleToggleFavorite}
-              style={styles.actionButton}
-            >
-              {favoriteLoading ? (
-                <ActivityIndicator size="small" />
-              ) : (
-                <Icon
-                  name={isFavorite ? "heart" : "heart-outline"}
-                  size={24}
-                  color={isFavorite ? textColor : undefined}
-                />
-              )}
-            </Pressable>
+            {!contentLoading && (
+              <Pressable
+                onPress={handleToggleFavorite}
+                style={styles.actionButton}
+              >
+                {favoriteLoading ? (
+                  <ActivityIndicator size="small" />
+                ) : (
+                  <Icon
+                    name={isFavorite ? "heart" : "heart-outline"}
+                    size={24}
+                    color={isFavorite ? textColor : undefined}
+                  />
+                )}
+              </Pressable>
+            )}
             <Pressable onPress={handleShare} style={styles.actionButton}>
               <Icon name="share" size={24} />
             </Pressable>

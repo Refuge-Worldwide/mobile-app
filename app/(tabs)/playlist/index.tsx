@@ -1,5 +1,4 @@
 import { Icon } from "@/components/Icon";
-import { PlaylistCardSkeleton } from "@/components/SkeletonLoader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +12,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -161,11 +161,7 @@ export default function PlaylistScreen() {
 
           {/* API playlists */}
           {loading ? (
-            <>
-              {Array.from({ length: 3 }).map((_, index) => (
-                <PlaylistCardSkeleton key={index} />
-              ))}
-            </>
+            <ActivityIndicator size="large" style={styles.loadingIndicator} />
           ) : (
             playlists.map((playlist) => (
               <Pressable
@@ -204,6 +200,9 @@ export default function PlaylistScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingIndicator: {
+    marginTop: 24,
   },
   scrollContent: {
     paddingHorizontal: 12,

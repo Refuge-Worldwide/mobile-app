@@ -21,6 +21,7 @@ interface ShowCardProps {
   showId?: string;
   slug?: string;
   disableNavigation?: boolean;
+  imageTransition?: number;
 }
 
 export function ShowCard({
@@ -35,6 +36,7 @@ export function ShowCard({
   showId,
   slug,
   disableNavigation = false,
+  imageTransition = 300,
 }: ShowCardProps) {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
@@ -164,7 +166,7 @@ export function ShowCard({
           <Image
             source={{ uri: optimizeImage(imageUrl) }}
             placeholder={{ blurhash: blurhash || defaultBlurhash }}
-            transition={300}
+            transition={imageTransition}
             style={styles.image}
             contentFit="cover"
           />

@@ -2,7 +2,6 @@ import { BottomSheet } from "@/components/BottomSheet";
 import { GenreFilter } from "@/components/GenreFilter";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
-import { ShowCardSkeleton } from "@/components/SkeletonLoader";
 import { SupporterBanner } from "@/components/SupporterBanner";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -47,6 +46,8 @@ function buildListEntries(shows: Show[], showBanner: boolean): ListEntry[] {
 export default function Archive() {
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(false);
+  const [featuredShows, setFeaturedShows] = useState<Show[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [skip, setSkip] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -123,25 +124,15 @@ export default function Archive() {
   );
 
   const fetchFeaturedShows = useCallback(async () => {
-    if (isFetchingShowsRef.current) return;
-    isFetchingShowsRef.current = true;
-    const requestGeneration = listGenerationRef.current;
-
-    setLoading(true);
+    setFeaturedLoading(true);
     try {
       const response = await fetch(FEATURED_API_URL);
       const data: Show[] = await response.json();
-
-      // The tab changed while this was in flight — discard.
-      if (requestGeneration !== listGenerationRef.current) return;
-
-      setShows(data);
-      setHasMore(false); // Featured shows don't have pagination
+      setFeaturedShows(data);
     } catch (error) {
       console.error("Error fetching featured shows:", error);
     } finally {
-      isFetchingShowsRef.current = false;
-      setLoading(false);
+      setFeaturedLoading(false);
     }
   }, []);
 
@@ -178,14 +169,14 @@ export default function Archive() {
     setShows([]);
     setSkip(0);
     setHasMore(true);
-
-    if (activeTab === "featured") {
-      fetchFeaturedShows();
-    } else {
-      fetchShows(0, selectedGenres);
-    }
+    fetchShows(0, selectedGenres);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGenres, activeTab]);
+  }, [selectedGenres]);
+
+  useEffect(() => {
+    fetchFeaturedShows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load genres when component mounts
   useEffect(() => {
@@ -200,15 +191,15 @@ export default function Archive() {
   };
 
   const handleRefresh = useCallback(async () => {
-    listGenerationRef.current += 1;
     setRefreshing(true);
-    setSkip(0);
-    setHasMore(true);
 
     try {
       if (activeTab === "featured") {
         await fetchFeaturedShows();
       } else {
+        listGenerationRef.current += 1;
+        setSkip(0);
+        setHasMore(true);
         await fetchShows(0, selectedGenres);
       }
     } finally {
@@ -261,12 +252,16 @@ export default function Archive() {
         onPress={() => pushShowDetail(router, "/(tabs)/radio", show)}
         showId={show.id}
         slug={show.slug}
+        imageTransition={0}
       />
     );
   };
 
+  const displayedShows = activeTab === "featured" ? featuredShows : shows;
+  const displayedLoading = activeTab === "featured" ? featuredLoading : loading;
+
   const renderFooter = () => {
-    if (!loading) return null;
+    if (!displayedLoading) return null;
     return (
       <View style={styles.footer}>
         <ActivityIndicator size="large" />
@@ -351,24 +346,15 @@ export default function Archive() {
         </View>
       )}
 
-      {/* Loading skeleton for initial load */}
-      {shows.length === 0 && loading ? (
+      {displayedShows.length === 0 && displayedLoading ? (
         <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
-          <ShowCardSkeleton />
-          <ShowCardSeparator />
-          <ShowCardSkeleton />
-          <ShowCardSeparator />
-          <ShowCardSkeleton />
-          {!user && (
-            <>
-              <ShowCardSeparator />
-              <SupporterBanner overlay="pill" />
-            </>
-          )}
+          <View style={styles.footer}>
+            <ActivityIndicator size="large" />
+          </View>
         </View>
       ) : (
         <FlatList
-          data={buildListEntries(shows, !user)}
+          data={buildListEntries(displayedShows, !user)}
           renderItem={renderListEntry}
           keyExtractor={(item) =>
             item.type === "banner" ? "supporter-banner" : item.show.id

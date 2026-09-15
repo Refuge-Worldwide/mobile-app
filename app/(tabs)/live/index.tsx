@@ -1,7 +1,6 @@
 import { BottomSheet } from "@/components/BottomSheet";
 import { Icon } from "@/components/Icon";
 import { RefugeLogo } from "@/components/RefugeLogo";
-import { LivePlayerSkeleton } from "@/components/SkeletonLoader";
 import { SupporterPrompt } from "@/components/SupporterPrompt";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -17,6 +16,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Pressable,
   RefreshControl,
@@ -262,10 +262,9 @@ export default function Live() {
         }
       >
         <View style={[styles.channelsContainer, { gap: 30 }]}>
-          {/* Loading skeleton */}
           {!liveNow && !loadError && (
-            <View style={styles.channelSection}>
-              <LivePlayerSkeleton />
+            <View style={[styles.channelSection, styles.loadingContainer]}>
+              <ActivityIndicator size="large" />
             </View>
           )}
 
@@ -435,6 +434,10 @@ const styles = StyleSheet.create({
   },
   channelSection: {
     width: "100%",
+  },
+  loadingContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
   },
   imageContainer: {
     width: "100%",

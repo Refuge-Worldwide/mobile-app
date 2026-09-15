@@ -1,7 +1,6 @@
 import { GenreTag } from "@/components/GenreTag";
 import { ShowCard } from "@/components/ShowCard";
 import { ShowCardSeparator } from "@/components/ShowCardSeparator";
-import { ShowCardSkeleton } from "@/components/SkeletonLoader";
 import { SupporterBanner } from "@/components/SupporterBanner";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -209,13 +208,8 @@ export default function SearchScreen() {
       </View>
 
       {loading && (
-        <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <View key={index}>
-              <ShowCardSkeleton />
-              {index < 2 && <ShowCardSeparator />}
-            </View>
-          ))}
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" />
         </View>
       )}
 

@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { ShowCard } from './ShowCard';
 import { ShowCardSeparator } from './ShowCardSeparator';
-import { ShowCardSkeleton } from './SkeletonLoader';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
@@ -150,13 +149,8 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
         </View>
       </View>
       {shows.length === 0 && loading ? (
-        <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
-          {Array.from({ length: 4 }).map((_, index) => (
-            <View key={index}>
-              <ShowCardSkeleton />
-              {index < 3 && <ShowCardSeparator />}
-            </View>
-          ))}
+        <View style={styles.footer}>
+          <ActivityIndicator size="large" />
         </View>
       ) : shows.length === 0 && !loading ? (
         <View style={styles.emptyState}>
