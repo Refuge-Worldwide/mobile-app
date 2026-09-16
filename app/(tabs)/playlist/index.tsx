@@ -3,6 +3,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
+import { useThemeBlurhash } from "@/hooks/useThemeBlurhash";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFavouritesWithShows } from "@/lib/favourites";
 import { ApiPlaylist, fetchPlaylistBySlug, fetchPlaylists } from "@/lib/playlistsApi";
@@ -28,6 +29,7 @@ export default function PlaylistScreen() {
   const [loading, setLoading] = useState(true);
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
+  const defaultBlurhash = useThemeBlurhash();
 
   const setTrack = useAudioStore((state) => state.setTrack);
   const addToQueue = useAudioStore((state) => state.addToQueue);
@@ -173,6 +175,8 @@ export default function PlaylistScreen() {
                 <View style={styles.imageContainer}>
                   <Image
                     source={{ uri: playlist.image }}
+                    placeholder={{ blurhash: defaultBlurhash }}
+                    transition={300}
                     style={styles.playlistImage}
                     contentFit="cover"
                   />

@@ -3,16 +3,17 @@ import { ShowCardSeparator } from '@/components/ShowCardSeparator';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
+import { useThemeBlurhash } from '@/hooks/useThemeBlurhash';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { pushShowDetail, ShowNavigationPrefix } from '@/lib/navigation';
 import { Artist } from '@/types/artists';
 import { Show } from '@/types/shows';
 import { ensureHttps, optimizeArtistHeaderImage } from '@/utils/imageOptimization';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -37,6 +38,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
 
   const textColor = useThemeColor({}, 'text');
   const bottomPadding = useBottomSafePadding();
+  const defaultBlurhash = useThemeBlurhash();
 
   useEffect(() => {
     if (slug) {
@@ -153,8 +155,10 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
             <View style={styles.imageContainer}>
               <Image
                 source={{ uri: optimizeArtistHeaderImage(artistImage) }}
+                placeholder={{ blurhash: defaultBlurhash }}
+                transition={300}
                 style={styles.artistImage}
-                resizeMode="cover"
+                contentFit="cover"
               />
             </View>
           )}

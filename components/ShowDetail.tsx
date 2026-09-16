@@ -5,18 +5,19 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
+import { useThemeBlurhash } from "@/hooks/useThemeBlurhash";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { isFavourited, toggleFavourite } from "@/lib/favourites";
 import { pushShowDetail, ShowNavigationPrefix } from "@/lib/navigation";
 import { Artist } from "@/types/artists";
 import { Show } from "@/types/shows";
 import { ensureHttps, optimizeArtistImage } from "@/utils/imageOptimization";
+import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -68,6 +69,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
 
   const textColor = useThemeColor({}, "text");
   const bottomPadding = useBottomSafePadding();
+  const defaultBlurhash = useThemeBlurhash();
 
   useEffect(() => {
     if (!slug) return;
@@ -418,7 +420,10 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                           {artistImage ? (
                             <Image
                               source={{ uri: optimizeArtistImage(artistImage) }}
+                              placeholder={{ blurhash: defaultBlurhash }}
+                              transition={300}
                               style={styles.artistImage}
+                              contentFit="cover"
                               key={optimizeArtistImage(artistImage)}
                             />
                           ) : (

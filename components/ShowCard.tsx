@@ -1,3 +1,4 @@
+import { useThemeBlurhash } from "@/hooks/useThemeBlurhash";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAudioStore } from "@/store/audioStore";
 import { optimizeShowImage } from "@/utils/imageOptimization";
@@ -70,7 +71,7 @@ export function ShowCard({
     }
   };
 
-  const defaultBlurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
+  const defaultBlurhash = useThemeBlurhash();
 
   // Use centralized image optimization from utils
   const optimizeImage = optimizeShowImage;
