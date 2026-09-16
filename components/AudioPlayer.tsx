@@ -94,7 +94,7 @@ export function AudioPlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTrack?.id]);
 
-  const { position, duration } = useProgress(10000);
+  const { position, duration } = useProgress(30000);
   useEffect(() => {
     if (currentTrack?.mode !== "archive" || !currentTrack.showId || !duration) {
       return;

@@ -141,7 +141,7 @@ export default function AccountScreen() {
   };
 
   const handleFavoritesPress = () => {
-    router.push("/(tabs)/playlist/playlist/favorites");
+    router.push("/(tabs)/account/favorites" as any);
   };
 
   const handleHistoryPress = () => {

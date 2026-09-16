@@ -5,7 +5,11 @@
     "version": "0.2.1",
     "description": "Stream live radio and explore curated playlists from Refuge Worldwide - Berlin's forward-thinking music platform featuring underground artists, experimental sounds, and diverse programming from around the globe.",
     "shortDescription": "Community radio and curated playlists from Berlin's Refuge Worldwide",
-    "keywords": ["radio", "music", "streaming"],
+    "keywords": [
+      "radio",
+      "music",
+      "streaming"
+    ],
     "orientation": "portrait",
     "privacy": "https://refugeworldwide.com/privacy-policy",
     "supportUrl": "https://refugeworldwide.com/imprint",
@@ -25,9 +29,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.refugeworldwide.app",
       "displayName": "Refuge Worldwide",
-      "associatedDomains": ["applinks:refugeworldwide.com"],
+      "associatedDomains": [
+        "applinks:refugeworldwide.com"
+      ],
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "ITSAppUsesNonExemptEncryption": false,
         "UIDesignRequiresCompatibility": true
       }
@@ -61,7 +69,10 @@
               "pathPrefix": "/artists"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -83,7 +94,8 @@
       "expo-audio",
       "expo-font",
       "expo-secure-store",
-      "./plugins/withFmtConstevalFix"
+      "./plugins/withFmtConstevalFix",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
