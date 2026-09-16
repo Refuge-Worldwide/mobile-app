@@ -1,4 +1,5 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { getResumableShow, markLivePlayed, saveProgress } from "@/lib/listenHistory";
 import { fetchShowBySlug } from "@/lib/showsApi";
 import { useAudioStore } from "@/store/audioStore";
 import {
@@ -15,6 +16,7 @@ import TrackPlayer, {
   Event,
   State,
   TrackType,
+  useProgress,
   useTrackPlayerEvents,
 } from "react-native-track-player";
 import { DraggableScrubber } from "./DraggableScrubber";
@@ -42,6 +44,7 @@ export function AudioPlayer() {
     currentTrack,
     isPlaying,
     isLoading,
+    setTrack,
     setIsPlaying,
     setIsLoading,
     clearTrack,
@@ -90,6 +93,29 @@ export function AudioPlayer() {
     // Only run when currentTrack changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTrack?.id]);
+
+  const { position, duration } = useProgress(10000);
+  useEffect(() => {
+    if (currentTrack?.mode !== "archive" || !currentTrack.showId || !duration) {
+      return;
+    }
+    saveProgress({
+      showId: currentTrack.showId,
+      slug: currentTrack.slug || "",
+      title: currentTrack.title,
+      url: currentTrack.url,
+      artwork: currentTrack.artwork,
+      position,
+      duration,
+    });
+  }, [position, duration, currentTrack]);
+
+  useEffect(() => {
+    if (currentTrack?.mode === "live") {
+      markLivePlayed();
+    }
+  }, [currentTrack?.mode, currentTrack?.id]);
+
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const [isVisible, setIsVisible] = useState(false);
@@ -195,13 +221,33 @@ export function AudioPlayer() {
         TrackPlayer.addEventListener(Event.RemoteSeek, async (event) => {
           await TrackPlayer.seekTo(event.position);
         });
+
+        if (!useAudioStore.getState().currentTrack) {
+          const resumableShow = await getResumableShow();
+          if (resumableShow) {
+            setTrack(
+              {
+                id: resumableShow.title,
+                url: resumableShow.url,
+                title: resumableShow.title,
+                artwork: resumableShow.artwork,
+                mode: "archive",
+                isLive: false,
+                showId: resumableShow.showId,
+                slug: resumableShow.slug,
+                startPosition: resumableShow.position,
+              },
+              { autoPlay: false },
+            );
+          }
+        }
       } catch (error) {
         // Player setup error - handle silently in production
       }
     };
 
     setupPlayer();
-  }, [clearTrack]);
+  }, [clearTrack, setTrack]);
 
   // Load and play track when currentTrack ID or URL changes (not on metadata updates)
   useEffect(() => {
@@ -273,8 +319,15 @@ export function AudioPlayer() {
         // Wait for both to complete
         await Promise.all([updateOptionsPromise, addTrackPromise]);
 
-        // Play the track - isPlaying is already true from setTrack
-        await TrackPlayer.play();
+        if (currentTrack.startPosition) {
+          await TrackPlayer.seekTo(currentTrack.startPosition);
+        }
+
+        if (isPlaying) {
+          await TrackPlayer.play();
+        } else {
+          setIsLoading(false);
+        }
 
         // Update the ref to track this loaded track
         lastLoadedTrackId.current = currentTrack.id;

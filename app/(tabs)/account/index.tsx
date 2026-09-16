@@ -144,6 +144,10 @@ export default function AccountScreen() {
     router.push("/(tabs)/playlist/playlist/favorites");
   };
 
+  const handleHistoryPress = () => {
+    router.push("/(tabs)/account/history" as any);
+  };
+
   const handleCopyCode = async (label: string | undefined, code: string) => {
     await Clipboard.setStringAsync(code);
     Alert.alert(
@@ -241,6 +245,12 @@ export default function AccountScreen() {
                 <ThemedButton
                   title="Favourites Shows"
                   onPress={handleFavoritesPress}
+                  variant="outline"
+                />
+
+                <ThemedButton
+                  title="Listen History"
+                  onPress={handleHistoryPress}
                   variant="outline"
                 />
 

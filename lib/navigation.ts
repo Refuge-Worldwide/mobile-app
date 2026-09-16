@@ -6,7 +6,8 @@ export type ShowNavigationPrefix =
   | "/(tabs)/radio"
   | "/(tabs)/search"
   | "/(tabs)/live"
-  | "/(tabs)/playlist";
+  | "/(tabs)/playlist"
+  | "/(tabs)/account";
 
 // Anything with at least a slug — a full Show, a related-show entry, a
 // playlist item, etc. Kept loose (no index signature, so any concrete Show

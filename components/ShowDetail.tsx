@@ -354,26 +354,35 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
           )}
 
           {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            {!contentLoading && (
-              <Pressable
-                onPress={handleToggleFavorite}
-                style={styles.actionButton}
-              >
-                {favoriteLoading ? (
-                  <ActivityIndicator size="small" />
-                ) : (
-                  <Icon
-                    name={isFavorite ? "heart" : "heart-outline"}
-                    size={24}
-                    color={isFavorite ? textColor : undefined}
-                  />
-                )}
-              </Pressable>
+          <View
+            style={[
+              styles.actionButtons,
+              contentLoading && styles.actionButtonsLoading,
+            ]}
+          >
+            {contentLoading ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <>
+                <Pressable
+                  onPress={handleToggleFavorite}
+                  style={styles.actionButton}
+                >
+                  {favoriteLoading ? (
+                    <ActivityIndicator size="small" />
+                  ) : (
+                    <Icon
+                      name={isFavorite ? "heart" : "heart-outline"}
+                      size={24}
+                      color={isFavorite ? textColor : undefined}
+                    />
+                  )}
+                </Pressable>
+                <Pressable onPress={handleShare} style={styles.actionButton}>
+                  <Icon name="share" size={24} />
+                </Pressable>
+              </>
             )}
-            <Pressable onPress={handleShare} style={styles.actionButton}>
-              <Icon name="share" size={24} />
-            </Pressable>
           </View>
         </View>
 
@@ -504,6 +513,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 16,
     marginTop: 4,
+  },
+  actionButtonsLoading: {
+    justifyContent: "center",
+    marginTop: 36,
   },
   actionButton: {
     padding: 0,

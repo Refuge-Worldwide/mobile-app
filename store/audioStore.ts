@@ -12,6 +12,7 @@ export interface Track {
   isLive?: boolean;
   showId?: string; // Unique show ID for matching with show cards
   slug?: string; // Show slug for API fetching
+  startPosition?: number; // Seconds to seek to once loaded — used to resume a show
 }
 
 interface AudioStore {
@@ -19,7 +20,7 @@ interface AudioStore {
   queue: Track[];
   isPlaying: boolean;
   isLoading: boolean;
-  setTrack: (track: Track) => void;
+  setTrack: (track: Track, options?: { autoPlay?: boolean }) => void;
   setIsPlaying: (isPlaying: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
   clearTrack: () => void;
@@ -57,10 +58,10 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   queue: [],
   isPlaying: false,
   isLoading: false,
-  setTrack: (track) =>
+  setTrack: (track, options) =>
     set({
       currentTrack: track,
-      isPlaying: true,
+      isPlaying: options?.autoPlay === false ? false : true,
       isLoading: true,
     }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
