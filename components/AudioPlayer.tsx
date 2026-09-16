@@ -102,9 +102,6 @@ export function AudioPlayer() {
     saveProgress({
       showId: currentTrack.showId,
       slug: currentTrack.slug || "",
-      title: currentTrack.title,
-      url: currentTrack.url,
-      artwork: currentTrack.artwork,
       position,
       duration,
     });
@@ -223,19 +220,22 @@ export function AudioPlayer() {
         });
 
         if (!useAudioStore.getState().currentTrack) {
-          const resumableShow = await getResumableShow();
-          if (resumableShow) {
+          const resumable = await getResumableShow();
+          const audioUrl = resumable?.show.mixcloudLink?.includes("soundcloud.com")
+            ? resumable.show.mixcloudLink
+            : undefined;
+          if (resumable && audioUrl) {
             setTrack(
               {
-                id: resumableShow.title,
-                url: resumableShow.url,
-                title: resumableShow.title,
-                artwork: resumableShow.artwork,
+                id: resumable.show.title,
+                url: audioUrl,
+                title: resumable.show.title,
+                artwork: resumable.show.coverImage || resumable.show.artwork,
                 mode: "archive",
                 isLive: false,
-                showId: resumableShow.showId,
-                slug: resumableShow.slug,
-                startPosition: resumableShow.position,
+                showId: resumable.show.id,
+                slug: resumable.show.slug,
+                startPosition: resumable.progress.position,
               },
               { autoPlay: false },
             );

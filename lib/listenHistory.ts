@@ -1,43 +1,40 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SQLite from "expo-sqlite";
+import { fetchShowBySlug } from "@/lib/showsApi";
+import { Show } from "@/types/shows";
 
 const LAST_LIVE_KEY = "rw-last-live-played-at";
 const FINISHED_THRESHOLD = 0.95;
 
-export interface ListenHistoryEntry {
+export interface ListenProgress {
   showId: string;
   slug: string;
-  title: string;
-  url: string;
-  artwork?: string;
-  date?: string;
   position: number;
   duration: number;
   finished: boolean;
   updatedAt: number;
 }
 
-interface ListenHistoryRow {
+export type ListenHistoryEntry = Show & {
+  position: number;
+  duration: number;
+  finished: boolean;
+  updatedAt: number;
+};
+
+interface ListenProgressRow {
   show_id: string;
   slug: string;
-  title: string;
-  url: string;
-  artwork: string | null;
-  date: string | null;
   position: number;
   duration: number;
   finished: number;
   updated_at: number;
 }
 
-function rowToEntry(row: ListenHistoryRow): ListenHistoryEntry {
+function rowToProgress(row: ListenProgressRow): ListenProgress {
   return {
     showId: row.show_id,
     slug: row.slug,
-    title: row.title,
-    url: row.url,
-    artwork: row.artwork ?? undefined,
-    date: row.date ?? undefined,
     position: row.position,
     duration: row.duration,
     finished: row.finished === 1,
@@ -51,10 +48,6 @@ const dbPromise = (async () => {
     CREATE TABLE IF NOT EXISTS listen_history (
       show_id TEXT PRIMARY KEY,
       slug TEXT NOT NULL,
-      title TEXT NOT NULL,
-      url TEXT NOT NULL,
-      artwork TEXT,
-      date TEXT,
       position REAL NOT NULL,
       duration REAL NOT NULL,
       finished INTEGER NOT NULL,
@@ -66,13 +59,34 @@ const dbPromise = (async () => {
   return db;
 })();
 
-export async function getHistory(): Promise<ListenHistoryEntry[]> {
+export async function getHistory(
+  limit: number,
+  offset: number,
+): Promise<ListenHistoryEntry[]> {
   try {
     const db = await dbPromise;
-    const rows = await db.getAllAsync<ListenHistoryRow>(
-      "SELECT * FROM listen_history ORDER BY updated_at DESC",
+    const rows = await db.getAllAsync<ListenProgressRow>(
+      "SELECT * FROM listen_history ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+      [limit, offset],
     );
-    return rows.map(rowToEntry);
+
+    const entries = await Promise.all(
+      rows.map(async (row) => {
+        const progress = rowToProgress(row);
+        const show = await fetchShowBySlug(progress.slug);
+        return show
+          ? {
+              ...show,
+              position: progress.position,
+              duration: progress.duration,
+              finished: progress.finished,
+              updatedAt: progress.updatedAt,
+            }
+          : null;
+      }),
+    );
+
+    return entries.filter((entry): entry is ListenHistoryEntry => entry !== null);
   } catch {
     return [];
   }
@@ -93,18 +107,23 @@ async function getLastLivePlayedAt(): Promise<number> {
   }
 }
 
-export async function getResumableShow(): Promise<ListenHistoryEntry | null> {
+export async function getResumableShow(): Promise<{
+  show: Show;
+  progress: ListenProgress;
+} | null> {
   try {
     const db = await dbPromise;
-    const row = await db.getFirstAsync<ListenHistoryRow>(
+    const row = await db.getFirstAsync<ListenProgressRow>(
       "SELECT * FROM listen_history ORDER BY updated_at DESC LIMIT 1",
     );
     if (!row || row.finished === 1) return null;
 
+    const progress = rowToProgress(row);
     const lastLiveAt = await getLastLivePlayedAt();
-    if (lastLiveAt > row.updated_at) return null;
+    if (lastLiveAt > progress.updatedAt) return null;
 
-    return rowToEntry(row);
+    const show = await fetchShowBySlug(progress.slug);
+    return show ? { show, progress } : null;
   } catch {
     return null;
   }
@@ -113,14 +132,10 @@ export async function getResumableShow(): Promise<ListenHistoryEntry | null> {
 export async function saveProgress(entry: {
   showId: string;
   slug: string;
-  title: string;
-  url: string;
-  artwork?: string;
-  date?: string;
   position: number;
   duration: number;
 }): Promise<void> {
-  if (!entry.showId || !entry.duration || !entry.url) return;
+  if (!entry.showId || !entry.slug || !entry.duration) return;
 
   const finished = entry.position / entry.duration >= FINISHED_THRESHOLD;
 
@@ -128,14 +143,10 @@ export async function saveProgress(entry: {
     const db = await dbPromise;
     await db.runAsync(
       `INSERT INTO listen_history
-        (show_id, slug, title, url, artwork, date, position, duration, finished, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (show_id, slug, position, duration, finished, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)
        ON CONFLICT(show_id) DO UPDATE SET
          slug = excluded.slug,
-         title = excluded.title,
-         url = excluded.url,
-         artwork = excluded.artwork,
-         date = excluded.date,
          position = excluded.position,
          duration = excluded.duration,
          finished = excluded.finished,
@@ -143,10 +154,6 @@ export async function saveProgress(entry: {
       [
         entry.showId,
         entry.slug,
-        entry.title,
-        entry.url,
-        entry.artwork ?? null,
-        entry.date ?? null,
         entry.position,
         entry.duration,
         finished ? 1 : 0,
