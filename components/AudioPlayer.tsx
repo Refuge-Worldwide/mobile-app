@@ -1,5 +1,10 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { getResumableShow, markLivePlayed, saveProgress } from "@/lib/listenHistory";
+import {
+  getResumableShow,
+  markLivePlayed,
+  saveCurrentProgress,
+  saveProgress,
+} from "@/lib/listenHistory";
 import { fetchShowBySlug } from "@/lib/showsApi";
 import { useAudioStore } from "@/store/audioStore";
 import {
@@ -9,7 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Pressable, StyleSheet, View } from "react-native";
+import { Animated, AppState, Pressable, StyleSheet, View } from "react-native";
 import TrackPlayer, {
   AppKilledPlaybackBehavior,
   Capability,
@@ -106,6 +111,13 @@ export function AudioPlayer() {
       duration,
     });
   }, [position, duration, currentTrack]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state !== "active") saveCurrentProgress();
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (currentTrack?.mode === "live") {
@@ -462,6 +474,8 @@ export function AudioPlayer() {
         } else if (isActuallyPaused && isPlaying) {
           setIsPlaying(false);
         }
+
+        if (isActuallyPaused) saveCurrentProgress();
 
         // Update loading state
         if (isBuffering && !isLoading) {

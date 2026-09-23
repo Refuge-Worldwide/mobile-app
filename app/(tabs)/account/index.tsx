@@ -109,9 +109,6 @@ export default function AccountScreen() {
     if (error) {
       Alert.alert("Error", error.message);
     } else {
-      // No popup needed — the account screen itself now shows the
-      // "Incomplete" status and "Complete account setup and pay" button right
-      // after this, so the same message would just be said twice.
       setEmail("");
       setUsername("");
       setPassword("");
@@ -152,6 +149,10 @@ export default function AccountScreen() {
     router.push("/(tabs)/account/history" as any);
   };
 
+  const handleAccountSettings = async () => {
+    await WebBrowser.openBrowserAsync(`${BACKEND_API_URL}/account/settings`);
+  };
+
   const handleCopyCode = async (label: string | undefined, code: string) => {
     await Clipboard.setStringAsync(code);
     Alert.alert(
@@ -160,34 +161,32 @@ export default function AccountScreen() {
     );
   };
 
-  const handleManageSubscription = async () => {
-    await WebBrowser.openBrowserAsync(`${BACKEND_API_URL}/account`);
-  };
+  const [checkingStatus, setCheckingStatus] = useState(false);
 
-  const handleBecomeSupporter = async () => {
-    if (!user?.email) return;
-
-    // Dedicated, distraction-free checkout page for the app — just the
-    // price picker, no marketing content and no modal-inside-a-browser-sheet.
-    // See pages/supporters/checkout.tsx on the website.
-    const url = `${BACKEND_API_URL}/supporters/checkout?email=${encodeURIComponent(user.email)}`;
-    const result = await WebBrowser.openAuthSessionAsync(
-      url,
-      "refugeworldwideapp://supporter-callback",
-    );
-
-    // Whether they finished checkout or just closed the browser, re-pull
-    // subscription_status so "Active" shows up without needing a relaunch —
-    // harmless no-op if nothing changed.
-    if (result.type === "success") {
-      const updatedUser = await refreshUser();
-      if (isPaidSupporterStatus(updatedUser?.subscription_status)) {
-        Toast.show({
-          type: "success",
-          text1: "Payment confirmed!",
-          text2: "Your account setup is complete.",
-        });
-      }
+  // Payment happens outside the app (App Store 3.1.3), so this just re-reads
+  // the account once they've confirmed via the emailed link.
+  const handleCheckStatus = async () => {
+    setCheckingStatus(true);
+    const updatedUser = await refreshUser();
+    setCheckingStatus(false);
+    if (!updatedUser) {
+      Toast.show({
+        type: "error",
+        text1: "Couldn't check your account",
+        text2: "Please try again in a moment.",
+      });
+    } else if (isPaidSupporterStatus(updatedUser.subscription_status)) {
+      Toast.show({
+        type: "success",
+        text1: "You're all set!",
+        text2: "Your supporter account is active.",
+      });
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Not confirmed yet",
+        text2: "Check your email to confirm your account.",
+      });
     }
   };
 
@@ -226,14 +225,6 @@ export default function AccountScreen() {
               </View>
               <View style={authStyles.cardRow}>
                 <ThemedText style={{ color: backgroundColor }}>
-                  Joined:
-                </ThemedText>
-                <ThemedText style={{ color: backgroundColor }}>
-                  January 24, 2024
-                </ThemedText>
-              </View>
-              <View style={authStyles.cardRow}>
-                <ThemedText style={{ color: backgroundColor }}>
                   Subscription:
                 </ThemedText>
                 <ThemedText style={{ color: backgroundColor }}>
@@ -247,7 +238,7 @@ export default function AccountScreen() {
             {isPaidSupporter ? (
               <>
                 <ThemedButton
-                  title="Favourites Shows"
+                  title="Favourites"
                   onPress={handleFavoritesPress}
                   variant="outline"
                 />
@@ -268,37 +259,37 @@ export default function AccountScreen() {
                 {discountCodes?.map((entry, index) => (
                   <ThemedButton
                     key={`${entry.code}-${index}`}
-                    title={`Copy ${entry.label ? `${entry.label} ` : ""}code`}
+                    title={`Copy ${entry.label ? `${entry.label} ` : ""}discount code`}
                     onPress={() => handleCopyCode(entry.label, entry.code)}
                     variant="outline"
                   />
                 ))}
 
-                {!isStaff && isPaidSupporterStatus(user.subscription_status) && (
-                  <ThemedButton
-                    title="Manage Subscription"
-                    onPress={handleManageSubscription}
-                    variant="outline"
-                  />
-                )}
+                {/* Paid/staff only: the web settings page offers checkout to
+                    unpaid accounts, which the app mustn't link to (3.1.3). */}
+                <ThemedButton
+                  title="Account Settings"
+                  onPress={handleAccountSettings}
+                  variant="outline"
+                />
+
               </>
             ) : (
-              // Just the one action while setup is incomplete — favourites/
-              // discount codes aren't useful yet, so don't clutter the
-              // screen with them.
+              // No payment wording or links here: App Store 3.1.3 forbids
+              // steering users to an outside purchase from inside the app.
               <>
                 <ThemedText type="subtitle" style={authStyles.almostThereHeading}>
-                  Almost there
+                  Thanks for signing up!
                 </ThemedText>
                 <ThemedText style={authStyles.incompleteMessage}>
-                  Thanks for signing up! Please complete your account setup
-                  and payment to become a supporter.
+                  Check your email to confirm your account.
                 </ThemedText>
 
                 <ThemedButton
-                  title="Finish setting up your account"
-                  onPress={handleBecomeSupporter}
-                  variant="filled"
+                  title="Refresh account status"
+                  onPress={handleCheckStatus}
+                  loading={checkingStatus}
+                  variant="outline"
                 />
               </>
             )}

@@ -98,9 +98,25 @@ export default function ListenHistoryScreen() {
     />
   );
 
+  const header = (
+    <View
+      style={[
+        styles.headerContainer,
+        { backgroundColor, borderBottomColor: textColor },
+      ]}
+    >
+      <View style={styles.headerContent}>
+        <ThemedText type="title" style={styles.headerTitle}>
+          Listen History
+        </ThemedText>
+      </View>
+    </View>
+  );
+
   if (history === null) {
     return (
       <ThemedView style={styles.container}>
+        {header}
         <View style={[styles.emptyContainer, { paddingBottom: bottomPadding }]}>
           <ActivityIndicator size="large" />
         </View>
@@ -111,8 +127,9 @@ export default function ListenHistoryScreen() {
   if (history.length === 0) {
     return (
       <ThemedView style={styles.container}>
+        {header}
         <View style={styles.emptyContainer}>
-          <ThemedText type="title" style={styles.emptyTitle}>
+          <ThemedText type="subtitle" style={styles.emptyTitle}>
             No listens yet
           </ThemedText>
           <ThemedText style={styles.emptyText}>
@@ -125,18 +142,7 @@ export default function ListenHistoryScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View
-        style={[
-          styles.headerContainer,
-          { backgroundColor, borderBottomColor: textColor },
-        ]}
-      >
-        <View style={styles.headerContent}>
-          <ThemedText type="title" style={styles.headerTitle}>
-            Listen History
-          </ThemedText>
-        </View>
-      </View>
+      {header}
       <FlatList
         data={history}
         renderItem={renderItem}
@@ -170,7 +176,8 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerTitle: {
-    flex: 1,
+    fontSize: 22,
+    lineHeight: 24,
   },
   footer: {
     paddingVertical: 20,

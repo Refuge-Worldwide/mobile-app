@@ -199,17 +199,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     // Favouriting is a supporter perk — being signed in isn't enough on
     // its own, since every account starts out unpaid.
     if (!isPaidSupporter) {
-      Alert.alert(
-        "Account setup incomplete",
-        "Favouriting shows is a supporter feature, please complete your account setup.",
-        [
-          { text: "Not now", style: "cancel" },
-          {
-            text: "Complete Setup",
-            onPress: () => router.push("/(tabs)/account"),
-          },
-        ],
-      );
+      Alert.alert("Supporters only", "Favouriting shows is a supporter feature.");
       return;
     }
 

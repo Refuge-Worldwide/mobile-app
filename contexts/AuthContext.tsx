@@ -45,6 +45,9 @@ interface AuthContextType {
   refreshUser: () => Promise<DirectusUser | null>;
 }
 
+// Must match the website, which stores every account email lowercased.
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
 export function isPaidSupporterStatus(status?: string | null) {
   return status === 'active' || status === 'past_due';
 }
@@ -108,7 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (rawEmail: string, password: string) => {
+    const email = normalizeEmail(rawEmail);
     try {
       await directus.login({ email, password });
       const me = await directus.request(readMe({ fields: ME_FIELDS }));
@@ -121,11 +125,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (
-    email: string,
+    rawEmail: string,
     password: string,
     username: string,
     newsletter: boolean,
   ) => {
+    const email = normalizeEmail(rawEmail);
     try {
       const response = await fetch(`${BACKEND_API_URL}/api/auth/signup`, {
         method: 'POST',
@@ -158,7 +163,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsStaff(false);
   };
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (rawEmail: string) => {
+    const email = normalizeEmail(rawEmail);
     try {
       // reset_url so the emailed link lands on the website's own
       // /reset-password page, not Directus's admin app

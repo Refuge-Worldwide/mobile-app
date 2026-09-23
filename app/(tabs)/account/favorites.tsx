@@ -100,9 +100,23 @@ export default function FavoritesScreen() {
     setRefreshing(false);
   }, []);
 
+  const header = (
+    <View
+      style={[
+        styles.headerContainer,
+        { backgroundColor, borderBottomColor: textColor },
+      ]}
+    >
+      <View style={styles.headerContent}>
+        <ThemedText type="title" style={styles.headerTitle}>Favourites</ThemedText>
+      </View>
+    </View>
+  );
+
   if (loading) {
     return (
       <ThemedView style={styles.container}>
+        {header}
         <View style={[styles.emptyContainer, { paddingBottom: bottomPadding }]}>
           <ActivityIndicator size="large" />
         </View>
@@ -113,8 +127,9 @@ export default function FavoritesScreen() {
   if (error) {
     return (
       <ThemedView style={styles.container}>
+        {header}
         <View style={styles.emptyContainer}>
-          <ThemedText type="title" style={styles.emptyTitle}>
+          <ThemedText type="subtitle" style={styles.emptyTitle}>
             Error
           </ThemedText>
           <ThemedText style={styles.emptyText}>{error}</ThemedText>
@@ -126,8 +141,9 @@ export default function FavoritesScreen() {
   if (shows.length === 0) {
     return (
       <ThemedView style={styles.container}>
+        {header}
         <View style={styles.emptyContainer}>
-          <ThemedText type="title" style={styles.emptyTitle}>
+          <ThemedText type="subtitle" style={styles.emptyTitle}>
             No shows yet
           </ThemedText>
           <ThemedText style={styles.emptyText}>
@@ -154,16 +170,7 @@ export default function FavoritesScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View
-        style={[
-          styles.headerContainer,
-          { backgroundColor, borderBottomColor: textColor },
-        ]}
-      >
-        <View style={styles.headerContent}>
-          <ThemedText type="title" style={styles.headerTitle}>Favourites</ThemedText>
-        </View>
-      </View>
+      {header}
       <FlatList
         data={shows}
         renderItem={renderShowItem}
@@ -196,7 +203,8 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerTitle: {
-    flex: 1,
+    fontSize: 22,
+    lineHeight: 24,
   },
   emptyContainer: {
     flex: 1,

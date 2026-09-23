@@ -1,4 +1,4 @@
-import { PlaybackService } from '@/service';
+import { PlaybackService } from '@/lib/playbackService';
 import TrackPlayer from 'react-native-track-player';
 import { ColourPicker } from '@/components/ColourPicker';
 import { SplashScreen } from '@/components/SplashScreen';

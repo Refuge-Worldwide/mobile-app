@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SQLite from "expo-sqlite";
 import { fetchShowBySlug } from "@/lib/showsApi";
+import { useAudioStore } from "@/store/audioStore";
+import TrackPlayer from "react-native-track-player";
 import { Show } from "@/types/shows";
 
 const LAST_LIVE_KEY = "rw-last-live-played-at";
@@ -42,17 +44,39 @@ function rowToProgress(row: ListenProgressRow): ListenProgress {
   };
 }
 
+const TABLE_COLUMNS = `
+  show_id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL,
+  position REAL NOT NULL,
+  duration REAL NOT NULL,
+  finished INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+`;
+
 const dbPromise = (async () => {
   const db = await SQLite.openDatabaseAsync("listenHistory.db");
+  await db.execAsync(`CREATE TABLE IF NOT EXISTS listen_history (${TABLE_COLUMNS});`);
+
+  // The first version of this table also had NOT NULL title/url columns,
+  // which every insert now violates — rebuild it without them, keeping rows.
+  const columns = await db.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(listen_history)",
+  );
+  if (columns.some((column) => column.name === "title")) {
+    await db.execAsync(`
+      BEGIN;
+      ALTER TABLE listen_history RENAME TO listen_history_old;
+      DROP INDEX IF EXISTS listen_history_updated_at;
+      CREATE TABLE listen_history (${TABLE_COLUMNS});
+      INSERT INTO listen_history (show_id, slug, position, duration, finished, updated_at)
+        SELECT show_id, slug, position, duration, finished, updated_at
+        FROM listen_history_old;
+      DROP TABLE listen_history_old;
+      COMMIT;
+    `);
+  }
+
   await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS listen_history (
-      show_id TEXT PRIMARY KEY,
-      slug TEXT NOT NULL,
-      position REAL NOT NULL,
-      duration REAL NOT NULL,
-      finished INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
     CREATE INDEX IF NOT EXISTS listen_history_updated_at
       ON listen_history (updated_at DESC);
   `);
@@ -160,5 +184,24 @@ export async function saveProgress(entry: {
         Date.now(),
       ],
     );
-  } catch {}
+  } catch (error) {
+    console.warn("[listenHistory] saveProgress failed:", error);
+  }
+}
+
+// For moments the 30s progress poll would miss: pause, seek, leaving the app.
+export async function saveCurrentProgress(): Promise<void> {
+  const track = useAudioStore.getState().currentTrack;
+  if (track?.mode !== "archive" || !track.showId || !track.slug) return;
+  try {
+    const { position, duration } = await TrackPlayer.getProgress();
+    await saveProgress({
+      showId: track.showId,
+      slug: track.slug,
+      position,
+      duration,
+    });
+  } catch (error) {
+    console.warn("[listenHistory] saveCurrentProgress failed:", error);
+  }
 }
