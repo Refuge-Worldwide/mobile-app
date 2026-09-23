@@ -3,8 +3,8 @@ import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { directus } from "@/lib/directus";
-import { createAnonChatRealtimeClient } from "@/lib/chatRealtime";
+import { directus, directusPublic } from "@/lib/directus";
+import { createChatRealtimeClient } from "@/lib/chatRealtime";
 import { readItems } from "@directus/sdk";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -104,7 +104,7 @@ export default function Chat() {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const data = await directus.request(
+        const data = await directusPublic.request(
           readItems("chat", {
             sort: ["date_created"],
             limit: 100,
@@ -119,20 +119,18 @@ export default function Chat() {
     fetchMessages();
   }, []);
 
-  // Subscribe to realtime updates. Signed-in users authenticate the socket
-  // with their own token via the shared `directus` client. Anonymous users
-  // have no token, and this Directus instance's websocket layer requires
-  // every connection to authenticate — so they connect via a dedicated
-  // read-only client instead (see lib/chatRealtime.ts). Re-subscribes if
-  // auth state changes while the screen is open.
+  // Subscribe to realtime updates. Every visitor, signed in or not, connects
+  // via the shared read-only "Chat Reader" client — matching the website's
+  // approach, and keeping the live feed connection independent of a signed-in
+  // user's own session (see lib/chatRealtime.ts).
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     let cancelled = false;
-    let anonClient: Awaited<ReturnType<typeof createAnonChatRealtimeClient>> | null = null;
+    let client: Awaited<ReturnType<typeof createChatRealtimeClient>> | null = null;
 
     const listen = async () => {
       try {
-        const client = user ? directus : (anonClient = await createAnonChatRealtimeClient());
+        client = await createChatRealtimeClient();
         if (cancelled) return;
 
         const { subscription, unsubscribe: unsub } = await client.subscribe(
@@ -167,9 +165,9 @@ export default function Chat() {
     return () => {
       cancelled = true;
       unsubscribe?.();
-      anonClient?.disconnect();
+      client?.disconnect();
     };
-  }, [user]);
+  }, []);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -266,7 +264,7 @@ export default function Chat() {
             style={[chatStyles.systemDivider, { backgroundColor: `${textColor}33` }]}
           />
           <ThemedText
-            style={[chatStyles.systemMessageText, { color: `${textColor}80` }]}
+            style={[chatStyles.systemMessageText, { color: `${textColor}B3` }]}
           >
             Live now: {item.message}
           </ThemedText>
