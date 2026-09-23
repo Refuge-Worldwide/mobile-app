@@ -37,6 +37,7 @@ export default function Live() {
     artwork: string;
     slug: string;
     isMixedFeelings: boolean;
+    repeat: boolean;
     streamUrl: string;
   } | null>(null);
   const [liveNowCh2, setLiveNowCh2] = useState<{
@@ -93,6 +94,7 @@ export default function Live() {
           artwork: data.ch1.liveNow.artwork,
           slug: data.ch1.liveNow.slug,
           isMixedFeelings: data.ch1.liveNow.isMixedFeelings,
+          repeat: !!data.ch1.liveNow.repeat,
           streamUrl: data.ch1.streamUrl,
         });
       } else {
@@ -171,7 +173,7 @@ export default function Live() {
       maybeShowSupporterPrompt();
       if (liveNow) {
         setLiveTrack({
-          title: liveNow.title,
+          title: liveNow.title + (liveNow.repeat ? " (Repeat)" : ""),
           artwork: liveNow.artwork,
           showId: liveNow.slug || "live-stream",
           slug: liveNow.slug,
@@ -332,6 +334,7 @@ export default function Live() {
                     style={{ color: backgroundColor }}
                   >
                     {liveNow.title}
+                    {liveNow.repeat && " (Repeat)"}
                   </ThemedText>
                 </Pressable>
               </View>

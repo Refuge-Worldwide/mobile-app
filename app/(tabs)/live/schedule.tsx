@@ -36,6 +36,7 @@ interface LiveNow {
   link: string | null;
   slug: string | null;
   isMixedFeelings: boolean;
+  repeat?: boolean;
 }
 
 interface ScheduleData {
