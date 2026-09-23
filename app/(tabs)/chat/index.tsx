@@ -5,7 +5,7 @@ import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { directus, directusPublic } from "@/lib/directus";
 import { createChatRealtimeClient } from "@/lib/chatRealtime";
-import { readItems } from "@directus/sdk";
+import { readItems, updateMe } from "@directus/sdk";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
@@ -57,7 +57,7 @@ function ChatImage({ uri }: { uri: string }) {
 }
 
 export default function Chat() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
@@ -188,14 +188,30 @@ export default function Chat() {
     return anonUsername;
   }, [user, anonUsername]);
 
-  const saveAnonUsername = async (username: string) => {
+  const saveUsername = async (username: string) => {
+    // Mirrors the website's update-profile / chat send validation
+    if (username.length < 2) {
+      Alert.alert("Username too short", "Use at least 2 characters.");
+      return;
+    }
+    if (username.toLowerCase().includes("refuge")) {
+      Alert.alert("Username unavailable", "That username is reserved.");
+      return;
+    }
+
     try {
-      await AsyncStorage.setItem(ANON_USERNAME_KEY, username);
-      setAnonUsername(username);
+      if (user) {
+        await directus.request(updateMe({ first_name: username }));
+        await refreshUser();
+      } else {
+        await AsyncStorage.setItem(ANON_USERNAME_KEY, username);
+        setAnonUsername(username);
+      }
       setIsSettingUsername(false);
       setTempUsername("");
     } catch (error) {
-      console.error("Failed to save anon username:", error);
+      console.error("Failed to save username:", error);
+      Alert.alert("Couldn't save username", "Please try again.");
     }
   };
 
@@ -302,11 +318,10 @@ export default function Chat() {
     );
   };
 
-  // Username prompt modal for anonymous users. First-time visitors (no
-  // stored anon username yet) are joining the chat; returning anon visitors
-  // opening this via the pencil are just changing their name.
+  // First-time anon visitors (no stored username yet) are joining the chat;
+  // anyone else opening this via the pencil is just changing their name.
   if (isSettingUsername) {
-    const isFirstTime = !anonUsername;
+    const isFirstTime = !user && !anonUsername;
 
     return (
       <ThemedView style={chatStyles.container}>
@@ -337,7 +352,7 @@ export default function Chat() {
             <Pressable
               onPress={() => {
                 if (tempUsername.trim()) {
-                  saveAnonUsername(tempUsername.trim());
+                  saveUsername(tempUsername.trim());
                 }
               }}
               style={[chatStyles.promptButton, { backgroundColor: textColor }]}
@@ -377,27 +392,20 @@ export default function Chat() {
       >
         <View style={chatStyles.headerContent}>
           <ThemedText type="title">Chat</ThemedText>
-          {!user && (
-            <Pressable
-              onPress={() => {
-                // Pre-filled so tapping Save with no edits just keeps the
-                // current name — there's no separate Cancel button.
-                setTempUsername(anonUsername);
-                setIsSettingUsername(true);
-              }}
-              style={chatStyles.identityRow}
-            >
-              <ThemedText style={[chatStyles.usernameLabel, { color: textColor }]}>
-                @{anonUsername || "anon"}
-              </ThemedText>
-              <Ionicons name="pencil-outline" size={16} color={textColor} />
-            </Pressable>
-          )}
-          {user && (
+          <Pressable
+            onPress={() => {
+              // Pre-filled so tapping Save with no edits just keeps the
+              // current name — there's no separate Cancel button.
+              setTempUsername(getCurrentUsername());
+              setIsSettingUsername(true);
+            }}
+            style={chatStyles.identityRow}
+          >
             <ThemedText style={[chatStyles.usernameLabel, { color: textColor }]}>
-              @{getCurrentUsername()}
+              @{getCurrentUsername() || "anon"}
             </ThemedText>
-          )}
+            <Ionicons name="pencil-outline" size={16} color={textColor} />
+          </Pressable>
         </View>
       </View>
       <KeyboardAvoidingView
