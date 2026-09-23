@@ -30,6 +30,7 @@ interface ChatMessage {
   message: string;
   image: string | null;
   date_created: string;
+  is_system: boolean;
 }
 
 const ANON_USERNAME_KEY = "chat_anon_username";
@@ -258,6 +259,22 @@ export default function Chat() {
   const GROUP_WINDOW_MS = 2 * 60 * 1000;
 
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
+    if (item.is_system) {
+      return (
+        <View style={chatStyles.systemMessageRow}>
+          <View
+            style={[chatStyles.systemDivider, { backgroundColor: `${textColor}33` }]}
+          />
+          <ThemedText
+            style={[chatStyles.systemMessageText, { color: `${textColor}80` }]}
+          >
+            Live now: {item.message}
+          </ThemedText>
+          {item.image && <ChatImage uri={item.image} />}
+        </View>
+      );
+    }
+
     const previous = index > 0 ? messages[index - 1] : null;
     const isGrouped =
       !!previous &&
@@ -489,6 +506,20 @@ const chatStyles = StyleSheet.create({
   },
   messageRowGrouped: {
     marginTop: 2,
+  },
+  systemMessageRow: {
+    marginTop: 14,
+  },
+  systemDivider: {
+    height: 1,
+    marginBottom: 8,
+  },
+  // Slightly bigger than messageText (16) to read as an announcement, not a
+  // regular chat message.
+  systemMessageText: {
+    fontSize: 18,
+    fontFamily: "VisueltMedium",
+    lineHeight: 23,
   },
   metaRow: {
     flexDirection: "row",

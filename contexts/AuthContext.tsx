@@ -24,8 +24,16 @@ interface AuthContextType {
   // on sign-in alone so they stop appearing once someone has an account,
   // whether or not they've paid yet.
   isPaidSupporter: boolean;
+  // Staff and admins (checked by the website, which can see roles) — they
+  // get everything a paid supporter does, without a subscription.
+  isStaff: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
+  signUp: (
+    email: string,
+    password: string,
+    username: string,
+    newsletter: boolean,
+  ) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   // Re-pulls the current user (e.g. subscription_status) without a full
@@ -45,6 +53,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   isPaidSupporter: false,
+  isStaff: false,
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
   signOut: async () => { },
@@ -65,13 +74,36 @@ const ME_FIELDS = ['id', 'email', 'first_name', 'last_name', 'subscription_statu
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<DirectusUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const isPaidSupporter = isPaidSupporterStatus(user?.subscription_status);
+  const [isStaff, setIsStaff] = useState(false);
+  const isPaidSupporter =
+    isStaff || isPaidSupporterStatus(user?.subscription_status);
+
+  // A failed lookup just means no staff perks, never a broken login.
+  const loadStaffStatus = async () => {
+    try {
+      const token = await directus.getToken();
+      if (!token) {
+        setIsStaff(false);
+        return;
+      }
+      const response = await fetch(`${BACKEND_API_URL}/api/auth/is-staff`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      setIsStaff(response.ok && data.isStaff === true);
+    } catch {
+      setIsStaff(false);
+    }
+  };
 
   useEffect(() => {
     // Restore session from stored token
     directus
       .request(readMe({ fields: ME_FIELDS }))
-      .then((me) => setUser(me as DirectusUser))
+      .then((me) => {
+        setUser(me as DirectusUser);
+        return loadStaffStatus();
+      })
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);
@@ -81,18 +113,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await directus.login({ email, password });
       const me = await directus.request(readMe({ fields: ME_FIELDS }));
       setUser(me as DirectusUser);
+      await loadStaffStatus();
       return { error: null };
     } catch (error) {
       return { error };
     }
   };
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    username: string,
+    newsletter: boolean,
+  ) => {
     try {
       const response = await fetch(`${BACKEND_API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, username }),
+        body: JSON.stringify({ email, password, username, newsletter }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -103,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await directus.login({ email, password });
       const me = await directus.request(readMe({ fields: ME_FIELDS }));
       setUser(me as DirectusUser);
+      await loadStaffStatus();
       return { error: null };
     } catch (error) {
       return { error };
@@ -116,11 +155,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore errors on logout
     }
     setUser(null);
+    setIsStaff(false);
   };
 
   const resetPassword = async (email: string) => {
     try {
-      await directus.request(passwordRequest(email));
+      // reset_url so the emailed link lands on the website's own
+      // /reset-password page, not Directus's admin app
+      await directus.request(passwordRequest(email, `${BACKEND_API_URL}/reset-password`));
       return { error: null };
     } catch (error) {
       return { error };
@@ -145,6 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         loading,
         isPaidSupporter,
+        isStaff,
         signIn,
         signUp,
         signOut,

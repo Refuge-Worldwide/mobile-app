@@ -7,6 +7,7 @@ import { Toast } from "@/components/ToastNotification";
 import { BACKEND_API_URL } from "@/constants/backendApiUrl";
 import { isPaidSupporterStatus, useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { directus } from "@/lib/directus";
 import { readSingleton } from "@directus/sdk";
 import * as Clipboard from "expo-clipboard";
@@ -27,6 +28,7 @@ export default function AccountScreen() {
     user,
     loading,
     isPaidSupporter,
+    isStaff,
     signIn,
     signUp,
     signOut,
@@ -37,6 +39,7 @@ export default function AccountScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [newsletter, setNewsletter] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [discountCodes, setDiscountCodes] = useState<
@@ -98,7 +101,7 @@ export default function AccountScreen() {
 
     setSubmitting(true);
     const { error } = isSignUp
-      ? await signUp(email, password, username.trim())
+      ? await signUp(email, password, username.trim(), newsletter)
       : await signIn(email, password);
 
     setSubmitting(false);
@@ -113,6 +116,7 @@ export default function AccountScreen() {
       setUsername("");
       setPassword("");
       setConfirmPassword("");
+      setNewsletter(false);
     }
   };
 
@@ -233,7 +237,7 @@ export default function AccountScreen() {
                   Subscription:
                 </ThemedText>
                 <ThemedText style={{ color: backgroundColor }}>
-                  Active
+                  {isStaff ? "Staff" : "Active"}
                 </ThemedText>
               </View>
             </View>
@@ -270,24 +274,29 @@ export default function AccountScreen() {
                   />
                 ))}
 
-                <ThemedButton
-                  title="Manage Subscription"
-                  onPress={handleManageSubscription}
-                  variant="outline"
-                />
+                {!isStaff && isPaidSupporterStatus(user.subscription_status) && (
+                  <ThemedButton
+                    title="Manage Subscription"
+                    onPress={handleManageSubscription}
+                    variant="outline"
+                  />
+                )}
               </>
             ) : (
               // Just the one action while setup is incomplete — favourites/
               // discount codes aren't useful yet, so don't clutter the
               // screen with them.
               <>
+                <ThemedText type="subtitle" style={authStyles.almostThereHeading}>
+                  Almost there
+                </ThemedText>
                 <ThemedText style={authStyles.incompleteMessage}>
                   Thanks for signing up! Please complete your account setup
                   and payment to become a supporter.
                 </ThemedText>
 
                 <ThemedButton
-                  title="Complete account setup and payment"
+                  title="Finish setting up your account"
                   onPress={handleBecomeSupporter}
                   variant="filled"
                 />
@@ -357,6 +366,41 @@ export default function AccountScreen() {
             />
           )}
 
+          {isSignUp && (
+            <Pressable
+              style={authStyles.checkboxRow}
+              onPress={() => setNewsletter(!newsletter)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: newsletter }}
+            >
+              <Ionicons
+                name={newsletter ? "checkbox" : "square-outline"}
+                size={24}
+                color={textColor}
+              />
+              <ThemedText style={authStyles.checkboxLabel}>
+                Sign me up to the Refuge Worldwide newsletter
+              </ThemedText>
+            </Pressable>
+          )}
+
+          {isSignUp && (
+            <ThemedText style={authStyles.privacyText}>
+              By signing up, you agree to our{" "}
+              <ThemedText
+                style={authStyles.privacyLink}
+                onPress={() =>
+                  WebBrowser.openBrowserAsync(
+                    `${BACKEND_API_URL}/privacy-policy`,
+                  )
+                }
+              >
+                Privacy Policy
+              </ThemedText>
+              .
+            </ThemedText>
+          )}
+
           <ThemedButton
             title={isSignUp ? "Sign Up" : "Sign In"}
             onPress={handleAuth}
@@ -394,6 +438,14 @@ const authStyles = StyleSheet.create({
   form: {
     gap: 24,
   },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  checkboxLabel: {
+    flex: 1,
+  },
   toggleButton: {
     padding: 8,
     alignItems: "center",
@@ -408,6 +460,13 @@ const authStyles = StyleSheet.create({
     alignItems: "flex-end",
   },
   forgotPasswordText: {
+    fontSize: 12,
+    textDecorationLine: "underline",
+  },
+  privacyText: {
+    fontSize: 12,
+  },
+  privacyLink: {
     fontSize: 12,
     textDecorationLine: "underline",
   },
@@ -427,6 +486,10 @@ const authStyles = StyleSheet.create({
   },
   buttonsContainer: {
     gap: 8,
+  },
+  almostThereHeading: {
+    textAlign: "center",
+    marginBottom: 4,
   },
   incompleteMessage: {
     textAlign: "center",
