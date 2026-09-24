@@ -27,7 +27,7 @@ export const ThemedButton = forwardRef<typeof Pressable, ThemedButtonProps>(
         borderColor: textColor,
         opacity: isDisabled ? 0.6 : 1,
       },
-      style,
+      style as ViewStyle,
     ];
 
     return (

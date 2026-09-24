@@ -173,7 +173,7 @@ export default function Live() {
       maybeShowSupporterPrompt();
       if (liveNow) {
         setLiveTrack({
-          title: liveNow.title + (liveNow.repeat ? " (Repeat)" : ""),
+          title: liveNow.title,
           artwork: liveNow.artwork,
           showId: liveNow.slug || "live-stream",
           slug: liveNow.slug,
@@ -334,7 +334,6 @@ export default function Live() {
                     style={{ color: backgroundColor }}
                   >
                     {liveNow.title}
-                    {liveNow.repeat && " (Repeat)"}
                   </ThemedText>
                 </Pressable>
               </View>

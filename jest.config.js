@@ -1,5 +1,6 @@
 module.exports = {
   preset: 'jest-expo',
+  testPathIgnorePatterns: ['/node_modules/', '/.kilo/'],
   setupFilesAfterEnv: ['<rootDir>/jest-setup.ts'],
   moduleNameMapper: {
     '^@react-native-async-storage/async-storage$':

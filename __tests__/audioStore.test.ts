@@ -157,7 +157,7 @@ describe('isShowPlaying', () => {
 
 describe('setLiveTrack', () => {
   it('sets a live stream track with the correct URL and metadata', () => {
-    useAudioStore.getState().setLiveTrack({ title: 'DJ Name', artwork: 'https://img.jpg', showId: 'live-1', slug: 'dj-name' });
+    useAudioStore.getState().setLiveTrack({ title: 'DJ Name', artwork: 'https://img.jpg', showId: 'live-1', slug: 'dj-name', streamUrl: 'https://streaming.radio.co/s3699c5e49/listen' });
     const state = useAudioStore.getState();
     expect(state.currentTrack?.id).toBe('live-stream');
     expect(state.currentTrack?.isLive).toBe(true);
@@ -172,7 +172,7 @@ describe('setLiveTrack', () => {
       isPlaying: true,
       isLoading: false,
     });
-    useAudioStore.getState().setLiveTrack({ title: 'New DJ', artwork: 'https://new.jpg' });
+    useAudioStore.getState().setLiveTrack({ title: 'New DJ', artwork: 'https://new.jpg', streamUrl: 'https://streaming.radio.co/s3699c5e49/listen' });
     expect(useAudioStore.getState().isLoading).toBe(false);
     expect(useAudioStore.getState().currentTrack?.title).toBe('New DJ');
   });

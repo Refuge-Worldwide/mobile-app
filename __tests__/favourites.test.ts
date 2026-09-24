@@ -161,7 +161,7 @@ describe('toggleFavourite', () => {
       .mockResolvedValueOnce({ id: 3, show_id: 'show-abc' }); // addFavourite
 
     const result = await toggleFavourite('show-abc');
-    expect(result?.data).toEqual({ id: 3, show_id: 'show-abc' });
+    expect(result).toEqual({ data: { id: 3, show_id: 'show-abc' }, error: null });
     expect(createItem).toHaveBeenCalledWith('show_favourites', { show_id: 'show-abc' });
   });
 

@@ -397,9 +397,7 @@ export function AudioPlayer() {
         if (currentTrack.id === "live-stream" && data.ch1?.liveNow) {
           // Update Channel 1 metadata only (no playback change)
           updateLiveTrackMetadata({
-            title:
-              data.ch1.liveNow.title +
-              (data.ch1.liveNow.repeat ? " (Repeat)" : ""),
+            title: data.ch1.liveNow.title,
             artwork: data.ch1.liveNow.artwork,
             showId: data.ch1.liveNow.slug || "live-stream",
             slug: data.ch1.liveNow.slug,

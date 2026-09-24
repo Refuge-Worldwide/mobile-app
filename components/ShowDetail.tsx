@@ -461,7 +461,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                     showId={relatedShow.id}
                     slug={relatedShow.slug}
                   />
-                  {index < show.relatedShows.length - 1 && <ShowCardSeparator />}
+                  {index < show.relatedShows!.length - 1 && <ShowCardSeparator />}
                 </View>
               ))}
             </View>
