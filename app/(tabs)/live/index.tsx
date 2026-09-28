@@ -259,14 +259,15 @@ export default function Live() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor={textColor}
-            colors={[textColor]}
+            colors={[backgroundColor]}
+            progressBackgroundColor={textColor}
           />
         }
       >
         <View style={[styles.channelsContainer, { gap: 30 }]}>
           {!liveNow && !loadError && (
             <View style={[styles.channelSection, styles.loadingContainer]}>
-              <ActivityIndicator size="large" />
+              <ActivityIndicator size="large" color={textColor} />
             </View>
           )}
 

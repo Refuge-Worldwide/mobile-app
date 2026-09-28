@@ -274,7 +274,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
     return (
       <ThemedView style={styles.container}>
         <View style={[styles.errorContainer, { paddingBottom: bottomPadding }]}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={textColor} />
         </View>
       </ThemedView>
     );
@@ -353,7 +353,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
             ]}
           >
             {contentLoading ? (
-              <ActivityIndicator size="small" />
+              <ActivityIndicator size="small" color={textColor} />
             ) : (
               <>
                 <Pressable
@@ -361,7 +361,7 @@ export function ShowDetail({ navigationPrefix }: ShowDetailProps) {
                   style={styles.actionButton}
                 >
                   {favoriteLoading ? (
-                    <ActivityIndicator size="small" />
+                    <ActivityIndicator size="small" color={textColor} />
                   ) : (
                     <Icon
                       name={isFavorite ? "heart" : "heart-outline"}

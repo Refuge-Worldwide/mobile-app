@@ -190,7 +190,7 @@ export default function SearchScreen() {
               backgroundColor: backgroundColor,
             },
           ]}
-          placeholder="Search shows and genres..."
+          placeholder="Search..."
           placeholderTextColor={textColor + "80"}
           value={searchQuery}
           onChangeText={handleSearch}
@@ -209,7 +209,7 @@ export default function SearchScreen() {
 
       {loading && (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={textColor} />
         </View>
       )}
 
@@ -253,7 +253,8 @@ export default function SearchScreen() {
               refreshing={refreshing}
               onRefresh={handleRefresh}
               tintColor={textColor}
-              colors={[textColor]}
+              colors={[backgroundColor]}
+              progressBackgroundColor={textColor}
             />
           }
         />

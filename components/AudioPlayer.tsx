@@ -287,13 +287,22 @@ export function AudioPlayer() {
         }
 
         // Update player options and add track in parallel for faster loading
+        // live stops when the app is killed, archive keeps playing
         const updateOptionsPromise = currentTrack.isLive
           ? TrackPlayer.updateOptions({
+            android: {
+              appKilledPlaybackBehavior:
+                AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification,
+            },
             capabilities: [Capability.Play, Capability.Stop],
             compactCapabilities: [Capability.Play, Capability.Stop],
             notificationCapabilities: [Capability.Play, Capability.Stop],
           })
           : TrackPlayer.updateOptions({
+            android: {
+              appKilledPlaybackBehavior:
+                AppKilledPlaybackBehavior.ContinuePlayback,
+            },
             capabilities: [
               Capability.Play,
               Capability.Pause,

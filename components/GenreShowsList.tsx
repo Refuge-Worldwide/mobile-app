@@ -132,7 +132,7 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
     if (!loading) return null;
     return (
       <View style={styles.footer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={textColor} />
       </View>
     );
   };
@@ -148,7 +148,7 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
       </View>
       {shows.length === 0 && loading ? (
         <View style={styles.footer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={textColor} />
         </View>
       ) : shows.length === 0 && !loading ? (
         <View style={styles.emptyState}>
@@ -172,7 +172,8 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
               refreshing={refreshing}
               onRefresh={handleRefresh}
               tintColor={textColor}
-              colors={[textColor]}
+              colors={[backgroundColor]}
+              progressBackgroundColor={textColor}
             />
           }
         />

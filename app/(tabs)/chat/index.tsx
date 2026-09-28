@@ -51,6 +51,7 @@ const loadedImages = new Set<string>();
 
 function ChatImage({ uri }: { uri: string }) {
   const [loaded, setLoaded] = useState(loadedImages.has(uri));
+  const textColor = useThemeColor({}, "text");
   return (
     <View
       style={{
@@ -62,7 +63,7 @@ function ChatImage({ uri }: { uri: string }) {
       }}
     >
       {!loaded && (
-        <ActivityIndicator style={StyleSheet.absoluteFillObject} />
+        <ActivityIndicator color={textColor} style={StyleSheet.absoluteFillObject} />
       )}
       <Image
         source={{ uri }}
@@ -704,6 +705,7 @@ const chatStyles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingTop: 24,
+    paddingBottom: 24,
   },
   usernamePromptBottom: {
     width: "100%",

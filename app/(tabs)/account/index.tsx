@@ -198,7 +198,7 @@ export default function AccountScreen() {
   if (loading) {
     return (
       <ThemedView style={authStyles.container}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={textColor} />
       </ThemedView>
     );
   }

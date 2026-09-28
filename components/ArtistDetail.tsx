@@ -124,7 +124,7 @@ export function ArtistDetail({ navigationPrefix }: ArtistDetailProps) {
     return (
       <ThemedView style={styles.container}>
         <View style={[styles.errorContainer, { paddingBottom: bottomPadding }]}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={textColor} />
         </View>
       </ThemedView>
     );

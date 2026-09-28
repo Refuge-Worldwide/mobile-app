@@ -118,7 +118,7 @@ export default function ListenHistoryScreen() {
       <ThemedView style={styles.container}>
         {header}
         <View style={[styles.emptyContainer, { paddingBottom: bottomPadding }]}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={textColor} />
         </View>
       </ThemedView>
     );
@@ -153,7 +153,7 @@ export default function ListenHistoryScreen() {
         ListFooterComponent={
           loadingMore ? (
             <View style={styles.footer}>
-              <ActivityIndicator size="large" />
+              <ActivityIndicator size="large" color={textColor} />
             </View>
           ) : null
         }

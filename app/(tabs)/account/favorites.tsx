@@ -118,7 +118,7 @@ export default function FavoritesScreen() {
       <ThemedView style={styles.container}>
         {header}
         <View style={[styles.emptyContainer, { paddingBottom: bottomPadding }]}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={textColor} />
         </View>
       </ThemedView>
     );
@@ -183,7 +183,8 @@ export default function FavoritesScreen() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor={textColor}
-            colors={[textColor]}
+            colors={[backgroundColor]}
+            progressBackgroundColor={textColor}
           />
         }
       />

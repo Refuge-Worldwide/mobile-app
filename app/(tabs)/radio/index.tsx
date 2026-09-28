@@ -264,7 +264,7 @@ export default function Archive() {
     if (!displayedLoading) return null;
     return (
       <View style={styles.footer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={textColor} />
       </View>
     );
   };
@@ -349,7 +349,7 @@ export default function Archive() {
       {displayedShows.length === 0 && displayedLoading ? (
         <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
           <View style={styles.footer}>
-            <ActivityIndicator size="large" />
+            <ActivityIndicator size="large" color={textColor} />
           </View>
         </View>
       ) : (
@@ -370,7 +370,8 @@ export default function Archive() {
               refreshing={refreshing}
               onRefresh={handleRefresh}
               tintColor={textColor}
-              colors={[textColor]}
+              colors={[backgroundColor]}
+              progressBackgroundColor={textColor}
             />
           }
         />

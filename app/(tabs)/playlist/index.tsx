@@ -163,7 +163,7 @@ export default function PlaylistScreen() {
 
           {/* API playlists */}
           {loading ? (
-            <ActivityIndicator size="large" style={styles.loadingIndicator} />
+            <ActivityIndicator size="large" color={textColor} style={styles.loadingIndicator} />
           ) : (
             playlists.map((playlist) => (
               <Pressable

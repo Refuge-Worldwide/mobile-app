@@ -129,7 +129,7 @@ export default function PlaylistDetailScreen() {
       <ThemedView style={styles.container}>
         {header}
         <View style={[styles.emptyContainer, { paddingBottom: bottomPadding }]}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={textColor} />
         </View>
       </ThemedView>
     );
@@ -196,7 +196,8 @@ export default function PlaylistDetailScreen() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor={textColor}
-            colors={[textColor]}
+            colors={[backgroundColor]}
+            progressBackgroundColor={textColor}
           />
         }
       />
