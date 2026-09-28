@@ -651,12 +651,10 @@ const chatStyles = StyleSheet.create({
     height: 1,
     marginBottom: 8,
   },
-  // Slightly bigger than messageText (16) to read as an announcement, not a
-  // regular chat message.
   systemMessageText: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: "VisueltMedium",
-    lineHeight: 23,
+    lineHeight: 21,
   },
   metaRow: {
     flexDirection: "row",
