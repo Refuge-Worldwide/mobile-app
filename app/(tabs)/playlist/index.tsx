@@ -157,7 +157,7 @@ export default function PlaylistScreen() {
               )}
             </View>
             <ThemedText style={styles.playlistName}>
-              {isPaidSupporter ? "Favourites" : "Favourites are for supporters"}
+              {isPaidSupporter ? "Favourites" : "Become a supporter to favourite"}
             </ThemedText>
           </Pressable>
 

@@ -1,3 +1,4 @@
+import { BottomSheet } from "@/components/BottomSheet";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { directus, directusPublic } from "@/lib/directus";
 import { createChatRealtimeClient } from "@/lib/chatRealtime";
 import { readItems, updateMe } from "@directus/sdk";
+import { BottomSheetModal, BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
@@ -13,6 +15,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   KeyboardAvoidingView,
@@ -39,17 +42,35 @@ const BACKEND_API_URL =
   Constants.expoConfig?.extra?.backendApiUrl ||
   process.env.EXPO_PUBLIC_API_URL;
 
+// Chat images are always 16:9, so the box size is known upfront - no async
+// measuring, no layout shift on load, and no resize when FlatList remounts
+// a row while scrolling. Tracks which URLs have already loaded once, across
+// mounts, so a remount of an already-seen image skips the loading state
+// instead of flashing it again.
+const loadedImages = new Set<string>();
+
 function ChatImage({ uri }: { uri: string }) {
-  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+  const [loaded, setLoaded] = useState(loadedImages.has(uri));
   return (
-    <View style={{ width: "100%", marginTop: 4 }}>
+    <View
+      style={{
+        width: "65%",
+        aspectRatio: 16 / 9,
+        marginTop: 4,
+        overflow: "hidden",
+        backgroundColor: "#ffffff14",
+      }}
+    >
+      {!loaded && (
+        <ActivityIndicator style={StyleSheet.absoluteFillObject} />
+      )}
       <Image
         source={{ uri }}
-        style={{ width: "100%", aspectRatio: aspectRatio ?? 1, opacity: aspectRatio ? 1 : 0 }}
+        style={{ width: "100%", height: "100%", opacity: loaded ? 1 : 0 }}
         contentFit="cover"
-        onLoad={(e) => {
-          const { width, height } = e.source;
-          if (width && height) setAspectRatio(width / height);
+        onLoad={() => {
+          loadedImages.add(uri);
+          setLoaded(true);
         }}
       />
     </View>
@@ -69,9 +90,42 @@ export default function Chat() {
   const [anonUsernameLoaded, setAnonUsernameLoaded] = useState(false);
   const [isSettingUsername, setIsSettingUsername] = useState(false);
   const [tempUsername, setTempUsername] = useState("");
+  const usernameSheetRef = useRef<BottomSheetModal>(null);
+
+  // Presents/dismisses the sheet as a bottom sheet over the chat, instead of
+  // replacing the whole screen - the chat (and its scroll position) stays
+  // mounted underneath, so saving a username no longer "reloads" it.
+  useEffect(() => {
+    if (isSettingUsername) {
+      usernameSheetRef.current?.present();
+    } else {
+      usernameSheetRef.current?.dismiss();
+    }
+  }, [isSettingUsername]);
   const [sending, setSending] = useState(false);
+  // True once the initial history has settled into its scrolled-to-bottom
+  // position - kept separate from the fetch itself so the list stays behind
+  // the spinner for that settling window instead of flashing at the top
+  // first (see isInitialLoadSettlingRef).
+  const [listReady, setListReady] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
+  // Tracks whether the viewer is already at the bottom, so a new message
+  // only auto-scrolls them when they haven't scrolled up to read history.
+  const isNearBottomRef = useRef(true);
+  // Until the viewer actually drags the list themselves, the programmatic
+  // scrolls done while settling in (onContentSizeChange) can throw off the
+  // onScroll-derived isNearBottomRef with a stale reading mid-animation -
+  // so it's ignored and treated as "at the bottom" until a real scroll gesture happens.
+  const hasUserScrolledRef = useRef(false);
+  // FlatList renders/measures the initial history over several
+  // onContentSizeChange calls (virtualization), not just one, so a single
+  // scrollToEnd right when the data lands can undershoot and leave the view
+  // stuck above the true bottom. This stays true only while that initial
+  // settling is still happening, so onContentSizeChange can keep pinning to
+  // the bottom through it without responding to later, unrelated size
+  // changes (e.g. an image loading).
+  const isInitialLoadSettlingRef = useRef(false);
 
   // Load anonymous username from storage
   useEffect(() => {
@@ -102,6 +156,8 @@ export default function Chat() {
 
   // Fetch initial messages
   useEffect(() => {
+    let cancelled = false;
+
     const fetchMessages = async () => {
       try {
         const data = await directusPublic.request(
@@ -110,13 +166,32 @@ export default function Chat() {
             limit: 100,
           }),
         );
+        if (cancelled) return;
         setMessages(data as unknown as ChatMessage[]);
+        isInitialLoadSettlingRef.current = true;
+        // Give FlatList's virtualized rendering time to finish growing
+        // before onContentSizeChange stops treating growth as "still
+        // settling in" and switches to only reacting to new messages.
+        setTimeout(() => {
+          if (cancelled) return;
+          isInitialLoadSettlingRef.current = false;
+          // A short pause after landing at the bottom before revealing the
+          // list, so it doesn't pop in right as the scroll settles.
+          setTimeout(() => {
+            if (!cancelled) setListReady(true);
+          }, 250);
+        }, 500);
       } catch (error) {
         console.error("Error fetching messages:", error);
+        if (!cancelled) setListReady(true);
       }
     };
 
     fetchMessages();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Subscribe to realtime updates. Every visitor, signed in or not, connects
@@ -169,13 +244,22 @@ export default function Chat() {
     };
   }, []);
 
-  // Scroll to bottom when new messages arrive
+  // Marks a new message as wanting a scroll, but doesn't scroll here -
+  // calling scrollToEnd() right in this effect can fire before FlatList has
+  // actually measured the new item's layout and silently fall short.
+  // onContentSizeChange (below) only fires once that layout is real, so the
+  // scroll is deferred to there instead.
+  const messageCountRef = useRef(0);
+  const pendingScrollToBottomRef = useRef(false);
   useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+    if (
+      messages.length > messageCountRef.current &&
+      !isInitialLoadSettlingRef.current &&
+      isNearBottomRef.current
+    ) {
+      pendingScrollToBottomRef.current = true;
     }
+    messageCountRef.current = messages.length;
   }, [messages.length]);
 
   const getCurrentUsername = useCallback(() => {
@@ -320,67 +404,7 @@ export default function Chat() {
 
   // First-time anon visitors (no stored username yet) are joining the chat;
   // anyone else opening this via the pencil is just changing their name.
-  if (isSettingUsername) {
-    const isFirstTime = !user && !anonUsername;
-
-    return (
-      <ThemedView style={chatStyles.container}>
-        <View style={chatStyles.usernamePrompt}>
-          <ThemedText type="subtitle" style={chatStyles.promptTitle}>
-            {isFirstTime
-              ? "Set your username to join the chat."
-              : "Change your username"}
-          </ThemedText>
-          <TextInput
-            style={[
-              chatStyles.usernameInput,
-              {
-                color: textColor,
-                borderColor: textColor,
-                backgroundColor: backgroundColor,
-              },
-            ]}
-            placeholder="Enter username..."
-            placeholderTextColor={`${textColor}60`}
-            value={tempUsername}
-            onChangeText={setTempUsername}
-            autoFocus
-            autoCapitalize="none"
-            maxLength={20}
-          />
-          <View style={chatStyles.promptButtons}>
-            <Pressable
-              onPress={() => {
-                if (tempUsername.trim()) {
-                  saveUsername(tempUsername.trim());
-                }
-              }}
-              style={[chatStyles.promptButton, { backgroundColor: textColor }]}
-              disabled={!tempUsername.trim()}
-            >
-              <ThemedText style={{ color: backgroundColor }}>
-                {isFirstTime ? "Join" : "Save"}
-              </ThemedText>
-            </Pressable>
-          </View>
-
-          {isFirstTime && (
-            <Pressable
-              onPress={() => router.push("/account")}
-              style={chatStyles.signInRow}
-            >
-              <ThemedText style={{ color: `${textColor}80` }}>
-                Already have an account?{" "}
-              </ThemedText>
-              <ThemedText style={[chatStyles.signInLabel, { color: textColor }]}>
-                Sign in
-              </ThemedText>
-            </Pressable>
-          )}
-        </View>
-      </ThemedView>
-    );
-  }
+  const isFirstTimeUsername = !user && !anonUsername;
 
   return (
     <ThemedView style={chatStyles.container}>
@@ -410,21 +434,49 @@ export default function Chat() {
       </View>
       <KeyboardAvoidingView
         style={chatStyles.keyboardAvoid}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        // Android already resizes the window for the keyboard (the app's
+        // default softwareKeyboardLayoutMode is "resize"), so adding RN's
+        // own "height" behavior on top double-shrinks the content here,
+        // pushing the input down behind the bottom tab bar (a sibling,
+        // absolutely-positioned overlay outside this screen, so it doesn't
+        // resize the same way). Let Android's native resize handle it alone.
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => String(item.id)}
-          style={chatStyles.messageList}
-          contentContainerStyle={chatStyles.messageListContent}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() =>
-            flatListRef.current?.scrollToEnd({ animated: false })
-          }
-        />
+        <View style={chatStyles.messageListWrap}>
+          {!listReady && (
+            <View style={[chatStyles.listLoadingOverlay, { backgroundColor }]}>
+              <ActivityIndicator color={textColor} />
+            </View>
+          )}
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => String(item.id)}
+            style={[chatStyles.messageList, !listReady && chatStyles.hidden]}
+            contentContainerStyle={chatStyles.messageListContent}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => {
+              if (isInitialLoadSettlingRef.current) {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              } else if (pendingScrollToBottomRef.current) {
+                pendingScrollToBottomRef.current = false;
+                flatListRef.current?.scrollToEnd({ animated: true });
+              }
+            }}
+            onScroll={(e) => {
+              if (!hasUserScrolledRef.current) return;
+              const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+              const distanceFromBottom =
+                contentSize.height - contentOffset.y - layoutMeasurement.height;
+              isNearBottomRef.current = distanceFromBottom < 80;
+            }}
+            onScrollBeginDrag={() => {
+              hasUserScrolledRef.current = true;
+            }}
+          />
+        </View>
 
         <View
           style={[
@@ -470,6 +522,72 @@ export default function Chat() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <BottomSheet
+        ref={usernameSheetRef}
+        snapPoints={["32%"]}
+        onDismiss={() => setIsSettingUsername(false)}
+      >
+        <View style={chatStyles.usernamePrompt}>
+          <ThemedText type="subtitle" style={chatStyles.promptTitle}>
+            {isFirstTimeUsername
+              ? "Set your username to join the chat."
+              : "Change your username"}
+          </ThemedText>
+
+          <View style={chatStyles.usernamePromptBottom}>
+            <BottomSheetTextInput
+              style={[
+                chatStyles.usernameInput,
+                {
+                  color: textColor,
+                  borderColor: textColor,
+                  backgroundColor: backgroundColor,
+                },
+              ]}
+              placeholder="Enter username..."
+              placeholderTextColor={`${textColor}60`}
+              value={tempUsername}
+              onChangeText={setTempUsername}
+              autoFocus
+              autoCapitalize="none"
+              maxLength={20}
+            />
+            <View style={chatStyles.promptButtons}>
+              <Pressable
+                onPress={() => {
+                  if (tempUsername.trim()) {
+                    saveUsername(tempUsername.trim());
+                  }
+                }}
+                style={[chatStyles.promptButton, { backgroundColor: textColor }]}
+                disabled={!tempUsername.trim()}
+              >
+                <ThemedText style={{ color: backgroundColor }}>
+                  {isFirstTimeUsername ? "Join" : "Save"}
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            {isFirstTimeUsername && (
+              <Pressable
+                onPress={() => {
+                  setIsSettingUsername(false);
+                  router.push("/account");
+                }}
+                style={chatStyles.signInRow}
+              >
+                <ThemedText style={{ color: `${textColor}80` }}>
+                  Already have an account?{" "}
+                </ThemedText>
+                <ThemedText style={[chatStyles.signInLabel, { color: textColor }]}>
+                  Sign in
+                </ThemedText>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </BottomSheet>
     </ThemedView>
   );
 }
@@ -499,6 +617,18 @@ const chatStyles = StyleSheet.create({
   },
   keyboardAvoid: {
     flex: 1,
+  },
+  messageListWrap: {
+    flex: 1,
+  },
+  listLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  hidden: {
+    opacity: 0,
   },
   messageList: {
     flex: 1,
@@ -571,9 +701,13 @@ const chatStyles = StyleSheet.create({
   },
   usernamePrompt: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 32,
+    paddingTop: 24,
+  },
+  usernamePromptBottom: {
+    width: "100%",
+    alignItems: "center",
   },
   promptTitle: {
     marginBottom: 24,
@@ -588,10 +722,11 @@ const chatStyles = StyleSheet.create({
     marginBottom: 24,
   },
   promptButtons: {
-    flexDirection: "row",
-    gap: 12,
+    width: "100%",
   },
   promptButton: {
+    width: "100%",
+    alignItems: "center",
     paddingHorizontal: 24,
     paddingVertical: 12,
   },

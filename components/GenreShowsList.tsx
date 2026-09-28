@@ -1,5 +1,6 @@
 import { useBottomSafePadding } from '@/hooks/useBottomSafePadding';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { pushShowDetail, ShowNavigationPrefix } from '@/lib/navigation';
 import { Show } from '@/types/shows';
 import { useRouter, useSegments } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -111,11 +112,6 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
   };
 
   const renderShowItem = ({ item }: { item: Show }) => {
-    // Live tab has shows under /show/ subfolder, other tabs have shows directly
-    const showPath = currentTab === 'live'
-      ? `/(tabs)/${currentTab}/show/${item.slug}`
-      : `/(tabs)/${currentTab}/${item.slug}`;
-
     return (
       <ShowCard
         imageUrl={item.coverImage || item.artwork}
@@ -123,7 +119,9 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
         title={item.title}
         date={formatDate(item.date)}
         genres={item.genres}
-        onPress={() => router.push(showPath as any)}
+        onPress={() =>
+          pushShowDetail(router, `/(tabs)/${currentTab}` as ShowNavigationPrefix, item)
+        }
         showId={item.id}
         slug={item.slug}
       />

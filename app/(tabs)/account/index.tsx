@@ -6,6 +6,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { Toast } from "@/components/ToastNotification";
 import { BACKEND_API_URL } from "@/constants/backendApiUrl";
 import { isPaidSupporterStatus, useAuth } from "@/contexts/AuthContext";
+import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { directus } from "@/lib/directus";
@@ -35,6 +36,7 @@ export default function AccountScreen() {
     resetPassword,
     refreshUser,
   } = useAuth();
+  const bottomPadding = useBottomSafePadding();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -204,7 +206,12 @@ export default function AccountScreen() {
   if (user) {
     return (
       <ThemedView style={authStyles.container}>
-        <ScrollView contentContainerStyle={authStyles.scrollContent}>
+        <ScrollView
+        contentContainerStyle={[
+          authStyles.scrollContent,
+          { paddingBottom: bottomPadding + 40 },
+        ]}
+      >
           {isPaidSupporter && (
             <View style={[authStyles.card, { backgroundColor: textColor }]}>
               <View style={authStyles.nameContainer}>
@@ -307,7 +314,12 @@ export default function AccountScreen() {
 
   return (
     <ThemedView style={authStyles.container}>
-      <ScrollView contentContainerStyle={authStyles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          authStyles.scrollContent,
+          { paddingBottom: bottomPadding + 40 },
+        ]}
+      >
         <View style={authStyles.form}>
           <ThemedInput
             placeholder="Email"
