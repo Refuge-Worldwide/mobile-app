@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import 'react-native-reanimated';
 
 TrackPlayer.registerPlaybackService(() => PlaybackService);
@@ -23,25 +24,27 @@ function RootLayoutContent() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <View style={styles.container}>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="radio/[slug]" options={{ headerShown: false }} />
-              <Stack.Screen name="artists/[slug]" options={{ headerShown: false }} />
-              <Stack.Screen name="+not-found" />
-            </Stack>
+      <KeyboardProvider>
+        <BottomSheetModalProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <View style={styles.container}>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="radio/[slug]" options={{ headerShown: false }} />
+                <Stack.Screen name="artists/[slug]" options={{ headerShown: false }} />
+                <Stack.Screen name="+not-found" />
+              </Stack>
 
-            {/* Self-contained ColourPicker with fixed button */}
-            <ColourPicker />
+              {/* Self-contained ColourPicker with fixed button */}
+              <ColourPicker />
 
-            <StatusBar style="auto" />
-          </View>
-        </ThemeProvider>
-      </BottomSheetModalProvider>
-      <ToastNotification />
+              <StatusBar style="auto" />
+            </View>
+          </ThemeProvider>
+        </BottomSheetModalProvider>
+        <ToastNotification />
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { directus, directusPublic } from "@/lib/directus";
 import { createChatRealtimeClient } from "@/lib/chatRealtime";
 import { readItems, updateMe } from "@directus/sdk";
+import { useIsFocused } from "@react-navigation/native";
 import { BottomSheetModal, BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,14 +18,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 interface ChatMessage {
   id: number;
@@ -84,6 +85,7 @@ export default function Chat() {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const totalBottomPadding = useBottomSafePadding();
+  const isFocused = useIsFocused();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -109,6 +111,7 @@ export default function Chat() {
   // the spinner for that settling window instead of flashing at the top
   // first (see isInitialLoadSettlingRef).
   const [listReady, setListReady] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   // Tracks whether the viewer is already at the bottom, so a new message
@@ -155,95 +158,134 @@ export default function Chat() {
     }
   }, [authLoading, anonUsernameLoaded, user, anonUsername]);
 
-  // Fetch initial messages
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchMessages = async () => {
-      try {
-        const data = await directusPublic.request(
-          readItems("chat", {
-            sort: ["date_created"],
-            limit: 100,
-          }),
-        );
-        if (cancelled) return;
-        setMessages(data as unknown as ChatMessage[]);
-        isInitialLoadSettlingRef.current = true;
-        // Give FlatList's virtualized rendering time to finish growing
-        // before onContentSizeChange stops treating growth as "still
-        // settling in" and switches to only reacting to new messages.
-        setTimeout(() => {
-          if (cancelled) return;
-          isInitialLoadSettlingRef.current = false;
-          // A short pause after landing at the bottom before revealing the
-          // list, so it doesn't pop in right as the scroll settles.
-          setTimeout(() => {
-            if (!cancelled) setListReady(true);
-          }, 250);
-        }, 500);
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-        if (!cancelled) setListReady(true);
-      }
-    };
-
-    fetchMessages();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // Subscribe to realtime updates. Every visitor, signed in or not, connects
   // via the shared read-only "Chat Reader" client — matching the website's
   // approach, and keeping the live feed connection independent of a signed-in
   // user's own session (see lib/chatRealtime.ts).
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    let cancelled = false;
-    let client: Awaited<ReturnType<typeof createChatRealtimeClient>> | null = null;
+  const clientRef = useRef<Awaited<ReturnType<typeof createChatRealtimeClient>> | null>(null);
+  const unsubscribeRef = useRef<(() => void) | undefined>(undefined);
+  const cancelledRef = useRef(true);
+  const connectedRef = useRef(false);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const idleDisconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-    const listen = async () => {
-      try {
-        client = await createChatRealtimeClient();
-        if (cancelled) return;
-
-        const { subscription, unsubscribe: unsub } = await client.subscribe(
-          "chat",
-          { event: "create" },
-        );
-        unsubscribe = unsub;
-
-        for await (const message of subscription) {
-          if (cancelled) break;
-          if (message.event === "create") {
-            const newMsgs = message.data as unknown as ChatMessage[];
-            // The initial REST fetch and this realtime "create" stream are
-            // two independent, unsynchronized sources — a message created
-            // in the gap between the REST snapshot and the subscription
-            // going live can land in both, duplicating its id (React's
-            // "two children with the same key" warning). Dedupe on append.
-            setMessages((prev) => {
-              const existingIds = new Set(prev.map((m) => m.id));
-              const deduped = newMsgs.filter((m) => !existingIds.has(m.id));
-              return deduped.length > 0 ? [...prev, ...deduped] : prev;
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error subscribing to chat:", error);
-      }
-    };
-
-    listen();
-
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-      client?.disconnect();
-    };
+  const fetchMessages = useCallback(async () => {
+    try {
+      const data = await directusPublic.request(
+        readItems("chat", {
+          sort: ["date_created"],
+          limit: 50,
+        }),
+      );
+      if (cancelledRef.current) return;
+      setMessages(data as unknown as ChatMessage[]);
+      isInitialLoadSettlingRef.current = true;
+      setTimeout(() => {
+        if (cancelledRef.current) return;
+        isInitialLoadSettlingRef.current = false;
+        setTimeout(() => {
+          if (!cancelledRef.current) setListReady(true);
+        }, 250);
+      }, 500);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      if (!cancelledRef.current) setListReady(true);
+    }
   }, []);
+
+  const listen = useCallback(async (attempt: number) => {
+    if (cancelledRef.current) return;
+
+    try {
+      const client = await createChatRealtimeClient();
+      clientRef.current = client;
+      if (cancelledRef.current) return;
+
+      const { subscription, unsubscribe } = await client.subscribe("chat", {});
+      unsubscribeRef.current = unsubscribe;
+      setIsReconnecting(false);
+
+      await fetchMessages();
+      if (cancelledRef.current) return;
+
+      for await (const message of subscription) {
+        if (cancelledRef.current) break;
+        if (message.event === "create") {
+          const newMsgs = message.data as unknown as ChatMessage[];
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const deduped = newMsgs.filter((m) => !existingIds.has(m.id));
+            return deduped.length > 0 ? [...prev, ...deduped] : prev;
+          });
+        } else if (message.event === "update") {
+          const updated = message.data as unknown as ChatMessage[];
+          const byId = new Map(updated.map((m) => [m.id, m]));
+          setMessages((prev) => prev.map((m) => byId.get(m.id) ?? m));
+        } else if (message.event === "delete") {
+          const deletedIds = new Set((message.data as (string | number)[]).map(String));
+          setMessages((prev) => prev.filter((m) => !deletedIds.has(String(m.id))));
+        }
+      }
+    } catch (error) {
+      console.error("Error subscribing to chat:", error);
+    }
+
+    if (!cancelledRef.current) {
+      setIsReconnecting(true);
+      const delay = Math.min(30000, 1000 * 2 ** attempt);
+      retryTimeoutRef.current = setTimeout(() => listen(attempt + 1), delay);
+    }
+  }, [fetchMessages]);
+
+  const connectRealtime = useCallback(() => {
+    if (connectedRef.current) return;
+    connectedRef.current = true;
+    cancelledRef.current = false;
+    listen(0);
+  }, [listen]);
+
+  const disconnectRealtime = useCallback(() => {
+    if (!connectedRef.current) return;
+    connectedRef.current = false;
+    cancelledRef.current = true;
+    if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    unsubscribeRef.current?.();
+    clientRef.current?.disconnect();
+    clientRef.current = null;
+    unsubscribeRef.current = undefined;
+    setIsReconnecting(false);
+  }, []);
+
+  useEffect(() => {
+    connectRealtime();
+    return () => {
+      if (idleDisconnectTimeoutRef.current) clearTimeout(idleDisconnectTimeoutRef.current);
+      disconnectRealtime();
+    };
+  }, [connectRealtime, disconnectRealtime]);
+
+  const [appActive, setAppActive] = useState(AppState.currentState === "active");
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      setAppActive(state === "active");
+    });
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (isFocused && appActive) {
+      if (idleDisconnectTimeoutRef.current) {
+        clearTimeout(idleDisconnectTimeoutRef.current);
+        idleDisconnectTimeoutRef.current = undefined;
+      }
+      connectRealtime();
+    } else {
+      idleDisconnectTimeoutRef.current = setTimeout(() => {
+        disconnectRealtime();
+      }, 60000);
+    }
+  }, [isFocused, appActive, connectRealtime, disconnectRealtime]);
 
   // Marks a new message as wanting a scroll, but doesn't scroll here -
   // calling scrollToEnd() right in this effect can fire before FlatList has
@@ -433,17 +475,15 @@ export default function Chat() {
           </Pressable>
         </View>
       </View>
-      <KeyboardAvoidingView
-        style={chatStyles.keyboardAvoid}
-        // Android already resizes the window for the keyboard (the app's
-        // default softwareKeyboardLayoutMode is "resize"), so adding RN's
-        // own "height" behavior on top double-shrinks the content here,
-        // pushing the input down behind the bottom tab bar (a sibling,
-        // absolutely-positioned overlay outside this screen, so it doesn't
-        // resize the same way). Let Android's native resize handle it alone.
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={0}
-      >
+      {isReconnecting && (
+        <View style={[chatStyles.reconnectBanner, { backgroundColor, borderBottomColor: textColor }]}>
+          <ActivityIndicator size="small" color={textColor} />
+          <ThemedText style={[chatStyles.reconnectText, { color: textColor }]}>
+            Reconnecting to chat…
+          </ThemedText>
+        </View>
+      )}
+      <KeyboardAvoidingView style={chatStyles.keyboardAvoid} behavior="padding">
         <View style={chatStyles.messageListWrap}>
           {!listReady && (
             <View style={[chatStyles.listLoadingOverlay, { backgroundColor }]}>
@@ -599,6 +639,17 @@ const chatStyles = StyleSheet.create({
   },
   headerContainer: {
     borderBottomWidth: 1,
+  },
+  reconnectBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+  },
+  reconnectText: {
+    fontSize: 12,
   },
   headerContent: {
     flexDirection: "row",
