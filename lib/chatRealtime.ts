@@ -9,9 +9,19 @@ if (!directusUrl) {
   throw new Error('EXPO_PUBLIC_DIRECTUS_URL is not set');
 }
 
+export interface ChatMessage {
+  id: number;
+  user: string | null;
+  username: string;
+  message: string;
+  image: string | null;
+  date_created: string;
+  is_system: boolean;
+}
+
 let tokenPromise: Promise<string> | null = null;
 
-async function fetchRealtimeToken(): Promise<string> {
+export async function fetchRealtimeToken(): Promise<string> {
   if (!tokenPromise) {
     tokenPromise = fetch(`${BACKEND_API_URL}/api/chat/realtime-token`)
       .then((res) => {
@@ -33,9 +43,9 @@ async function fetchRealtimeToken(): Promise<string> {
 }
 
 /**
- * Builds a fresh websocket-capable Directus client authenticated as the
- * read-only "Chat Reader" Directus user — used for every visitor, signed in
- * or not, matching the website's approach (see refuge-worldwide's
+ * Builds a websocket-capable Directus client authenticated as the read-only
+ * "Chat Reader" Directus user — used for every visitor, signed in or not,
+ * matching the website's approach (see refuge-worldwide's
  * lib/directus/chatRealtime.ts). That user carries only read access to the
  * `chat` collection, so its token is safe to hand to any client. It exists
  * purely because this Directus instance's websocket layer requires every
@@ -46,8 +56,7 @@ async function fetchRealtimeToken(): Promise<string> {
  *
  * Callers own the returned client's lifecycle (subscribe/disconnect).
  */
-export async function createChatRealtimeClient() {
-  const token = await fetchRealtimeToken();
+export function createChatRealtimeClient(token: string) {
   return createDirectus(directusUrl as string)
     .with(realtime({ authMode: 'handshake' }))
     .with(staticToken(token));

@@ -184,8 +184,8 @@ export default function Archive() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadMore = () => {
-    if (!loading && hasMore && activeTab !== "featured") {
+  const loadMoreLatest = () => {
+    if (!loading && hasMore) {
       fetchShows(skip, selectedGenres);
     }
   };
@@ -257,11 +257,8 @@ export default function Archive() {
     );
   };
 
-  const displayedShows = activeTab === "featured" ? featuredShows : shows;
-  const displayedLoading = activeTab === "featured" ? featuredLoading : loading;
-
-  const renderFooter = () => {
-    if (!displayedLoading) return null;
+  const renderFooter = (show: boolean) => {
+    if (!show) return null;
     return (
       <View style={styles.footer}>
         <ActivityIndicator size="large" color={textColor} />
@@ -346,36 +343,74 @@ export default function Archive() {
         </View>
       )}
 
-      {displayedShows.length === 0 && displayedLoading ? (
-        <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
-          <View style={styles.footer}>
-            <ActivityIndicator size="large" color={textColor} />
-          </View>
-        </View>
-      ) : (
-        <FlatList
-          data={buildListEntries(displayedShows, !user)}
-          renderItem={renderListEntry}
-          keyExtractor={(item) =>
-            item.type === "banner" ? "supporter-banner" : item.show.id
-          }
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={renderFooter}
-          ItemSeparatorComponent={ShowCardSeparator}
-          contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={textColor}
-              colors={[backgroundColor]}
-              progressBackgroundColor={textColor}
+      {/* Latest and Featured each get their own FlatList, kept mounted and
+          just hidden when inactive, so switching tabs doesn't carry over
+          scroll position from the other list. */}
+      <View style={styles.listArea}>
+        <View style={[styles.listWrap, activeTab !== "latest" && styles.hiddenList]}>
+          {shows.length === 0 && loading ? (
+            <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
+              <View style={styles.footer}>
+                <ActivityIndicator size="large" color={textColor} />
+              </View>
+            </View>
+          ) : (
+            <FlatList
+              data={buildListEntries(shows, !user)}
+              renderItem={renderListEntry}
+              keyExtractor={(item) =>
+                item.type === "banner" ? "supporter-banner" : item.show.id
+              }
+              onEndReached={loadMoreLatest}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={() => renderFooter(loading)}
+              ItemSeparatorComponent={ShowCardSeparator}
+              contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  tintColor={textColor}
+                  colors={[backgroundColor]}
+                  progressBackgroundColor={textColor}
+                />
+              }
             />
-          }
-        />
-      )}
+          )}
+        </View>
+
+        <View style={[styles.listWrap, activeTab !== "featured" && styles.hiddenList]}>
+          {featuredShows.length === 0 && featuredLoading ? (
+            <View style={[styles.listContent, { paddingBottom: bottomPadding }]}>
+              <View style={styles.footer}>
+                <ActivityIndicator size="large" color={textColor} />
+              </View>
+            </View>
+          ) : (
+            <FlatList
+              data={buildListEntries(featuredShows, !user)}
+              renderItem={renderListEntry}
+              keyExtractor={(item) =>
+                item.type === "banner" ? "supporter-banner" : item.show.id
+              }
+              ListFooterComponent={() => renderFooter(featuredLoading)}
+              ItemSeparatorComponent={ShowCardSeparator}
+              contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding }]}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  tintColor={textColor}
+                  colors={[backgroundColor]}
+                  progressBackgroundColor={textColor}
+                />
+              }
+            />
+          )}
+        </View>
+      </View>
 
       {/* Genre Filter Bottom Sheet */}
       <BottomSheet ref={bottomSheetRef} snapPoints={["70%", "90%"]}>
@@ -397,6 +432,15 @@ export default function Archive() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  listArea: {
+    flex: 1,
+  },
+  listWrap: {
+    flex: 1,
+  },
+  hiddenList: {
+    display: "none",
   },
   tabBar: {
     flexDirection: "row",

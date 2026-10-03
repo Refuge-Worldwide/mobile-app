@@ -8,9 +8,9 @@ import { BACKEND_API_URL } from "@/constants/backendApiUrl";
 import { isPaidSupporterStatus, useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { directus } from "@/lib/directus";
 import { readSingleton } from "@directus/sdk";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -207,11 +207,11 @@ export default function AccountScreen() {
     return (
       <ThemedView style={authStyles.container}>
         <ScrollView
-        contentContainerStyle={[
-          authStyles.scrollContent,
-          { paddingBottom: bottomPadding + 40 },
-        ]}
-      >
+          contentContainerStyle={[
+            authStyles.scrollContent,
+            { paddingBottom: bottomPadding + 40 },
+          ]}
+        >
           {isPaidSupporter && (
             <View style={[authStyles.card, { backgroundColor: textColor }]}>
               <View style={authStyles.nameContainer}>
@@ -405,7 +405,7 @@ export default function AccountScreen() {
           )}
 
           <ThemedButton
-            title={isSignUp ? "Sign Up" : "Sign In"}
+            title={isSignUp ? "Become a supporter" : "Sign In"}
             onPress={handleAuth}
             loading={submitting}
           />
@@ -417,7 +417,7 @@ export default function AccountScreen() {
             <ThemedText style={{ textDecorationLine: "underline" }}>
               {isSignUp
                 ? "Already have an account? Sign In"
-                : "Don't have an account? Sign Up"}
+                : "No account? Become a supporter"}
             </ThemedText>
           </Pressable>
         </View>
@@ -432,7 +432,6 @@ const authStyles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 100,
   },
   title: {
     marginBottom: 30,

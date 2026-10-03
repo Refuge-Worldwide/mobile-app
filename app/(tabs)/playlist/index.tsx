@@ -173,6 +173,9 @@ export default function PlaylistScreen() {
                 }
               >
                 <View style={styles.imageContainer}>
+                  {/* TODO: playlist.image is unresized from the API — fix in
+                      the website's /api/playlists, not here, so it reaches
+                      users without an app release. */}
                   <Image
                     source={{ uri: playlist.image }}
                     placeholder={{ blurhash: defaultBlurhash }}

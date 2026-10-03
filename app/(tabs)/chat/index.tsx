@@ -5,7 +5,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { directus, directusPublic } from "@/lib/directus";
-import { createChatRealtimeClient } from "@/lib/chatRealtime";
+import {
+  createChatRealtimeClient,
+  fetchRealtimeToken,
+  type ChatMessage,
+} from "@/lib/chatRealtime";
+import { splitOnUrls, isUrl } from "@/lib/linkify";
 import { readItems, updateMe } from "@directus/sdk";
 import { useIsFocused } from "@react-navigation/native";
 import { BottomSheetModal, BottomSheetTextInput } from "@gorhom/bottom-sheet";
@@ -20,28 +25,60 @@ import {
   Alert,
   AppState,
   FlatList,
+  Linking,
   Pressable,
   StyleSheet,
+  Text,
   TextInput,
   View,
+  type TextProps,
 } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
-
-interface ChatMessage {
-  id: number;
-  user: string | null;
-  username: string;
-  message: string;
-  image: string | null;
-  date_created: string;
-  is_system: boolean;
-}
 
 const ANON_USERNAME_KEY = "chat_anon_username";
 
 const BACKEND_API_URL =
   Constants.expoConfig?.extra?.backendApiUrl ||
   process.env.EXPO_PUBLIC_API_URL;
+
+// TODO chat improvements still to do:
+// - link previews (card with title/image under the message, needs a
+//   backend endpoint to fetch the page's og tags)
+// - emoji reactions on messages
+// - reply/quote a specific message
+// - long press menu to copy or report a message
+// - load older messages by scrolling up past the current 50 limit
+// - typing indicator
+// - gif support
+
+function LinkifiedText({
+  text,
+  style,
+  linkStyle,
+}: {
+  text: string;
+  style: TextProps["style"];
+  linkStyle: TextProps["style"];
+}) {
+  const parts = splitOnUrls(text);
+  return (
+    <Text style={style}>
+      {parts.map((part, i) =>
+        isUrl(part) ? (
+          <Text
+            key={i}
+            style={linkStyle}
+            onPress={() => Linking.openURL(part)}
+          >
+            {part}
+          </Text>
+        ) : (
+          part
+        ),
+      )}
+    </Text>
+  );
+}
 
 // Chat images are always 16:9, so the box size is known upfront - no async
 // measuring, no layout shift on load, and no resize when FlatList remounts
@@ -130,6 +167,18 @@ export default function Chat() {
   // the bottom through it without responding to later, unrelated size
   // changes (e.g. an image loading).
   const isInitialLoadSettlingRef = useRef(false);
+  // Whether there's older history left to page back through - reset to true
+  // on every fresh connect/reconnect, since that starts a new baseline.
+  const hasMoreHistoryRef = useRef(true);
+  const isLoadingOlderRef = useRef(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  // Set right before an older-history prepend's setMessages call, and
+  // consumed (reset) by the scroll-to-bottom effect below - so that effect
+  // can tell a prepend's length increase apart from a new live message's,
+  // without racing isLoadingOlderRef's own reset in loadOlderMessages'
+  // finally block (which lands in the same tick as the prepend, before this
+  // effect ever runs).
+  const lastChangeWasPrependRef = useRef(false);
 
   // Load anonymous username from storage
   useEffect(() => {
@@ -162,55 +211,60 @@ export default function Chat() {
   // via the shared read-only "Chat Reader" client — matching the website's
   // approach, and keeping the live feed connection independent of a signed-in
   // user's own session (see lib/chatRealtime.ts).
-  const clientRef = useRef<Awaited<ReturnType<typeof createChatRealtimeClient>> | null>(null);
+  const clientRef = useRef<ReturnType<typeof createChatRealtimeClient> | null>(null);
   const unsubscribeRef = useRef<(() => void) | undefined>(undefined);
   const cancelledRef = useRef(true);
   const connectedRef = useRef(false);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const idleDisconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const fetchMessages = useCallback(async () => {
-    try {
-      const data = await directusPublic.request(
-        readItems("chat", {
-          sort: ["date_created"],
-          limit: 50,
-        }),
-      );
-      if (cancelledRef.current) return;
-      setMessages(data as unknown as ChatMessage[]);
-      isInitialLoadSettlingRef.current = true;
-      setTimeout(() => {
-        if (cancelledRef.current) return;
-        isInitialLoadSettlingRef.current = false;
-        setTimeout(() => {
-          if (!cancelledRef.current) setListReady(true);
-        }, 250);
-      }, 500);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-      if (!cancelledRef.current) setListReady(true);
-    }
-  }, []);
-
   const listen = useCallback(async (attempt: number) => {
     if (cancelledRef.current) return;
 
     try {
-      const client = await createChatRealtimeClient();
-      clientRef.current = client;
+      const token = await fetchRealtimeToken();
       if (cancelledRef.current) return;
 
-      const { subscription, unsubscribe } = await client.subscribe("chat", {});
+      const client = createChatRealtimeClient(token);
+      clientRef.current = client;
+
+      // Subscribing with a sort/limit query gets the latest page of history
+      // back as the subscription's own "init" event below - the same one
+      // socket then carries every live update after, so there's no separate
+      // REST call to Directus (or our backend) for history at all.
+      const { subscription, unsubscribe } = await client.subscribe("chat", {
+        query: { sort: ["-date_created"], limit: 50 },
+      });
       unsubscribeRef.current = unsubscribe;
       setIsReconnecting(false);
 
-      await fetchMessages();
-      if (cancelledRef.current) return;
-
       for await (const message of subscription) {
         if (cancelledRef.current) break;
-        if (message.event === "create") {
+        if (message.event === "init") {
+          // Comes back newest-first (so the limit catches the latest page,
+          // not the oldest) - reverse to oldest-first for display.
+          const initialMessages = (message.data as unknown as ChatMessage[])
+            .slice()
+            .reverse();
+          setMessages(initialMessages);
+          hasMoreHistoryRef.current = initialMessages.length === 50;
+          isInitialLoadSettlingRef.current = true;
+          setTimeout(() => {
+            if (cancelledRef.current) return;
+            isInitialLoadSettlingRef.current = false;
+            flatListRef.current?.scrollToOffset({ offset: 999999, animated: false });
+            setTimeout(() => {
+              if (cancelledRef.current) return;
+              flatListRef.current?.scrollToOffset({ offset: 999999, animated: false });
+              setListReady(true);
+              setTimeout(() => {
+                if (!cancelledRef.current) {
+                  flatListRef.current?.scrollToOffset({ offset: 999999, animated: false });
+                }
+              }, 300);
+            }, 250);
+          }, 500);
+        } else if (message.event === "create") {
           const newMsgs = message.data as unknown as ChatMessage[];
           setMessages((prev) => {
             const existingIds = new Set(prev.map((m) => m.id));
@@ -228,6 +282,7 @@ export default function Chat() {
       }
     } catch (error) {
       console.error("Error subscribing to chat:", error);
+      if (!cancelledRef.current) setListReady(true);
     }
 
     if (!cancelledRef.current) {
@@ -235,7 +290,7 @@ export default function Chat() {
       const delay = Math.min(30000, 1000 * 2 ** attempt);
       retryTimeoutRef.current = setTimeout(() => listen(attempt + 1), delay);
     }
-  }, [fetchMessages]);
+  }, []);
 
   const connectRealtime = useCallback(() => {
     if (connectedRef.current) return;
@@ -243,6 +298,43 @@ export default function Chat() {
     cancelledRef.current = false;
     listen(0);
   }, [listen]);
+
+  // Pages back through history older than what the socket's init snapshot
+  // covered - a plain REST call, since Directus's websocket subscribe has no
+  // "load more" of its own. Public role has read access to `chat`, so this
+  // goes straight to Directus rather than through the backend.
+  const loadOlderMessages = useCallback(async () => {
+    if (isLoadingOlderRef.current || !hasMoreHistoryRef.current) return;
+    const oldest = messages[0];
+    if (!oldest) return;
+
+    isLoadingOlderRef.current = true;
+    setLoadingOlder(true);
+    try {
+      const older = await directusPublic.request(
+        readItems("chat", {
+          filter: { id: { _lt: oldest.id } },
+          sort: ["-date_created"],
+          limit: 50,
+        }),
+      );
+      const olderMessages = (older as unknown as ChatMessage[]).slice().reverse();
+      hasMoreHistoryRef.current = olderMessages.length === 50;
+
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const toPrepend = olderMessages.filter((m) => !existingIds.has(m.id));
+        if (toPrepend.length === 0) return prev;
+        lastChangeWasPrependRef.current = true;
+        return [...toPrepend, ...prev];
+      });
+    } catch (error) {
+      console.error("Error loading older chat messages:", error);
+    } finally {
+      isLoadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
+  }, [messages]);
 
   const disconnectRealtime = useCallback(() => {
     if (!connectedRef.current) return;
@@ -295,7 +387,9 @@ export default function Chat() {
   const messageCountRef = useRef(0);
   const pendingScrollToBottomRef = useRef(false);
   useEffect(() => {
-    if (
+    if (lastChangeWasPrependRef.current) {
+      lastChangeWasPrependRef.current = false;
+    } else if (
       messages.length > messageCountRef.current &&
       !isInitialLoadSettlingRef.current &&
       isNearBottomRef.current
@@ -436,9 +530,11 @@ export default function Chat() {
           </View>
         )}
         {item.message ? (
-          <ThemedText style={[chatStyles.messageText, { color: textColor }]}>
-            {item.message}
-          </ThemedText>
+          <LinkifiedText
+            text={item.message}
+            style={[chatStyles.messageText, { color: textColor }]}
+            linkStyle={{ textDecorationLine: "underline" }}
+          />
         ) : null}
         {item.image && <ChatImage uri={item.image} />}
       </View>
@@ -498,12 +594,26 @@ export default function Chat() {
             style={[chatStyles.messageList, !listReady && chatStyles.hidden]}
             contentContainerStyle={chatStyles.messageListContent}
             showsVerticalScrollIndicator={false}
+            maintainVisibleContentPosition={
+              listReady ? { minIndexForVisible: 0 } : undefined
+            }
+            onStartReached={() => {
+              if (listReady) loadOlderMessages();
+            }}
+            onStartReachedThreshold={0.3}
+            ListHeaderComponent={
+              loadingOlder ? (
+                <View style={chatStyles.loadOlderFooter}>
+                  <ActivityIndicator size="small" color={textColor} />
+                </View>
+              ) : null
+            }
             onContentSizeChange={() => {
               if (isInitialLoadSettlingRef.current) {
-                flatListRef.current?.scrollToEnd({ animated: false });
+                flatListRef.current?.scrollToOffset({ offset: 999999, animated: false });
               } else if (pendingScrollToBottomRef.current) {
                 pendingScrollToBottomRef.current = false;
-                flatListRef.current?.scrollToEnd({ animated: true });
+                flatListRef.current?.scrollToOffset({ offset: 999999, animated: true });
               }
             }}
             onScroll={(e) => {
@@ -678,6 +788,10 @@ const chatStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1,
+  },
+  loadOlderFooter: {
+    paddingVertical: 12,
+    alignItems: "center",
   },
   hidden: {
     opacity: 0,
