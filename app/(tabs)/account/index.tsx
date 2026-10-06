@@ -8,10 +8,7 @@ import { BACKEND_API_URL } from "@/constants/backendApiUrl";
 import { isPaidSupporterStatus, useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { directus } from "@/lib/directus";
-import { readSingleton } from "@directus/sdk";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
@@ -44,10 +41,6 @@ export default function AccountScreen() {
   const [newsletter, setNewsletter] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [discountCodes, setDiscountCodes] = useState<
-    { label?: string; code: string }[] | null
-  >(null);
-  const [discountCodesError, setDiscountCodesError] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string }>();
 
@@ -56,34 +49,6 @@ export default function AccountScreen() {
       setIsSignUp(true);
     }
   }, [params.mode]);
-
-  useEffect(() => {
-    if (!isPaidSupporter) {
-      setDiscountCodes(null);
-      setDiscountCodesError(false);
-      return;
-    }
-
-    let cancelled = false;
-    directus
-      .request(readSingleton("settings", { fields: ["discount_codes"] }))
-      .then((settings) => {
-        if (cancelled) return;
-        setDiscountCodes(
-          (settings?.discount_codes as
-            | { label?: string; code: string }[]
-            | null) ?? [],
-        );
-      })
-      .catch((error) => {
-        console.error("Failed to fetch discount codes:", error);
-        if (!cancelled) setDiscountCodesError(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isPaidSupporter]);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -151,16 +116,12 @@ export default function AccountScreen() {
     router.push("/(tabs)/account/history" as any);
   };
 
-  const handleAccountSettings = async () => {
-    await WebBrowser.openBrowserAsync(`${BACKEND_API_URL}/account/settings`);
+  const handleDiscountsPress = () => {
+    router.push("/(tabs)/account/discounts" as any);
   };
 
-  const handleCopyCode = async (label: string | undefined, code: string) => {
-    await Clipboard.setStringAsync(code);
-    Alert.alert(
-      "Success",
-      `${label ? `${label} discount code` : "Discount code"} ${code} copied to clipboard!`,
-    );
+  const handleAccountSettings = async () => {
+    await WebBrowser.openBrowserAsync(`${BACKEND_API_URL}/account/settings`);
   };
 
   const [checkingStatus, setCheckingStatus] = useState(false);
@@ -256,21 +217,11 @@ export default function AccountScreen() {
                   variant="outline"
                 />
 
-                {discountCodesError && (
-                  <ThemedText style={authStyles.incompleteMessage}>
-                    Couldn&apos;t load discount codes. Please try again
-                    later.
-                  </ThemedText>
-                )}
-
-                {discountCodes?.map((entry, index) => (
-                  <ThemedButton
-                    key={`${entry.code}-${index}`}
-                    title={`Copy ${entry.label ? `${entry.label} ` : ""}discount code`}
-                    onPress={() => handleCopyCode(entry.label, entry.code)}
-                    variant="outline"
-                  />
-                ))}
+                <ThemedButton
+                  title="Discounts"
+                  onPress={handleDiscountsPress}
+                  variant="outline"
+                />
 
                 {/* Paid/staff only: the web settings page offers checkout to
                     unpaid accounts, which the app mustn't link to (3.1.3). */}

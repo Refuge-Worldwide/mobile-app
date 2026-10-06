@@ -4,7 +4,7 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useLayoutStore } from "@/store/layoutStore";
 import { Tabs } from "expo-router";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NavigationProvider, useNavigationContext } from "@/contexts/NavigationContext";
 
@@ -95,12 +95,16 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
       </View>
 
       {/* Secondary tabs row - spread across */}
-      <View style={styles.tabsRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabsRowScrollContent}
+      >
         {secondaryTabRoutes.map((route: any) => {
           const index = state.routes.findIndex((r: any) => r.key === route.key);
           return renderTab(route, index);
         })}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -196,6 +200,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 6,
+    marginBottom: 6,
+  },
+  tabsRowScrollContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexGrow: 1,
     paddingHorizontal: 6,
     marginBottom: 6,
   },

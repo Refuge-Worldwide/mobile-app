@@ -78,8 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<DirectusUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isStaff, setIsStaff] = useState(false);
+  const [hasRemoteSupporterAccess, setHasRemoteSupporterAccess] = useState(false);
   const isPaidSupporter =
-    isStaff || isPaidSupporterStatus(user?.subscription_status);
+    hasRemoteSupporterAccess || isPaidSupporterStatus(user?.subscription_status);
 
   // A failed lookup just means no staff perks, never a broken login.
   const loadStaffStatus = async () => {
@@ -87,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = await directus.getToken();
       if (!token) {
         setIsStaff(false);
+        setHasRemoteSupporterAccess(false);
         return;
       }
       const response = await fetch(`${BACKEND_API_URL}/api/auth/is-staff`, {
@@ -94,8 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       const data = await response.json();
       setIsStaff(response.ok && data.isStaff === true);
+      setHasRemoteSupporterAccess(response.ok && data.hasSupporterAccess === true);
     } catch {
       setIsStaff(false);
+      setHasRemoteSupporterAccess(false);
     }
   };
 
@@ -161,6 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
     setIsStaff(false);
+    setHasRemoteSupporterAccess(false);
   };
 
   const resetPassword = async (rawEmail: string) => {

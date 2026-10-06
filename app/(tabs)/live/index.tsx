@@ -290,7 +290,7 @@ export default function Live() {
                     ]}
                   >
                     {isLoading && currentTrack?.id === "live-stream" ? (
-                      <Icon name="loading" size={40} color={backgroundColor} />
+                      <Icon name="loading" size={24} color={backgroundColor} />
                     ) : (
                       <Icon
                         name={isCurrentlyPlayingLive ? "stop" : "play"}
@@ -361,7 +361,7 @@ export default function Live() {
                   ]}
                 >
                   {isLoading && currentTrack?.id === "live-stream-ch2" ? (
-                    <Icon name="loading" size={50} color={backgroundColor} />
+                    <Icon name="loading" size={24} color={backgroundColor} />
                   ) : (
                     <Icon
                       name={isCurrentlyPlayingLiveCh2 ? "stop" : "play"}

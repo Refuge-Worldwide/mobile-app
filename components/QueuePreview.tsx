@@ -1,4 +1,6 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { isFavourited, toggleFavourite } from "@/lib/favourites";
 import { Track, useAudioStore } from "@/store/audioStore";
 import { optimizeShowImage } from "@/utils/imageOptimization";
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
@@ -13,11 +15,12 @@ import * as WebBrowser from "expo-web-browser";
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
 } from "react";
-import { Platform, Pressable, Share, StyleSheet, View } from "react-native";
+import { Alert, Platform, Pressable, Share, StyleSheet, View } from "react-native";
 import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
@@ -38,8 +41,11 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const [showDescription, setShowDescription] = useState<string | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const router = useRouter();
+  const { user, isPaidSupporter } = useAuth();
 
   const {
     currentTrack,
@@ -65,12 +71,48 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
   // Fetch show details when sheet opens
   const handleSheetChange = useCallback(
     (index: number) => {
+      setIsSheetOpen(index >= 0);
       if (index >= 0) {
         fetchShowDetails();
       }
     },
     [currentTrack],
   );
+
+  useEffect(() => {
+    if (isSheetOpen) {
+      fetchShowDetails();
+    }
+  }, [currentTrack?.slug, isSheetOpen]);
+
+  useEffect(() => {
+    if (isPaidSupporter && currentTrack?.showId) {
+      isFavourited(currentTrack.showId).then(setIsFavorite);
+    } else {
+      setIsFavorite(false);
+    }
+  }, [isPaidSupporter, currentTrack?.showId]);
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      Alert.alert("Sign in required", "Please sign in to favorite shows");
+      return;
+    }
+
+    if (!isPaidSupporter) {
+      Alert.alert("Supporters only", "Favouriting shows is a supporter feature.");
+      return;
+    }
+
+    if (!currentTrack?.showId) return;
+
+    const { error } = await toggleFavourite(currentTrack.showId);
+    if (error) {
+      Alert.alert("Error", "Failed to update favorite");
+    } else {
+      setIsFavorite((current) => !current);
+    }
+  };
 
   const fetchShowDetails = async () => {
     if (!currentTrack?.slug) {
@@ -300,10 +342,11 @@ export const QueuePreview = forwardRef<QueuePreviewRef>((props, ref) => {
               <View style={styles.actionButtonsLeft}>
                 <Pressable
                   style={styles.actionButton}
-                  accessibilityLabel="Add to favorites"
+                  onPress={handleToggleFavorite}
+                  accessibilityLabel={isFavorite ? "Remove from favorites" : "Add to favorites"}
                   accessibilityRole="button"
                 >
-                  <Icon name="heart-outline" size={24} />
+                  <Icon name={isFavorite ? "heart" : "heart-outline"} size={24} />
                 </Pressable>
                 {currentTrack?.url?.includes("soundcloud.com") && (
                   <Pressable

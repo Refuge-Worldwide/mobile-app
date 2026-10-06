@@ -189,6 +189,7 @@ export function AudioPlayer() {
         await TrackPlayer.setupPlayer({
           // Allow buffering further ahead on good connections for resilience
           maxBuffer: 120,
+          autoHandleInterruptions: true,
         });
         await TrackPlayer.updateOptions({
           android: {
@@ -590,11 +591,11 @@ export function AudioPlayer() {
                   accessibilityRole="button"
                 >
                   {isLoading ? (
-                    <Icon name="loading" size={24} color={textColor} />
+                    <Icon name="loading" size={20} color={textColor} />
                   ) : (
                     <Icon
                       name={isPlaying ? "stop" : "play"}
-                      size={24}
+                      size={30}
                       color={textColor}
                     />
                   )}

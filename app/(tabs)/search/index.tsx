@@ -10,7 +10,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { pushShowDetail } from "@/lib/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -90,15 +90,9 @@ export default function SearchScreen() {
     fetchGenres();
   }, []);
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
+  const latestQueryRef = useRef("");
 
-    if (query.trim().length === 0) {
-      setResults([]);
-      setError(null);
-      return;
-    }
-
+  const performSearch = async (query: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -111,6 +105,8 @@ export default function SearchScreen() {
       }
 
       const data: SearchResponse = await response.json();
+
+      if (latestQueryRef.current !== query) return;
 
       // Transform shows to ensure audioFile and coverImage have proper URLs
       const transformedShows = (data.shows || []).map((show: any) => ({
@@ -129,12 +125,44 @@ export default function SearchScreen() {
         setGenres(data.genres);
       }
     } catch (err) {
+      if (latestQueryRef.current !== query) return;
       console.error("Error searching:", err);
       setError("Failed to load search results");
       setResults([]);
     } finally {
-      setLoading(false);
+      if (latestQueryRef.current === query) setLoading(false);
     }
+  };
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    const trimmed = searchQuery.trim();
+    latestQueryRef.current = trimmed;
+
+    if (trimmed.length === 0) {
+      setResults([]);
+      setError(null);
+      return;
+    }
+
+    debounceRef.current = setTimeout(() => {
+      performSearch(trimmed);
+    }, 350);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
   };
 
   const formatDate = (dateString: string) => {

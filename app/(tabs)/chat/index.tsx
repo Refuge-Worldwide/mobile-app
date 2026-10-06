@@ -3,6 +3,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBottomSafePadding } from "@/hooks/useBottomSafePadding";
+import { useThemeBlurhash } from "@/hooks/useThemeBlurhash";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { directus, directusPublic } from "@/lib/directus";
 import {
@@ -33,7 +34,7 @@ import {
   View,
   type TextProps,
 } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { KeyboardAvoidingView, useKeyboardState } from "react-native-keyboard-controller";
 
 const ANON_USERNAME_KEY = "chat_anon_username";
 
@@ -80,16 +81,8 @@ function LinkifiedText({
   );
 }
 
-// Chat images are always 16:9, so the box size is known upfront - no async
-// measuring, no layout shift on load, and no resize when FlatList remounts
-// a row while scrolling. Tracks which URLs have already loaded once, across
-// mounts, so a remount of an already-seen image skips the loading state
-// instead of flashing it again.
-const loadedImages = new Set<string>();
-
 function ChatImage({ uri }: { uri: string }) {
-  const [loaded, setLoaded] = useState(loadedImages.has(uri));
-  const textColor = useThemeColor({}, "text");
+  const defaultBlurhash = useThemeBlurhash();
   return (
     <View
       style={{
@@ -100,17 +93,12 @@ function ChatImage({ uri }: { uri: string }) {
         backgroundColor: "#ffffff14",
       }}
     >
-      {!loaded && (
-        <ActivityIndicator color={textColor} style={StyleSheet.absoluteFillObject} />
-      )}
       <Image
         source={{ uri }}
-        style={{ width: "100%", height: "100%", opacity: loaded ? 1 : 0 }}
+        placeholder={{ blurhash: defaultBlurhash }}
+        transition={300}
+        style={{ width: "100%", height: "100%" }}
         contentFit="cover"
-        onLoad={() => {
-          loadedImages.add(uri);
-          setLoaded(true);
-        }}
       />
     </View>
   );
@@ -122,6 +110,7 @@ export default function Chat() {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const totalBottomPadding = useBottomSafePadding();
+  const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
   const isFocused = useIsFocused();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -464,6 +453,8 @@ export default function Chat() {
       }
 
       setNewMessage("");
+      isNearBottomRef.current = true;
+      pendingScrollToBottomRef.current = true;
     } catch (error) {
       console.error("Error sending message:", error);
       Alert.alert(
@@ -554,7 +545,7 @@ export default function Chat() {
         ]}
       >
         <View style={chatStyles.headerContent}>
-          <ThemedText type="title">Chat</ThemedText>
+          <ThemedText type="title" style={chatStyles.headerTitle}>Chat</ThemedText>
           <Pressable
             onPress={() => {
               // Pre-filled so tapping Save with no edits just keeps the
@@ -634,7 +625,7 @@ export default function Chat() {
             chatStyles.inputContainer,
             {
               borderTopColor: textColor,
-              paddingBottom: 8 + totalBottomPadding,
+              paddingBottom: isKeyboardVisible ? 8 : 8 + totalBottomPadding,
             },
           ]}
         >
@@ -749,6 +740,10 @@ const chatStyles = StyleSheet.create({
   },
   headerContainer: {
     borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    lineHeight: 24,
   },
   reconnectBanner: {
     flexDirection: "row",

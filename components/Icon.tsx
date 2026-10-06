@@ -45,10 +45,13 @@ export function Icon({
       case 'stop':
         return <Ionicons name="stop-sharp" size={size} color={iconColor} style={style} />;
       case 'loading':
-        // ActivityIndicator accepts 'small' or 'large', or a number
-        // For sizes < 40, use 'small', otherwise 'large'
-        const activitySize = size && size >= 40 ? 'large' : 'small';
-        return <ActivityIndicator size={activitySize} color={iconColor} />;
+        return (
+          <ActivityIndicator
+            size="small"
+            color={iconColor}
+            style={{ transform: [{ scale: size / 20 }] }}
+          />
+        );
       case 'heart':
         return <Ionicons name="heart" size={size} color={iconColor} style={style} />;
       case 'heart-outline':

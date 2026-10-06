@@ -1,7 +1,16 @@
 import { directus } from "@/lib/directus";
 import { Show } from "@/types/shows";
-import { createItem, deleteItems, readItems } from "@directus/sdk";
+import { createItem, deleteItems, readItems, readMe } from "@directus/sdk";
 import Constants from "expo-constants";
+
+async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const me = await directus.request(readMe({ fields: ["id"] }));
+    return (me as { id: string }).id;
+  } catch {
+    return null;
+  }
+}
 
 const BACKEND_API_URL =
   Constants.expoConfig?.extra?.backendApiUrl ||
@@ -42,10 +51,15 @@ export async function removeFavourite(showId: string) {
     return { error: new Error("User not authenticated") };
   }
 
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { error: new Error("User not authenticated") };
+  }
+
   try {
     await directus.request(
       deleteItems("show_favourites", {
-        filter: { show_id: { _eq: showId } },
+        filter: { show_id: { _eq: showId }, user_created: { _eq: userId } },
       }),
     );
     return { error: null as Error | null };
@@ -65,10 +79,13 @@ function toError(error: unknown): Error {
 export async function isFavourited(showId: string): Promise<boolean> {
   if (!(await directus.getToken())) return false;
 
+  const userId = await getCurrentUserId();
+  if (!userId) return false;
+
   try {
     const data = await directus.request(
       readItems("show_favourites", {
-        filter: { show_id: { _eq: showId } },
+        filter: { show_id: { _eq: showId }, user_created: { _eq: userId } },
         limit: 1,
       }),
     );
@@ -85,9 +102,13 @@ export async function isFavourited(showId: string): Promise<boolean> {
 export async function getFavourites(): Promise<Favourite[]> {
   if (!(await directus.getToken())) return [];
 
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
   try {
     const data = await directus.request(
       readItems("show_favourites", {
+        filter: { user_created: { _eq: userId } },
         sort: ["-date_created"],
       }),
     );

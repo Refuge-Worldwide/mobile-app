@@ -141,7 +141,7 @@ export function GenreShowsList({ genre }: GenreShowsListProps) {
     <ThemedView style={styles.container}>
       <View style={[styles.headerContainer, { backgroundColor, borderBottomColor: textColor }]}>
         <View style={styles.headerContent}>
-          <ThemedText type="title">
+          <ThemedText type="title" style={styles.headerTitle}>
             {genre}
           </ThemedText>
         </View>
@@ -192,6 +192,10 @@ const styles = StyleSheet.create({
   headerContent: {
     paddingHorizontal: 12,
     paddingBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 22,
+    lineHeight: 24,
   },
   titleContainer: {
     paddingBottom: 4,
