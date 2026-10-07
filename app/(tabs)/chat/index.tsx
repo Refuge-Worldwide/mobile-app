@@ -110,7 +110,10 @@ export default function Chat() {
   const textColor = useThemeColor({}, "text");
   const backgroundColor = useThemeColor({}, "background");
   const totalBottomPadding = useBottomSafePadding();
-  const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
+  // Floating keyboards report as visible with 0 height, so check height too
+  const isKeyboardDocked = useKeyboardState(
+    (state) => state.isVisible && state.height > 0,
+  );
   const isFocused = useIsFocused();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -570,7 +573,11 @@ export default function Chat() {
           </ThemedText>
         </View>
       )}
-      <KeyboardAvoidingView style={chatStyles.keyboardAvoid} behavior="padding">
+      <KeyboardAvoidingView
+        style={chatStyles.keyboardAvoid}
+        behavior="padding"
+        automaticOffset
+      >
         <View style={chatStyles.messageListWrap}>
           {!listReady && (
             <View style={[chatStyles.listLoadingOverlay, { backgroundColor }]}>
@@ -625,7 +632,7 @@ export default function Chat() {
             chatStyles.inputContainer,
             {
               borderTopColor: textColor,
-              paddingBottom: isKeyboardVisible ? 8 : 8 + totalBottomPadding,
+              paddingBottom: isKeyboardDocked ? 8 : 8 + totalBottomPadding,
             },
           ]}
         >
